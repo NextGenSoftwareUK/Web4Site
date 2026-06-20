@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OASIS WEB4 — The Foundation Layer</title>
+<meta name="description" content="OASIS WEB4 — the universal foundation layer. Identity, karma, data, NFTs, tokens and providers — one avatar, one karma score, one wallet, interoperable across 40+ Web2 and Web3 providers and every connected world.">
+<meta property="og:title" content="OASIS WEB4 — The Foundation Layer">
+<meta property="og:description" content="One avatar. One karma score. One wallet. Every world, every chain, every provider — unified under a single API.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='30' fill='none' stroke='%2300e5ff' stroke-width='5'/><circle cx='50' cy='50' r='10' fill='%2300e5ff'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cyan:#00e5ff;--cyan-glow:rgba(0,229,255,.18);
+  --rose:#ff5fa0;
+  --gold:#f0a500;
+  --bg-deep:#030714;--bg-card:#0a1535;--bg-card2:#071028;
+  --text:#d0e4ff;--text-dim:#6a80a8;
+  --heading:#ffffff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg-deep);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+
+#star-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(3,7,20,.88);backdrop-filter:blur(12px);border-bottom:1px solid rgba(0,229,255,.12)}
+.nav-brand{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;color:#fff;text-decoration:none}
+.nav-brand span{color:var(--cyan)}
+.nav-links{display:flex;gap:28px;list-style:none}
+.nav-links a{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.14em;color:#a8bfd8;text-decoration:none;transition:color .2s}
+.nav-links a:hover{color:var(--cyan)}
+
+/* ── SECTIONS ── */
+.section{position:relative;z-index:1;padding:100px 40px;max-width:1200px;margin:0 auto}
+.section-full{position:relative;z-index:1;padding:100px 40px}
+.section-kicker{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.28em;color:var(--cyan);margin-bottom:16px;text-align:center}
+.section-title{font-family:'Orbitron',sans-serif;font-size:clamp(26px,4vw,44px);font-weight:900;letter-spacing:.06em;color:var(--heading);text-align:center;margin-bottom:18px;line-height:1.15}
+.section-line{display:block;width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);margin:0 auto 36px}
+.section-sub{font-size:17px;color:#a8bfd8;text-align:center;max-width:720px;margin:0 auto 56px;line-height:1.7}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 40px 80px;position:relative;z-index:1}
+.hero-kicker{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.35em;color:var(--cyan);margin-bottom:28px;display:flex;align-items:center;justify-content:center;gap:12px}
+.hero-kicker::before,.hero-kicker::after{content:'';width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--cyan))}
+.hero-kicker::after{background:linear-gradient(90deg,var(--cyan),transparent)}
+.hero h1{font-family:'Orbitron',sans-serif;font-size:clamp(36px,7vw,88px);font-weight:900;letter-spacing:.08em;color:var(--heading);line-height:1.05;margin-bottom:16px}
+.hero h1 span{color:var(--cyan);text-shadow:0 0 40px rgba(0,229,255,.5)}
+.hero-tagline{font-family:'Share Tech Mono',monospace;font-size:clamp(13px,2vw,17px);letter-spacing:.22em;color:var(--cyan);margin-bottom:28px;opacity:.9}
+.hero-desc{font-size:clamp(15px,1.8vw,19px);color:#a8bfd8;max-width:680px;line-height:1.75;margin-bottom:48px}
+.hero-ctas{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.btn-primary{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.14em;color:#fff;background:linear-gradient(135deg,rgba(0,229,255,.25),rgba(0,229,255,.1));border:1px solid rgba(0,229,255,.5);border-radius:999px;padding:14px 32px;text-decoration:none;transition:background .25s,border-color .25s,box-shadow .25s;display:inline-block}
+.btn-primary:hover{background:linear-gradient(135deg,rgba(0,229,255,.4),rgba(0,229,255,.2));border-color:var(--cyan);box-shadow:0 0 32px rgba(0,229,255,.3)}
+.btn-secondary{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.14em;color:#a8bfd8;background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:14px 32px;text-decoration:none;transition:border-color .25s,color .25s;display:inline-block}
+.btn-secondary:hover{border-color:rgba(255,255,255,.3);color:#fff}
+.hero-bg{display:block;width:100%;max-width:1520px;margin-top:60px;pointer-events:none;opacity:.88}
+
+/* ── PRINCIPLES ── */
+.principles-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;max-width:1100px;margin:0 auto}
+.principle-card{background:var(--bg-card);border:1px solid rgba(0,229,255,.12);border-radius:14px;padding:30px 24px;text-align:center;transition:transform .3s,border-color .3s}
+.principle-card:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.32)}
+.principle-icon{font-size:36px;margin-bottom:14px;display:block}
+.principle-title{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.12em;color:var(--cyan);margin-bottom:10px}
+.principle-desc{font-size:1.05rem;color:#a8bfd8;line-height:1.65}
+
+/* ── FEATURES ── */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;max-width:1100px;margin:0 auto}
+.feature-card{background:var(--bg-card);border:1px solid rgba(0,229,255,.1);border-radius:14px;padding:32px 26px;transition:transform .3s,border-color .3s}
+.feature-card:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.3)}
+.feature-icon{font-size:32px;margin-bottom:16px;display:block}
+.feature-title{font-family:'Orbitron',sans-serif;font-size:1.02rem;font-weight:700;letter-spacing:.1em;color:var(--heading);margin-bottom:10px}
+.feature-desc{font-size:1.05rem;color:#a8bfd8;line-height:1.65}
+
+/* ── LAYER STACK ── */
+.layer-stack{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:4px}
+.layer-item{display:flex;align-items:center;gap:16px;padding:14px 22px;border-radius:10px;border:1px solid rgba(255,255,255,.07);background:var(--bg-card)}
+.layer-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.layer-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.14em;flex:1;color:#a8bfd8}
+.layer-tag{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--text-dim)}
+.layer-divider{text-align:center;padding:5px 0;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.2em;color:rgba(0,229,255,.35)}
+
+/* ── INTEGRATION BAND ── */
+.integration-band{max-width:900px;margin:0 auto;background:linear-gradient(135deg,rgba(0,229,255,.05),rgba(10,21,53,.96));border:1px solid rgba(0,229,255,.18);border-radius:20px;padding:56px 44px;text-align:center}
+.integration-band h3{font-family:'Orbitron',sans-serif;font-size:20px;font-weight:900;letter-spacing:.08em;color:var(--heading);margin-bottom:14px}
+.integration-band p{font-size:16px;color:#a8bfd8;line-height:1.7;max-width:680px;margin:0 auto 24px}
+.pill-row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-bottom:0}
+.pill{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--cyan);border:1px solid rgba(0,229,255,.28);border-radius:999px;padding:7px 16px}
+
+/* ── ROADMAP ── */
+.rm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+.rm-tile{background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.8rem;position:relative}
+.rm-tile.active{border-color:rgba(0,229,255,.3)}
+.rm-kicker-gold{font-family:'Share Tech Mono',monospace;font-size:.68rem;letter-spacing:.15em;color:var(--gold);margin-bottom:.5rem}
+.rm-kicker-cyan{font-family:'Share Tech Mono',monospace;font-size:.68rem;letter-spacing:.15em;color:var(--cyan);margin-bottom:.5rem}
+.rm-kicker-dim{font-family:'Share Tech Mono',monospace;font-size:.68rem;letter-spacing:.15em;color:rgba(168,191,216,.4);margin-bottom:.5rem}
+.rm-title{font-family:'Orbitron',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:.7rem;color:var(--cyan)}
+.rm-tile.future .rm-title{color:#a8bfd8}
+.rm-desc{color:#a8bfd8;font-size:1.05rem;line-height:1.65}
+.rm-badge{display:inline-block;margin-top:1rem;font-family:'Share Tech Mono',monospace;font-size:.68rem;letter-spacing:.15em;padding:.3rem .8rem;border-radius:999px}
+.rm-badge.done{background:rgba(240,165,0,.12);color:var(--gold);border:1px solid rgba(240,165,0,.3)}
+.rm-badge.active{background:rgba(0,229,255,.12);color:var(--cyan);border:1px solid rgba(0,229,255,.3)}
+.rm-badge.soon{background:rgba(255,255,255,.06);color:#a8bfd8;border:1px solid rgba(255,255,255,.12)}
+@media(max-width:900px){.rm-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.rm-grid{grid-template-columns:1fr}}
+
+/* ── FOOTER ── */
+footer{position:relative;z-index:1;border-top:1px solid rgba(0,229,255,.1);padding:52px 0 40px}
+.foot-inner{max-width:1200px;margin:0 auto;padding:0 40px}
+.foot-brand-row{text-align:center;margin-bottom:3.5rem}
+.foot-brand-name{font-family:'Orbitron',sans-serif;font-size:15px;font-weight:900;letter-spacing:.2em;color:var(--cyan);margin-bottom:8px}
+.foot-sub{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.22em;color:#a8bfd8}
+.foot-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:1.5rem;margin-bottom:3rem}
+.foot-col h4{font-family:'Orbitron',sans-serif;font-size:.72rem;letter-spacing:.15em;font-weight:700;color:var(--cyan);margin-bottom:1rem;text-transform:uppercase}
+.foot-col ul{list-style:none;padding:0;margin:0}
+.foot-col ul li{margin-bottom:.25rem}
+.foot-col ul li a{color:#a8bfd8;text-decoration:none;font-size:.9rem;transition:filter .3s ease,color .3s ease}
+footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 8px rgba(0,229,255,1)) drop-shadow(0 0 20px rgba(0,229,255,.8)) drop-shadow(0 0 40px rgba(0,229,255,.4))}
+.foot-bottom{border-top:1px solid rgba(0,229,255,.08);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.foot-bottom p{color:#a8bfd8;font-size:.82rem;transition:filter .3s ease,color .3s ease}
+.foot-bottom a{color:#a8bfd8;text-decoration:none;transition:filter .3s ease,color .3s ease}
+@media(max-width:900px){.foot-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:500px){.foot-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<canvas id="star-canvas"></canvas>
+
+<!-- ── NAV ── -->
+<nav>
+  <a href="https://oasisomniverse.one" class="nav-brand" target="_blank" rel="noopener">OASIS <span>WEB4</span></a>
+  <ul class="nav-links">
+    <li><a href="#what">THE CONCEPT</a></li>
+    <li><a href="#principles">PRINCIPLES</a></li>
+    <li><a href="#features">FEATURES</a></li>
+    <li><a href="#providers">PROVIDERS</a></li>
+    <li><a href="#roadmap">ROADMAP</a></li>
+    <li><a href="https://oasisomniverse.one" target="_blank" rel="noopener">ECOSYSTEM</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-kicker">WEB4 · THE FOUNDATION LAYER</div>
+  <h1>OASIS <span>WEB4</span></h1>
+  <div class="hero-tagline">ONE AVATAR. ONE KARMA. EVERY WORLD.</div>
+  <p class="hero-desc">The universal foundation layer every other layer of the OASIS Omniverse is built on — identity, karma, data, NFTs, tokens and providers, all unified under one API. One avatar, one karma score, one wallet — fully distributed, decentralised and fault-tolerant, interoperable across 40+ Web2 and Web3 providers and every connected world, forever.</p>
+  <div class="hero-ctas">
+    <a href="#what" class="btn-primary">EXPLORE WEB4 →</a>
+    <a href="https://api.web4.oasisomniverse.one/swagger" class="btn-secondary" target="_blank" rel="noopener">SWAGGER DOCS →</a>
+    <a href="https://oasisweb4.com/" class="btn-secondary" target="_blank" rel="noopener">ORIGINAL WEB4 SITE →</a>
+  </div>
+
+  <!-- Hero SVG: AVATAR hub connected to providers + worlds -->
+  <svg class="hero-bg" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <filter id="gp">
+        <feGaussianBlur stdDeviation="4" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="gs">
+        <feGaussianBlur stdDeviation="2.5" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <style>
+        .orb{animation:orb-pulse 2.6s ease-in-out infinite alternate}
+        @keyframes orb-pulse{from{opacity:.22;r:46}to{opacity:.5;r:54}}
+        .dash-out{stroke-dasharray:6 5;animation:dash-fwd 1s linear infinite}
+        .dash-in{stroke-dasharray:6 5;animation:dash-rev 1.4s linear infinite}
+        @keyframes dash-fwd{to{stroke-dashoffset:-44}}
+        @keyframes dash-rev{to{stroke-dashoffset:44}}
+      </style>
+    </defs>
+
+    <!-- Subtle grid -->
+    <line x1="0"   y1="180" x2="780" y2="180" stroke="#00e5ff" stroke-width=".3" opacity=".07"/>
+    <line x1="390" y1="0"   x2="390" y2="360" stroke="#00e5ff" stroke-width=".3" opacity=".07"/>
+
+    <!-- HUB pulsing outer ring -->
+    <circle cx="390" cy="180" class="orb" stroke="#00e5ff" stroke-width=".9" fill="none" filter="url(#gp)"/>
+    <circle cx="390" cy="180" r="40"  stroke="#00e5ff" stroke-width="1.6" fill="rgba(0,229,255,.07)" filter="url(#gp)"/>
+    <circle cx="390" cy="180" r="22"  stroke="#00e5ff" stroke-width="1"   fill="rgba(0,229,255,.14)" opacity=".7"/>
+    <circle cx="390" cy="180" r="8"   fill="#00e5ff" opacity=".95" filter="url(#gp)"/>
+    <text x="390" y="215" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="9" font-weight="700" letter-spacing="2.5" fill="#fff" opacity=".9">AVATAR</text>
+
+    <!-- Provider nodes (left side) with spokes -->
+    <line x1="175" y1="68"  x2="345" y2="160" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="175" cy="68" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="175" y="65"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">ETHEREUM</text>
+    <text x="175" y="77"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+
+    <line x1="128" y1="180" x2="338" y2="180" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="128" cy="180" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="128" y="177" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">SOLANA</text>
+    <text x="128" y="189" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+
+    <line x1="175" y1="292" x2="345" y2="200" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="175" cy="292" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="175" y="289" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">IPFS</text>
+    <text x="175" y="301" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">STORAGE</text>
+
+    <!-- Outer left nodes (smaller) -->
+    <line x1="58" y1="100" x2="148" y2="160" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
+    <circle cx="58" cy="100" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="58" y="97"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">MONGODB</text>
+    <text x="58" y="108" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">DATA</text>
+
+    <line x1="58" y1="260" x2="148" y2="200" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
+    <circle cx="58" cy="260" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="58" y="257" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">SQLITE</text>
+    <text x="58" y="268" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">DATA</text>
+
+    <!-- Provider nodes (right side) -->
+    <line x1="605" y1="68"  x2="435" y2="160" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="605" cy="68" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="605" y="65"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">HOLOCHAIN</text>
+    <text x="605" y="77"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">P2P</text>
+
+    <line x1="652" y1="180" x2="442" y2="180" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="652" cy="180" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="652" y="177" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">POLYGON</text>
+    <text x="652" y="189" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+
+    <line x1="605" y1="292" x2="435" y2="200" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="605" cy="292" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="605" y="289" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">NEO4J</text>
+    <text x="605" y="301" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">GRAPH</text>
+
+    <!-- Outer right nodes -->
+    <line x1="722" y1="100" x2="632" y2="160" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
+    <circle cx="722" cy="100" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="722" y="97"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".5" fill="#00e5ff" opacity=".8">SOLID</text>
+    <text x="722" y="108" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".4" fill="#00e5ff" opacity=".5">POD</text>
+
+    <line x1="722" y1="260" x2="632" y2="200" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
+    <circle cx="722" cy="260" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="722" y="257" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">AWS</text>
+    <text x="722" y="268" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">CLOUD</text>
+
+    <!-- Core identity subsystems: top / bottom -->
+    <line x1="390" y1="48" x2="390" y2="138" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
+    <circle cx="390" cy="48" r="38" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".75"/>
+    <text x="390" y="44"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing=".6" fill="#ff5fa0">KARMA</text>
+    <text x="390" y="57"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".3" fill="#ff5fa0" opacity=".65">REPUTATION</text>
+
+    <line x1="390" y1="312" x2="390" y2="222" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
+    <circle cx="390" cy="312" r="38" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".75"/>
+    <text x="390" y="308" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing=".6" fill="#ff5fa0">WALLET</text>
+    <text x="390" y="321" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".3" fill="#ff5fa0" opacity=".65">UNIVERSAL</text>
+
+    <!-- Travelling pulses inbound (provider → hub) -->
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin="0s"><mpath href="#p-eth"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin=".3s"><mpath href="#p-sol"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin=".6s"><mpath href="#p-ipfs"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin=".9s"><mpath href="#p-holo"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin="1.2s"><mpath href="#p-poly"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin="1.5s"><mpath href="#p-neo"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#ff5fa0" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin="1.8s"><mpath href="#p-karma"/></animateMotion>
+    </circle>
+    <circle r="3.5" fill="#ff5fa0" filter="url(#gs)">
+      <animateMotion dur="1.8s" repeatCount="indefinite" begin="2.1s"><mpath href="#p-wallet"/></animateMotion>
+    </circle>
+
+    <!-- Hidden motion paths -->
+    <path id="p-eth"    d="M175,68  L390,180" fill="none"/>
+    <path id="p-sol"    d="M128,180 L390,180" fill="none"/>
+    <path id="p-ipfs"   d="M175,292 L390,180" fill="none"/>
+    <path id="p-holo"   d="M605,68  L390,180" fill="none"/>
+    <path id="p-poly"   d="M652,180 L390,180" fill="none"/>
+    <path id="p-neo"    d="M605,292 L390,180" fill="none"/>
+    <path id="p-karma"  d="M390,48  L390,180" fill="none"/>
+    <path id="p-wallet" d="M390,312 L390,180" fill="none"/>
+  </svg>
+</section>
+
+<!-- ── WHAT IS WEB4 ── -->
+<section class="section" id="what">
+  <div class="section-kicker">THE CONCEPT</div>
+  <h2 class="section-title">WHAT IS WEB4?</h2>
+  <span class="section-line"></span>
+  <p class="section-sub">Every blockchain, database and identity provider speaks its own language. WEB4 is the universal foundation layer underneath everything else in the OASIS Omniverse — identity, karma, data, NFTs, tokens and providers, all unified under one API, so every layer built on top never has to think about it again.</p>
+
+  <div class="layer-stack">
+    <div class="layer-item" style="opacity:.65">
+      <div class="layer-dot" style="background:#fdd835;opacity:.7"></div>
+      <div class="layer-label">WEB6 / WEB7 / WEB8+ &nbsp;—&nbsp; AI, symbiosis, galactic network and beyond</div>
+      <div class="layer-tag">ABOVE</div>
+    </div>
+    <div class="layer-item" style="opacity:.8">
+      <div class="layer-dot" style="background:#a78bfa;opacity:.8"></div>
+      <div class="layer-label">WEB5 / STAR ODK &nbsp;—&nbsp; holons, OAPPs, the decentralised app store</div>
+      <div class="layer-tag">WEB5+</div>
+    </div>
+    <div class="layer-divider">↓ EVERYTHING ABOVE BUILDS ON THIS</div>
+    <div class="layer-item" style="border-color:rgba(0,229,255,.35);background:rgba(0,229,255,.07)">
+      <div class="layer-dot" style="background:#00e5ff;box-shadow:0 0 8px rgba(0,229,255,.6)"></div>
+      <div class="layer-label" style="color:#00e5ff">WEB4 · FOUNDATION LAYER &nbsp;—&nbsp; identity, karma, data, NFTs, tokens &amp; providers</div>
+      <div class="layer-tag" style="color:#00e5ff">THIS LAYER</div>
+    </div>
+    <div class="layer-divider">↓ WEB4 UNIFIES EVERYTHING BELOW</div>
+    <div class="layer-item" style="opacity:.6">
+      <div class="layer-dot" style="background:#6060c0;opacity:.5"></div>
+      <div class="layer-label">WEB3 / WEB2 / WEB1 &nbsp;—&nbsp; blockchains, cloud APIs, the open internet</div>
+      <div class="layer-tag">BELOW</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRINCIPLES ── -->
+<section class="section-full" id="principles" style="background:rgba(255,255,255,.007)">
+  <div class="section" style="padding-top:0;padding-bottom:0">
+    <div class="section-kicker">FOUNDING PRINCIPLES</div>
+    <h2 class="section-title">UNIFIED BY DESIGN</h2>
+    <span class="section-line"></span>
+    <p class="section-sub">WEB4 is built on four uncompromising principles. Every avatar, every API call and every byte of data flows through these constraints.</p>
+    <div class="principles-grid">
+      <div class="principle-card">
+        <span class="principle-icon">🪪</span>
+        <div class="principle-title">UNIVERSAL</div>
+        <div class="principle-desc">One avatar identity, recognised instantly across every connected world. No account juggling, no fresh starts, no fragmented reputation.</div>
+      </div>
+      <div class="principle-card">
+        <span class="principle-icon">👑</span>
+        <div class="principle-title">SOVEREIGN</div>
+        <div class="principle-desc">You hold your own keys. Private keys stay local and auto-sync across your own devices — never custodied, never locked into a single provider.</div>
+      </div>
+      <div class="principle-card">
+        <span class="principle-icon">🔗</span>
+        <div class="principle-title">INTEROPERABLE</div>
+        <div class="principle-desc">40+ Web2 and Web3 providers behind one unified API. Switch chains, databases or storage networks without rewriting a single line of application code.</div>
+      </div>
+      <div class="principle-card">
+        <span class="principle-icon">♾️</span>
+        <div class="principle-title">PERSISTENT</div>
+        <div class="principle-desc">Karma, reputation and history are never lost. Auto-replicated across every available provider with automatic failover if any one of them goes down.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="section" id="features">
+  <div class="section-kicker">CAPABILITIES</div>
+  <h2 class="section-title">THE FOUNDATION LAYER IN ACTION</h2>
+  <span class="section-line"></span>
+  <p class="section-sub">WEB4 is the foundation every other OASIS layer is built on. These are the capabilities that emerge when identity, data and reputation are unified under one API.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">🪪</span>
+      <div class="feature-title">AVATAR SSO</div>
+      <div class="feature-desc">One OASIS avatar identity across every integrated world. Name, reputation, karma, level history, achievements and NFT cosmetics all follow you — one login, infinite worlds.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🦸</span>
+      <div class="feature-title">KARMA &amp; REPUTATION ENGINE</div>
+      <div class="feature-desc">Real-world and in-game positive actions earn karma that flows through every connected world, raising stats, unlocking superpowers and building a portable, provider-agnostic reputation.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💰</span>
+      <div class="feature-title">UNIVERSAL WALLET</div>
+      <div class="feature-desc">Private keys stay local and auto-backup across your own devices. Public keys and wallets auto-replicate across providers — a decentralised, aggregated wallet for every connected chain.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🖼️</span>
+      <div class="feature-title">CROSS-CHAIN NFTs</div>
+      <div class="feature-desc">Mint once, recognise everywhere. NFTs minted through WEB4 are queryable and tradeable across every connected chain and marketplace, without bridging or wrapping.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🚀</span>
+      <div class="feature-title">HYPERDRIVE ROUTING</div>
+      <div class="feature-desc">Auto-failover, auto-replication, load balancing and provider selection route every operation across the strongest available path — no single point of failure, ever.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🌌</span>
+      <div class="feature-title">COSMIC ORM</div>
+      <div class="feature-desc">A single, AI-native data model abstracts away 40+ underlying providers. Write your data layer once; OASIS handles replication, health-checking and failover for you.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🔐</span>
+      <div class="feature-title">PROVIDER-AGNOSTIC AUTH</div>
+      <div class="feature-desc">Sign in with wallets, social logins, biometrics or classic email — WEB4 normalises every auth method into one identity, so apps never need to care which one a user chose.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📡</span>
+      <div class="feature-title">REAL-TIME DATA SYNC</div>
+      <div class="feature-desc">Changes to avatar, karma or inventory propagate to every connected world and provider in real time — no polling, no stale state, no manual reconciliation.</div>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📖</span>
+      <div class="feature-title">FULLY DOCUMENTED API</div>
+      <div class="feature-desc">A complete REST API with live Swagger sandbox endpoints. Query any data, manage any asset, control any identity — through one unified interface instead of dozens of incompatible ones.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PROVIDERS ── -->
+<section class="section" id="providers">
+  <div class="section-kicker">UNDER THE HOOD</div>
+  <h2 class="section-title">40+ PROVIDERS. ONE API.</h2>
+  <span class="section-line"></span>
+  <p class="section-sub">WEB4 abstracts away the entire Web2 + Web3 landscape so your app just calls one endpoint — everything else is handled, replicated and kept in sync automatically.</p>
+  <div class="integration-band">
+    <h3>NATIVE PROVIDER INTEGRATIONS</h3>
+    <p>Native integrations with the chains, storage networks and databases your users already live on — with 30+ more in progress. Switch providers without changing a line of application code.</p>
+    <div class="pill-row">
+      <span class="pill">ETHEREUM</span>
+      <span class="pill">SOLANA</span>
+      <span class="pill">POLYGON</span>
+      <span class="pill">HOLOCHAIN</span>
+      <span class="pill">IPFS</span>
+      <span class="pill">MONGODB</span>
+      <span class="pill">NEO4J</span>
+      <span class="pill">SQLITE</span>
+      <span class="pill">SOLID</span>
+      <span class="pill">ACTIVITYPUB</span>
+      <span class="pill">TELOS</span>
+      <span class="pill">SEEDS</span>
+      <span class="pill">THREEFOLD</span>
+      <span class="pill">AWS</span>
+      <span class="pill">+ 30 MORE</span>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROADMAP ── -->
+<section class="section" id="roadmap">
+  <div class="section-kicker">THE ROAD AHEAD</div>
+  <h2 class="section-title">BUILDING THE FOUNDATION</h2>
+  <span class="section-line"></span>
+  <p class="section-sub">WEB4 is live today through the OASIS API — and growing into the universal foundation layer for every chain, provider and world.</p>
+  <div class="rm-grid">
+    <div class="rm-tile active">
+      <div class="rm-kicker-gold">SHIPPING NOW</div>
+      <div class="rm-title">Avatar SSO &amp; Karma Engine</div>
+      <p class="rm-desc">Universal avatar identity, karma and reputation live today across every connected OASIS world, with real-time sync and automatic provider failover.</p>
+      <span class="rm-badge done">LIVE</span>
+    </div>
+    <div class="rm-tile active">
+      <div class="rm-kicker-gold">SHIPPING NOW</div>
+      <div class="rm-title">40+ Provider Integrations</div>
+      <p class="rm-desc">Native support for Ethereum, Solana, Polygon, Holochain, IPFS, MongoDB, Neo4j, SOLID and 30+ more — all behind one unified REST API with live Swagger docs.</p>
+      <span class="rm-badge done">LIVE</span>
+    </div>
+    <div class="rm-tile active">
+      <div class="rm-kicker-gold">SHIPPING NOW</div>
+      <div class="rm-title">HyperDrive Auto-Failover</div>
+      <p class="rm-desc">Automatic provider selection, health-checking, replication and failover route every operation across the strongest available path — zero single points of failure.</p>
+      <span class="rm-badge done">LIVE</span>
+    </div>
+    <div class="rm-tile soon">
+      <div class="rm-kicker-cyan">NEXT</div>
+      <div class="rm-title">Universal Wallet Aggregation UI</div>
+      <p class="rm-desc">A single dashboard view of every wallet, balance and NFT across every connected chain — manageable directly from OPORTAL without leaving the app.</p>
+      <span class="rm-badge soon">COMING SOON</span>
+    </div>
+    <div class="rm-tile soon">
+      <div class="rm-kicker-cyan">NEXT</div>
+      <div class="rm-title">Biometric &amp; Passkey Auth</div>
+      <p class="rm-desc">Native biometric and passkey sign-in alongside wallet and social login — all normalised into the same WEB4 avatar identity behind the scenes.</p>
+      <span class="rm-badge soon">COMING SOON</span>
+    </div>
+    <div class="rm-tile soon">
+      <div class="rm-kicker-cyan">NEXT</div>
+      <div class="rm-title">Cross-Chain Reputation Export</div>
+      <p class="rm-desc">Export your WEB4 karma and reputation score as a portable, verifiable credential that other platforms outside the OASIS Omniverse can read and trust.</p>
+      <span class="rm-badge soon">COMING SOON</span>
+    </div>
+    <div class="rm-tile future">
+      <div class="rm-kicker-dim">ON THE HORIZON</div>
+      <div class="rm-title">Provider Marketplace</div>
+      <p class="rm-desc">A community-driven marketplace where developers can publish and monetise new provider integrations directly into the WEB4 abstraction layer via STARNET.</p>
+    </div>
+    <div class="rm-tile future">
+      <div class="rm-kicker-dim">ON THE HORIZON</div>
+      <div class="rm-title">Decentralised Identity Recovery</div>
+      <p class="rm-desc">Social-recovery and multi-device key recovery flows so losing a device never means losing your avatar, karma history or wallet access.</p>
+    </div>
+    <div class="rm-tile future">
+      <div class="rm-kicker-dim">ALWAYS EVOLVING</div>
+      <div class="rm-title" style="color:#a8bfd8">More Providers to Come</div>
+      <p class="rm-desc">The list of native integrations grows continuously — every new chain, database and storage network the ecosystem needs gets added behind the same unchanging API.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="foot-inner">
+    <div class="foot-brand-row">
+      <div class="foot-brand-name">OASIS WEB4</div>
+      <div class="foot-sub">THE FOUNDATION LAYER · ONE AVATAR, EVERY WORLD</div>
+    </div>
+    <div class="foot-grid">
+      <div class="foot-col">
+        <h4>ECOSYSTEM</h4>
+        <ul>
+          <li><a href="https://oasisomniverse.one" target="_blank" rel="noopener">OASIS Omniverse</a></li>
+          <li><a href="https://oportal.oasisomniverse.one" target="_blank" rel="noopener">OPORTAL</a></li>
+          <li><a href="https://star.oasisomniverse.one" target="_blank" rel="noopener">STAR ODK</a></li>
+          <li><a href="https://starnet.oasisomniverse.one" target="_blank" rel="noopener">STARNET</a></li>
+          <li><a href="https://ogengine.oasisomniverse.one" target="_blank" rel="noopener">OGEngine</a></li>
+          <li><a href="https://ourworld.oasisomniverse.one" target="_blank" rel="noopener">Our World</a></li>
+          <li><a href="https://odoom.oasisomniverse.one" target="_blank" rel="noopener">ODOOM</a></li>
+          <li><a href="https://oquake.oasisomniverse.one" target="_blank" rel="noopener">OQuake</a></li>
+          <li><a href="https://holonet.oasisomniverse.one" target="_blank" rel="noopener">HoloNET</a></li>
+          <li><a href="https://web6.oasisomniverse.one" target="_blank" rel="noopener">WEB6</a></li>
+          <li><a href="https://web7.oasisomniverse.one" target="_blank" rel="noopener">WEB7</a></li>
+          <li><a href="https://web8.oasisomniverse.one" target="_blank" rel="noopener">WEB8</a></li>
+          <li><a href="https://web9.oasisomniverse.one" target="_blank" rel="noopener">WEB9</a></li>
+          <li><a href="https://web10.oasisomniverse.one" target="_blank" rel="noopener">WEB10</a></li>
+          <li><a href="https://founders.oasisomniverse.one" target="_blank" rel="noopener">Founders NFT</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>BUILD</h4>
+        <ul>
+          <li><a href="https://api.web4.oasisomniverse.one/swagger" target="_blank" rel="noopener">Web4 OASIS API</a></li>
+          <li><a href="https://api.starnet.oasisomniverse.one/swagger" target="_blank" rel="noopener">Web5 STARNET API</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/releases/tag/STAR-ODK-Runtime-v3.5.0" target="_blank" rel="noopener">STAR CLI/ODK</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/releases/tag/STAR-API-CLIENT-v1.0.0" target="_blank" rel="noopener">STAR API Client</a></li>
+          <li><a href="https://www.nuget.org/profiles/dellams" target="_blank" rel="noopener">NuGet (50 pkgs)</a></li>
+          <li><a href="https://oasis-web4.gitbook.io/oasis-web4-docs/" target="_blank" rel="noopener">GitBook Docs</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS" target="_blank" rel="noopener">GitHub</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/tree/master/Docs/Devs/API%20Documentation" target="_blank" rel="noopener">API Reference</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/DEVELOPER_DOCUMENTATION_INDEX.md" target="_blank" rel="noopener">Developer Index</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/tree/master/Docs" target="_blank" rel="noopener">All Docs (GitHub)</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/OASIS_Quick_Start_Guide.md" target="_blank" rel="noopener">Quick Start Guide</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/OASIS_ARCHITECTURE_OVERVIEW.md" target="_blank" rel="noopener">Architecture Overview</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/DEVELOPMENT_ENVIRONMENT_SETUP.md" target="_blank" rel="noopener">Environment Setup</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/OASIS-BEST-PRACTICES.md" target="_blank" rel="noopener">Best Practices</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/DOCKER_DEPLOYMENT_GUIDE.md" target="_blank" rel="noopener">Docker Deployment Guide</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/releases/tag/OASIS-Runtime-v4.5.1" target="_blank" rel="noopener">OASIS Runtime v4.5.1</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>READ</h4>
+        <ul>
+          <li><a href="https://oasisomniverse.one#flightmap" target="_blank" rel="noopener">Flight Map</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/THE_OASIS_COMPREHENSIVE_WHITEPAPER.md" target="_blank" rel="noopener">Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OUR_WORLD_WHITEPAPER.md" target="_blank" rel="noopener">Our World Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/INVESTOR_EVALUATION_GUIDE.md" target="_blank" rel="noopener">Investor Guide</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/GETTING_STARTED_INDEX.md" target="_blank" rel="noopener">Getting Started</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/STAR_CLI_Comprehensive_Guide.md" target="_blank" rel="noopener">STAR CLI Guide</a></li>
+          <li><a href="https://www.oasisweb4.com/holonic-architecture" target="_blank" rel="noopener">Holonic Architecture</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/WIKI_DOCUMENTATION_INDEX.md" target="_blank" rel="noopener">Wiki</a></li>
+          <li><a href="https://www.ourworldthegame.com/blog" target="_blank" rel="noopener">Blog</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_Lite_Paper.md" target="_blank" rel="noopener">OASIS Lite Paper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_HYPERDRIVE_WHITEPAPER.md" target="_blank" rel="noopener">HyperDrive Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_COSMIC_ORM_WHITEPAPER.md" target="_blank" rel="noopener">Cosmic ORM Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_NFT_SYSTEM_WHITEPAPER.md" target="_blank" rel="noopener">NFT System Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_UNIVERSAL_WALLET_WHITEPAPER.md" target="_blank" rel="noopener">Universal Wallet Whitepaper</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/OASIS_TECHNOLOGY_SUMMARY_AND_USE_CASES.md" target="_blank" rel="noopener">Use Cases</a></li>
+          <li><a href="https://oasisweb4.com/" target="_blank" rel="noopener">Original WEB4 Site</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>FOUNDERS</h4>
+        <ul>
+          <li><a href="https://founders.oasisomniverse.one" target="_blank" rel="noopener">Founders NFT</a></li>
+          <li><a href="https://founders.oasisomniverse.one#tiers" target="_blank" rel="noopener">Genesis Tier</a></li>
+          <li><a href="https://founders.oasisomniverse.one#tiers" target="_blank" rel="noopener">Core Tier</a></li>
+          <li><a href="https://founders.oasisomniverse.one#tiers" target="_blank" rel="noopener">Supporter Tier</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>COMMUNITY</h4>
+        <ul>
+          <li><a href="https://discord.gg/q9gMKU6" target="_blank" rel="noopener">Discord</a></li>
+          <li><a href="https://t.me/oasisweb4chat" target="_blank" rel="noopener">Telegram</a></li>
+          <li><a href="https://x.com/OASISWEB4" target="_blank" rel="noopener">X OASIS WEB4</a></li>
+          <li><a href="https://x.com/OurWorldTheGame" target="_blank" rel="noopener">X Our World</a></li>
+          <li><a href="https://x.com/HoloNET_OASIS" target="_blank" rel="noopener">X HoloNET</a></li>
+          <li><a href="https://www.youtube.com/@WEB4OASIS" target="_blank" rel="noopener">YouTube OASIS</a></li>
+          <li><a href="https://www.youtube.com/@ourworld-the-game" target="_blank" rel="noopener">YouTube Our World</a></li>
+          <li><a href="https://www.youtube.com/channel/UC0_O4RwdY3lq1m3-K-njUxA" target="_blank" rel="noopener">YouTube Our World Legacy</a></li>
+          <li><a href="https://www.facebook.com/ourworldthegame" target="_blank" rel="noopener">Facebook</a></li>
+        </ul>
+      </div>
+      <div class="foot-col">
+        <h4>SUPPORT</h4>
+        <ul>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/issues" target="_blank" rel="noopener">Report an Issue</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/discussions" target="_blank" rel="noopener">Discussions</a></li>
+          <li><a href="https://tally.so/r/WOZjNa" target="_blank" rel="noopener">Submit a Support Ticket</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/CONTRIBUTING.md" target="_blank" rel="noopener">Contributing</a></li>
+          <li><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/Devs/CODE_OF_CONDUCT.md" target="_blank" rel="noopener">Code of Conduct</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <p>&copy; 2026 <a href="https://nextgenworld.co.uk" target="_blank" rel="noopener">NextGen Software Ltd.</a> All rights reserved.</p>
+      <p>Part of the <a href="https://oasisomniverse.one" target="_blank" rel="noopener">OASIS Omniverse</a> ecosystem.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── STARS ──
+(function(){
+  const c=document.getElementById('star-canvas'),ctx=c.getContext('2d');
+  let stars=[];
+  function resize(){c.width=innerWidth;c.height=innerHeight;stars=Array.from({length:200},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.4+.3,o:Math.random()*.8+.2,s:Math.random()*.6+.2}))}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);stars.forEach(s=>{s.o+=(.003*s.s*(Math.random()>.5?1:-1));s.o=Math.max(.1,Math.min(1,s.o));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(0,229,255,${s.o})`;ctx.fill()});requestAnimationFrame(draw)}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ── REVEAL ON SCROLL ──
+(function(){
+  const els=document.querySelectorAll('.principle-card,.feature-card,.rm-tile');
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.style.opacity=1; e.target.style.transform='translateY(0)'; } });
+  },{threshold:.1});
+  els.forEach(el=>{ el.style.opacity=0; el.style.transform='translateY(20px)'; el.style.transition='opacity .6s ease,transform .6s ease'; io.observe(el); });
+})();
+</script>
+
+</body>
+</html>
