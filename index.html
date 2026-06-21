@@ -166,7 +166,7 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
   </div>
 
   <!-- Hero SVG: AVATAR hub connected to providers + worlds -->
-  <svg class="hero-bg" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+  <svg class="hero-bg" viewBox="0 0 780 420" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
     <defs>
       <filter id="gp">
         <feGaussianBlur stdDeviation="4" result="b"/>
@@ -188,97 +188,106 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
 
     <!-- Subtle grid -->
     <line x1="0"   y1="180" x2="780" y2="180" stroke="#00e5ff" stroke-width=".3" opacity=".07"/>
-    <line x1="390" y1="0"   x2="390" y2="360" stroke="#00e5ff" stroke-width=".3" opacity=".07"/>
+    <line x1="390" y1="0"   x2="390" y2="420" stroke="#00e5ff" stroke-width=".3" opacity=".07"/>
 
     <!-- HUB pulsing outer ring -->
     <circle cx="390" cy="180" class="orb" stroke="#00e5ff" stroke-width=".9" fill="none" filter="url(#gp)"/>
-    <circle cx="390" cy="180" r="40"  stroke="#00e5ff" stroke-width="1.6" fill="rgba(0,229,255,.07)" filter="url(#gp)"/>
-    <circle cx="390" cy="180" r="22"  stroke="#00e5ff" stroke-width="1"   fill="rgba(0,229,255,.14)" opacity=".7"/>
-    <circle cx="390" cy="180" r="8"   fill="#00e5ff" opacity=".95" filter="url(#gp)"/>
-    <text x="390" y="210" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="7" font-weight="700" letter-spacing="1.5" fill="#fff" opacity=".7">UNIFIED</text>
-    <text x="390" y="223" text-anchor="middle" font-family="Orbitron,sans-serif" font-size="9" font-weight="700" letter-spacing="1" fill="#fff" opacity=".9">WEB4 OASIS API</text>
+    <circle cx="390" cy="180" r="48"  stroke="#00e5ff" stroke-width="1.6" fill="rgba(0,229,255,.07)" filter="url(#gp)">
+      <animate attributeName="r" values="48;54;48" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="390" cy="180" r="28"  stroke="#00e5ff" stroke-width="1"   fill="rgba(0,229,255,.14)" opacity=".78"/>
+    <circle cx="390" cy="180" r="10"   fill="#00e5ff" opacity=".95" filter="url(#gp)"/>
+    <text x="390" y="210" text-anchor="middle" dominant-baseline="middle" font-family="Orbitron,sans-serif" font-size="8.5" font-weight="700" letter-spacing="1.5" fill="#fff" opacity=".8">UNIFIED</text>
+    <text x="390" y="223" text-anchor="middle" dominant-baseline="middle" font-family="Orbitron,sans-serif" font-size="10.5" font-weight="700" letter-spacing="1" fill="#fff" opacity=".95">WEB4</text>
+    <text x="390" y="237" text-anchor="middle" dominant-baseline="middle" font-family="Orbitron,sans-serif" font-size="8.5" font-weight="700" letter-spacing="1" fill="#fff" opacity=".82">OASIS API</text>
 
     <!-- Provider nodes (left side) with spokes -->
     <line x1="175" y1="68"  x2="345" y2="160" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="175" cy="68" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="175" y="65"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">ETHEREUM</text>
-    <text x="175" y="77"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+    <circle cx="175" cy="68" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="175" y="65"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">ETHEREUM</text>
+    <text x="175" y="77"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">CHAIN</text>
 
     <line x1="128" y1="180" x2="338" y2="180" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="128" cy="180" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="128" y="177" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">SOLANA</text>
-    <text x="128" y="189" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+    <circle cx="128" cy="180" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="128" y="177" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">SOLANA</text>
+    <text x="128" y="189" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">CHAIN</text>
 
     <line x1="175" y1="292" x2="345" y2="200" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="175" cy="292" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="175" y="289" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">IPFS</text>
-    <text x="175" y="301" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">STORAGE</text>
+    <circle cx="175" cy="292" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="175" y="289" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">IPFS</text>
+    <text x="175" y="301" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">STORAGE</text>
 
     <!-- Outer left nodes (smaller) -->
     <line x1="58" y1="100" x2="148" y2="160" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
-    <circle cx="58" cy="100" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
-    <text x="58" y="97"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">MONGODB</text>
-    <text x="58" y="108" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">DATA</text>
+    <circle cx="58" cy="100" r="26" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="58" y="97"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".6" fill="#c4f7ff" font-weight="700" opacity=".9">MONGODB</text>
+    <text x="58" y="108" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".5" fill="#c4f7ff" opacity=".65">DATA</text>
 
     <line x1="58" y1="260" x2="148" y2="200" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
-    <circle cx="58" cy="260" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
-    <text x="58" y="257" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">SQLITE</text>
-    <text x="58" y="268" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">DATA</text>
+    <circle cx="58" cy="260" r="26" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="58" y="257" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".6" fill="#c4f7ff" font-weight="700" opacity=".9">SQLITE</text>
+    <text x="58" y="268" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".5" fill="#c4f7ff" opacity=".65">DATA</text>
 
     <!-- Provider nodes (right side) -->
     <line x1="605" y1="68"  x2="435" y2="160" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="605" cy="68" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="605" y="65"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">HOLOCHAIN</text>
-    <text x="605" y="77"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">P2P</text>
+    <circle cx="605" cy="68" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="605" y="65"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">HOLOCHAIN</text>
+    <text x="605" y="77"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">P2P</text>
 
     <line x1="652" y1="180" x2="442" y2="180" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="652" cy="180" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="652" y="177" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">POLYGON</text>
-    <text x="652" y="189" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">CHAIN</text>
+    <circle cx="652" cy="180" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="652" y="177" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">POLYGON</text>
+    <text x="652" y="189" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">CHAIN</text>
 
     <line x1="605" y1="292" x2="435" y2="200" stroke="#00e5ff" stroke-width=".9" opacity=".28" class="dash-in"/>
-    <circle cx="605" cy="292" r="30" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
-    <text x="605" y="289" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing="1"   fill="#00e5ff">NEO4J</text>
-    <text x="605" y="301" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".8" fill="#00e5ff" opacity=".6">GRAPH</text>
+    <circle cx="605" cy="292" r="36" fill="rgba(0,229,255,.07)" stroke="#00e5ff" stroke-width="1" opacity=".7"/>
+    <text x="605" y="289" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing="1"   fill="#c4f7ff" font-weight="700">NEO4J</text>
+    <text x="605" y="301" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".8" fill="#c4f7ff" opacity=".75">GRAPH</text>
 
     <!-- Outer right nodes -->
     <line x1="722" y1="100" x2="632" y2="160" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
-    <circle cx="722" cy="100" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
-    <text x="722" y="97"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".5" fill="#00e5ff" opacity=".8">SOLID</text>
-    <text x="722" y="108" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".4" fill="#00e5ff" opacity=".5">POD</text>
+    <circle cx="722" cy="100" r="26" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="722" y="97"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".5" fill="#c4f7ff" font-weight="700" opacity=".9">SOLID</text>
+    <text x="722" y="108" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".4" fill="#c4f7ff" opacity=".65">POD</text>
 
     <line x1="722" y1="260" x2="632" y2="200" stroke="#00e5ff" stroke-width=".6" opacity=".2" class="dash-in"/>
-    <circle cx="722" cy="260" r="21" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
-    <text x="722" y="257" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".6" fill="#00e5ff" opacity=".8">AWS</text>
-    <text x="722" y="268" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".5" fill="#00e5ff" opacity=".5">CLOUD</text>
+    <circle cx="722" cy="260" r="26" fill="rgba(0,229,255,.05)" stroke="#00e5ff" stroke-width=".8" opacity=".5"/>
+    <text x="722" y="257" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".6" fill="#c4f7ff" font-weight="700" opacity=".9">AWS</text>
+    <text x="722" y="268" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7"   letter-spacing=".5" fill="#c4f7ff" opacity=".65">CLOUD</text>
 
     <!-- Core identity subsystems: top / bottom -->
     <line x1="390" y1="48" x2="390" y2="138" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
-    <circle cx="390" cy="48" r="38" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".75"/>
-    <text x="390" y="44"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing=".6" fill="#ff5fa0">KARMA</text>
-    <text x="390" y="57"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".3" fill="#ff5fa0" opacity=".65">REPUTATION</text>
+    <circle cx="390" cy="48" r="44" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".78"/>
+    <text x="390" y="44"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing=".6" fill="#ffd4e2" font-weight="700">KARMA</text>
+    <text x="390" y="57"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".3" fill="#ffd4e2" opacity=".75">REPUTATION</text>
 
     <!-- Digital assets: NFTs &amp; Tokens, flanking Karma -->
     <line x1="280" y1="40" x2="362" y2="148" stroke="#f0a500" stroke-width=".9" opacity=".3" class="dash-in"/>
-    <circle cx="280" cy="40" r="28" fill="rgba(240,165,0,.08)" stroke="#f0a500" stroke-width="1" opacity=".75"/>
-    <text x="280" y="37"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".6" fill="#f0a500">NFTs</text>
-    <text x="280" y="48"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".3" fill="#f0a500" opacity=".65">ASSETS</text>
+    <circle cx="280" cy="40" r="34" fill="rgba(240,165,0,.08)" stroke="#f0a500" stroke-width="1" opacity=".8"/>
+    <text x="280" y="35" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="9.2" letter-spacing=".5" fill="#ffe0a3" font-weight="700">NFTs /</text>
+    <text x="280" y="47" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="9.2" letter-spacing=".5" fill="#ffe0a3" font-weight="700">GeoNFTs</text>
 
     <line x1="500" y1="40" x2="418" y2="148" stroke="#f0a500" stroke-width=".9" opacity=".3" class="dash-in"/>
-    <circle cx="500" cy="40" r="28" fill="rgba(240,165,0,.08)" stroke="#f0a500" stroke-width="1" opacity=".75"/>
-    <text x="500" y="37"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8"   letter-spacing=".6" fill="#f0a500">TOKENS</text>
-    <text x="500" y="48"  text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6"   letter-spacing=".3" fill="#f0a500" opacity=".65">UTILITY</text>
+    <circle cx="500" cy="40" r="34" fill="rgba(240,165,0,.08)" stroke="#f0a500" stroke-width="1" opacity=".8"/>
+    <text x="500" y="37"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="9.5" letter-spacing=".6" fill="#ffe0a3" font-weight="700">TOKENS</text>
+    <text x="500" y="48"  text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7.5" letter-spacing=".3" fill="#ffe0a3" opacity=".75">UTILITY</text>
 
-    <line x1="280" y1="320" x2="362" y2="212" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
-    <circle cx="280" cy="320" r="38" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".75"/>
-    <text x="280" y="316" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing=".6" fill="#ff5fa0">WALLET</text>
-    <text x="280" y="329" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".3" fill="#ff5fa0" opacity=".65">UNIVERSAL</text>
+    <line x1="280" y1="340" x2="362" y2="232" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
+    <circle cx="280" cy="340" r="44" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".78"/>
+    <text x="280" y="336" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing=".6" fill="#ffd4e2" font-weight="700">WALLET</text>
+    <text x="280" y="349" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".3" fill="#ffd4e2" opacity=".75">UNIVERSAL</text>
 
     <!-- Core identity: Avatar, symmetric with Wallet -->
-    <line x1="500" y1="320" x2="418" y2="212" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
-    <circle cx="500" cy="320" r="38" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".75"/>
-    <text x="500" y="316" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="8.5" letter-spacing=".6" fill="#ff5fa0">AVATAR</text>
-    <text x="500" y="329" text-anchor="middle" font-family="Share Tech Mono,monospace" font-size="6.5" letter-spacing=".3" fill="#ff5fa0" opacity=".65">IDENTITY</text>
+    <line x1="500" y1="340" x2="418" y2="232" stroke="#ff5fa0" stroke-width=".9" opacity=".3" class="dash-in"/>
+    <circle cx="500" cy="340" r="44" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".78"/>
+    <text x="500" y="336" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="10" letter-spacing=".6" fill="#ffd4e2" font-weight="700">AVATAR</text>
+    <text x="500" y="349" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8" letter-spacing=".3" fill="#ffd4e2" opacity=".75">FOUNDATION</text>
+
+    <!-- Social APIs -->
+    <line x1="390" y1="340" x2="390" y2="256" stroke="#ff5fa0" stroke-width=".9" opacity=".28" class="dash-in"/>
+    <circle cx="390" cy="300" r="28" fill="rgba(255,95,160,.08)" stroke="#ff5fa0" stroke-width="1" opacity=".82"/>
+    <text x="390" y="296" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="8.2" letter-spacing=".5" fill="#ffd4e2" font-weight="700" opacity=".95">SOCIAL</text>
+    <text x="390" y="308" text-anchor="middle" dominant-baseline="middle" font-family="Share Tech Mono,monospace" font-size="7.2" letter-spacing=".4" fill="#ffd4e2" opacity=".78">APIS</text>
 
     <!-- Travelling pulses inbound (provider → hub) -->
     <circle r="3.5" fill="#00e5ff" filter="url(#gs)">
@@ -323,10 +332,10 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
     <path id="p-poly"   d="M652,180 L390,180" fill="none"/>
     <path id="p-neo"    d="M605,292 L390,180" fill="none"/>
     <path id="p-karma"  d="M390,48  L390,180" fill="none"/>
-    <path id="p-wallet" d="M280,320 L390,180" fill="none"/>
+    <path id="p-wallet" d="M280,340 L390,180" fill="none"/>
     <path id="p-nfts"   d="M280,40  L390,180" fill="none"/>
     <path id="p-tokens" d="M500,40  L390,180" fill="none"/>
-    <path id="p-avatar" d="M500,320 L390,180" fill="none"/>
+    <path id="p-avatar" d="M500,340 L390,180" fill="none"/>
   </svg>
 </section>
 
@@ -458,7 +467,7 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
   <p class="section-sub">The intelligent orchestration and interoperability layer abstracting over all of Web2 and Web3. HyperDrive connects everything to everything — routing, orchestrating and persisting data, applications and infrastructure across any network, provider, chain or technology, online or offline. No single point of failure. Impossible to shut down.</p>
 
   <!-- Hero SVG: HYPERDRIVE hub routing to every destination -->
-  <svg class="hero-bg" viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="max-width:1200px;margin:0 auto 56px">
+  <svg class="hero-bg" viewBox="0 0 780 420" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="max-width:1200px;margin:0 auto 56px">
     <defs>
       <filter id="hd-gp"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
       <filter id="hd-gs"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
@@ -975,3 +984,4 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
 
 </body>
 </html>
+
