@@ -1231,7 +1231,7 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
         {name:'Polygon', logo:'polygon.svg', icon:'polygon'},
         {name:'EOSIO', icon:'eos'},
         {name:'Telos', icon:'telos'},
-        {name:'SEEDS', icon:'seeds'},
+        {name:'SEEDS', src:'https://joinseeds.earth/favicon.ico', icon:'seeds'},
         {name:'Loom', icon:'loom'},
         {name:'TON', icon:'ton'},
         {name:'Stellar', icon:'stellar'},
@@ -1263,14 +1263,14 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
     {
       title:'WEB3 API',
       items:[
-        {name:'Moralis', icon:'moralis'}
+        {name:'Moralis', src:'https://moralis.com/favicon.ico', icon:'moralis'}
       ]
     },
     {
       title:'IPFS',
       items:[
         {name:'IPFS', logo:'ipfs.png', icon:'ipfs'},
-        {name:'Pinata', icon:'pinata'},
+        {name:'Pinata', src:'https://pinata.cloud/favicon.ico', icon:'pinata'},
         {name:'Arweave', logo:'arweave.png', icon:'arweave'}
       ]
     },
@@ -1302,7 +1302,7 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
     {
       title:'OTHER',
       items:[
-        {name:'Urbit'},
+        {name:'Urbit', src:'https://urbit.org/favicon.ico'},
         {name:'ThreeFold', logo:'threefold.png', icon:'threefold'},
         {name:'PLANO'},
         {name:'HoloWeb'},
@@ -1320,7 +1320,30 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
     card.className='provider-card';
     const badge=document.createElement('div');
     badge.className='provider-badge';
-    if(item.logo){
+    if(item.src){
+      const img=document.createElement('img');
+      img.alt=`${item.name} logo`;
+      img.src=item.src;
+      img.onerror=()=>{
+        if(item.logo){
+          img.src=localLogo(item.logo);
+          img.onerror=()=>{
+            if(item.icon){
+              img.src=iconUrl(item.icon);
+              img.onerror=()=>{ badge.innerHTML=`<span>${fallbackText(item.name)}</span>`; };
+            } else {
+              badge.innerHTML=`<span>${fallbackText(item.name)}</span>`;
+            }
+          };
+        } else if(item.icon){
+          img.src=iconUrl(item.icon);
+          img.onerror=()=>{ badge.innerHTML=`<span>${fallbackText(item.name)}</span>`; };
+        } else {
+          badge.innerHTML=`<span>${fallbackText(item.name)}</span>`;
+        }
+      };
+      badge.appendChild(img);
+    } else if(item.logo){
       const img=document.createElement('img');
       img.alt=`${item.name} logo`;
       img.src=localLogo(item.logo);
