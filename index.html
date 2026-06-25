@@ -168,6 +168,36 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
   .foot-bottom{justify-content:center;text-align:center}
 }
 @media(max-width:500px){
+  .features-grid{
+    grid-template-columns:1fr !important;
+    gap:14px;
+    width:100%;
+    max-width:100%;
+  }
+  .principle-card,
+  .feature-card,
+  .provider-card,
+  .code-card,
+  .dna-card,
+  .rm-tile{
+    width:100%;
+    min-width:0;
+    box-sizing:border-box;
+  }
+  .principle-card,
+  .feature-card,
+  .dna-card,
+  .rm-tile{
+    padding-left:18px;
+    padding-right:18px;
+  }
+  .feature-title{font-size:.92rem;line-height:1.15}
+  .feature-desc{font-size:.98rem;line-height:1.5}
+  .code-section,
+  .dna-band{
+    padding-left:18px;
+    padding-right:18px;
+  }
   .foot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
   .foot-bottom{font-size:.78rem;line-height:1.5}
 }
