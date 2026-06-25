@@ -163,8 +163,14 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
 .foot-bottom{border-top:1px solid rgba(0,229,255,.08);padding-top:1.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
 .foot-bottom p{color:#a8bfd8;font-size:.82rem;transition:filter .3s ease,color .3s ease}
 .foot-bottom a{color:#a8bfd8;text-decoration:none;transition:filter .3s ease,color .3s ease}
-@media(max-width:900px){.foot-grid{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:500px){.foot-grid{grid-template-columns:1fr}}
+@media(max-width:720px){
+  .foot-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}
+  .foot-bottom{justify-content:center;text-align:center}
+}
+@media(max-width:500px){
+  .foot-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+  .foot-bottom{font-size:.78rem;line-height:1.5}
+}
 </style>
 </head>
 <body>
