@@ -555,6 +555,10 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
       <div class="layer-tag">BELOW</div>
     </div>
   </div>
+
+  <div style="margin:40px auto 0;border-radius:16px;overflow:hidden;border:1px solid rgba(0,229,255,.12);background:rgba(3,7,20,.9)">
+    <canvas id="torus-canvas" width="900" height="500" style="width:100%;display:block"></canvas>
+  </div>
 </section>
 
 <!-- ── PRINCIPLES ── -->
@@ -1559,6 +1563,135 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
     section.appendChild(grid);
     wall.appendChild(section);
   });
+})();
+
+// ── TORUS LAYER DIAGRAM ──
+(function(){
+  const canvas = document.getElementById('torus-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W=900, H=500, cx=450, cy=258;
+  const R=160, r=78;
+  let angle=0;
+
+  function tubeCol(phi, bright){
+    const s = Math.sin(phi);
+    let c;
+    if(s > 0.65)       c=[155,90,255];   // violet  – Web5/STAR
+    else if(s > 0.2)   c=[60,180,255];   // blue    – transition
+    else if(s > -0.2)  c=[0,229,255];    // cyan    – Web4/OASIS
+    else if(s > -0.6)  c=[0,210,150];    // teal    – Web3/COSMIC ORM
+    else if(s > -0.82) c=[0,180,100];    // green   – Web3
+    else               c=[80,110,190];   // blue-gray – Web2/Web1
+    return `rgba(${c[0]},${c[1]},${c[2]},${bright.toFixed(2)})`;
+  }
+
+  function proj(x,y,z){ return { sx: cx+x, sy: cy - z - y*0.38 }; }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    const NT=80, NP=40;
+    const segs=[];
+
+    // Meridian circles (every 4th theta)
+    for(let i=0;i<NT;i+=4){
+      const t=angle+(i/NT)*Math.PI*2;
+      for(let j=0;j<NP;j++){
+        const p0=(j/NP)*Math.PI*2, p1=((j+1)/NP)*Math.PI*2;
+        const a={x:(R+r*Math.cos(p0))*Math.cos(t),y:(R+r*Math.cos(p0))*Math.sin(t),z:r*Math.sin(p0)};
+        const b={x:(R+r*Math.cos(p1))*Math.cos(t),y:(R+r*Math.cos(p1))*Math.sin(t),z:r*Math.sin(p1)};
+        segs.push({type:'wire',a,b,phi:(p0+p1)/2,depth:a.y+b.y});
+      }
+    }
+
+    // Latitude circles (every 2nd phi)
+    for(let j=0;j<NP;j+=2){
+      const p=(j/NP)*Math.PI*2;
+      for(let i=0;i<NT;i++){
+        const t0=angle+(i/NT)*Math.PI*2, t1=angle+((i+1)/NT)*Math.PI*2;
+        const a={x:(R+r*Math.cos(p))*Math.cos(t0),y:(R+r*Math.cos(p))*Math.sin(t0),z:r*Math.sin(p)};
+        const b={x:(R+r*Math.cos(p))*Math.cos(t1),y:(R+r*Math.cos(p))*Math.sin(t1),z:r*Math.sin(p)};
+        segs.push({type:'wire',a,b,phi:p,depth:a.y+b.y});
+      }
+    }
+
+    // Arrows added directly into the depth-sort so they never vanish —
+    // they dim when behind the torus but always render.
+    // 3 streams (Web1/2/3) × 3 arrows each = 9 arrows, spaced evenly around tube.
+    const AS=Math.PI*2/3, AP=Math.PI*2/3;
+    for(let i=0;i<3;i++){
+      for(let k=0;k<3;k++){
+        const theta=angle+i*AS;
+        const psi=((angle*1.5+i*AS+k*AP)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+        const phi=-Math.PI/2-psi;
+        const rho=R+r*Math.cos(phi);
+        const x=rho*Math.cos(theta), y=rho*Math.sin(theta), z=r*Math.sin(phi);
+        const phi2=phi-0.22, rho2=R+r*Math.cos(phi2);
+        const x2=rho2*Math.cos(theta), y2=rho2*Math.sin(theta), z2=r*Math.sin(phi2);
+        segs.push({type:'arrow',x,y,z,x2,y2,z2,isRed:Math.sin(phi)<0,depth:y*2});
+      }
+    }
+
+    segs.sort((a,b)=>b.depth-a.depth);
+    const maxY=R+r;
+
+    for(const s of segs){
+      if(s.type==='arrow'){
+        const sp=proj(s.x,s.y,s.z), sp2=proj(s.x2,s.y2,s.z2);
+        const dx=sp2.sx-sp.sx, dy=sp2.sy-sp.sy;
+        const len=Math.sqrt(dx*dx+dy*dy); if(len<1) continue;
+        const nx=dx/len, ny=dy/len;
+        const [cr,cg,cb]=s.isRed?[230,45,45]:[155,90,255];
+        const fade=Math.max(0.28,Math.min(1,0.45+(-s.y+R)/(2*(R+r))));
+        ctx.save();
+        ctx.shadowColor=`rgb(${cr},${cg},${cb})`; ctx.shadowBlur=20;
+        ctx.beginPath();
+        ctx.moveTo(sp.sx+nx*15, sp.sy+ny*15);
+        ctx.lineTo(sp.sx-ny*8,  sp.sy+nx*8);
+        ctx.lineTo(sp.sx+ny*8,  sp.sy-nx*8);
+        ctx.closePath();
+        ctx.fillStyle=`rgba(${cr},${cg},${cb},${fade.toFixed(2)})`;
+        ctx.fill();
+        ctx.restore();
+      } else {
+        const t=1-(s.depth/2+maxY)/(2*maxY);
+        const bright=0.08+t*0.78;
+        const p0=proj(s.a.x,s.a.y,s.a.z), p1=proj(s.b.x,s.b.y,s.b.z);
+        ctx.beginPath();
+        ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy);
+        ctx.strokeStyle=tubeCol(s.phi,bright);
+        ctx.lineWidth=1.1;
+        ctx.stroke();
+      }
+    }
+
+    labels();
+    angle+=0.005;
+    requestAnimationFrame(render);
+  }
+
+  function lbl(text,x,y,font,color,glow,blur){
+    ctx.save();
+    ctx.font=font; ctx.fillStyle=color;
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    if(blur){ctx.shadowColor=glow; ctx.shadowBlur=blur;}
+    ctx.fillText(text,x,y);
+    ctx.restore();
+  }
+
+  function labels(){
+    lbl('STAR OMNIVERSE',cx,72,'bold 24px Orbitron,sans-serif','rgba(185,150,255,.92)','#8b5cf6',14);
+    lbl('Web5',cx,100,'24px "Share Tech Mono",monospace','rgba(139,92,246,.72)','#8b5cf6',6);
+    lbl('OASIS API',cx,cy-6,'bold 24px Orbitron,sans-serif','rgba(0,229,255,.95)','#00e5ff',18);
+    lbl('Web4',cx,cy+17,'24px "bold Share Tech Mono",monospace','rgba(0,229,255,.65)','#00e5ff',6);
+    lbl('STAR API',134,cy-8,'bold 24px Orbitron,sans-serif','rgba(185,150,255,.92)','#8b5cf6',8);
+    lbl('STAR API',W-134,cy-8,'bold 24px Orbitron,sans-serif','rgba(185,150,255,.92)','#8b5cf6',8);
+    lbl('Web3',cx,370,'20px "bold Share Tech Mono",monospace','rgba(0,204,136,.72)','#00cc88',5);
+    lbl('Web1',cx-50,380,'20px "bold Share Tech Mono",monospace','rgba(106,128,168,.65)',null,0);
+    lbl('Web2',cx+50,380,'20px " boldShare Tech Mono",monospace','rgba(80,128,220,.72)','#4060cc',4);
+  }
+
+  render();
 })();
 </script>
 
