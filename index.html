@@ -31,6 +31,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:18px 40px;display:fl
 .nav-links{display:flex;gap:28px;list-style:none}
 .nav-links a{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.14em;color:#a8bfd8;text-decoration:none;transition:color .2s}
 .nav-links a:hover{color:var(--cyan)}
+.nav-cta{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--cyan);border:1px solid rgba(0,229,255,.35);border-radius:999px;padding:8px 18px;text-decoration:none;transition:background .2s,border-color .2s;white-space:nowrap}
+.nav-cta:hover{background:rgba(0,229,255,.08);border-color:rgba(0,229,255,.6)}
 .nav-toggle{display:none;flex-direction:column;justify-content:center;gap:5px;width:32px;height:32px;background:none;border:none;cursor:pointer;z-index:101}
 .nav-toggle span{display:block;width:100%;height:2px;background:#a8bfd8;transition:transform .25s,opacity .25s}
 .nav-toggle.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
@@ -329,8 +331,8 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
     <li><a href="#oasisdna">OASISDNA</a></li>
     <li><a href="#providers">PROVIDERS</a></li>
     <li><a href="#roadmap">ROADMAP</a></li>
-    <li><a href="https://oasisomniverse.one" target="_blank" rel="noopener">ECOSYSTEM</a></li>
   </ul>
+  <a href="https://oasisomniverse.one" target="_blank" rel="noopener" class="nav-cta">ECOSYSTEM</a>
   <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
     <span></span><span></span><span></span>
   </button>
