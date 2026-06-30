@@ -143,6 +143,28 @@ pre.code-block code{font-family:inherit}
 .dna-card li::before{content:'•';color:var(--cyan);margin-right:8px}
 .dna-path{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.12em;color:#a8bfd8;text-align:center;margin-top:16px;opacity:.8}
 
+/* ── ONET ── */
+.onet-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;max-width:1100px;margin:0 auto 48px}
+.onet-card{background:var(--bg-card);border:1px solid rgba(0,229,255,.1);border-radius:14px;padding:28px 24px;transition:transform .3s,border-color .3s}
+.onet-card:hover{transform:translateY(-5px);border-color:rgba(0,229,255,.32)}
+.onet-card-icon{font-size:32px;margin-bottom:14px;display:block}
+.onet-card-title{font-family:'Orbitron',sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.1em;color:var(--heading);margin-bottom:10px}
+.onet-card-desc{font-size:1.05rem;color:#a8bfd8;line-height:1.65}
+.onet-arch{max-width:860px;margin:0 auto 48px;background:linear-gradient(135deg,rgba(0,229,255,.04),rgba(10,21,53,.97));border:1px solid rgba(0,229,255,.16);border-radius:18px;padding:40px 36px}
+.onet-arch-title{font-family:'Orbitron',sans-serif;font-size:16px;font-weight:800;letter-spacing:.1em;color:#fff;margin-bottom:20px;text-align:center}
+.onet-layer{display:flex;align-items:center;gap:14px;padding:12px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(3,7,20,.5);margin-bottom:6px}
+.onet-layer-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;background:var(--cyan);box-shadow:0 0 8px rgba(0,229,255,.6)}
+.onet-layer-dot.violet{background:#a78bfa;box-shadow:0 0 8px rgba(167,139,250,.6)}
+.onet-layer-dot.gold{background:var(--gold);box-shadow:0 0 8px rgba(240,165,0,.5)}
+.onet-layer-dot.rose{background:var(--rose);box-shadow:0 0 8px rgba(255,95,160,.5)}
+.onet-layer-label{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.14em;color:#a8bfd8;flex:1}
+.onet-layer-tag{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:.18em;color:#6a80a8}
+.onet-arrow{text-align:center;padding:2px 0;font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.2em;color:rgba(0,229,255,.3)}
+.onet-stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;max-width:860px;margin:0 auto}
+.onet-stat{background:var(--bg-card);border:1px solid rgba(0,229,255,.1);border-radius:12px;padding:22px 18px;text-align:center}
+.onet-stat-val{font-family:'Orbitron',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:900;color:var(--cyan);display:block;margin-bottom:6px}
+.onet-stat-label{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.18em;color:#a8bfd8}
+
 /* ── ROADMAP ── */
 .rm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
 .rm-tile{background:var(--bg-card);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:1.8rem;position:relative}
@@ -327,6 +349,7 @@ footer a:hover,.foot-col ul li a:hover{color:var(--cyan);filter:drop-shadow(0 0 
     <li><a href="#principles">PRINCIPLES</a></li>
     <li><a href="#features">FEATURES</a></li>
     <li><a href="#hyperdrive">HYPERDRIVE</a></li>
+    <li><a href="#onet">ONET</a></li>
     <li><a href="#cosmic-orm">COSMIC ORM</a></li>
     <li><a href="#oasisdna">OASISDNA</a></li>
     <li><a href="#providers">PROVIDERS</a></li>
@@ -1134,6 +1157,99 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
     </div>
     <div class="dna-path">If you do not specify a provider, OASIS uses the configured ONODE default from OASISDNA. If that provider fails, HyperDrive follows the failover list in order and keeps the operation moving.</div>
   </div>
+</section>
+
+<!-- ── ONET ── -->
+<section class="section" id="onet">
+  <div class="section-kicker">THE P2P BACKBONE</div>
+  <h2 class="section-title">ONET — THE NETWORK OF NETWORKS</h2>
+  <span class="section-line"></span>
+  <p class="section-sub">ONET is the peer-to-peer transport layer that binds WEB4 together. Every provider, avatar, wallet and holon is discoverable and reachable through one unified network — spanning Web2 and Web3 simultaneously.</p>
+
+  <!-- stat strip -->
+  <div class="onet-stat-row" style="margin-bottom:52px">
+    <div class="onet-stat"><span class="onet-stat-val">40+</span><span class="onet-stat-label">PROVIDERS BRIDGED</span></div>
+    <div class="onet-stat"><span class="onet-stat-val">O(log n)</span><span class="onet-stat-label">KADEMLIA ROUTING</span></div>
+    <div class="onet-stat"><span class="onet-stat-val">AES-256</span><span class="onet-stat-label">END-TO-END ENCRYPTION</span></div>
+    <div class="onet-stat"><span class="onet-stat-val">100%</span><span class="onet-stat-label">UPTIME VIA FAILOVER</span></div>
+  </div>
+
+  <!-- feature cards -->
+  <div class="onet-grid">
+    <div class="onet-card">
+      <span class="onet-card-icon">🔗</span>
+      <div class="onet-card-title">UNIFIED P2P TRANSPORT</div>
+      <p class="onet-card-desc">A single TCP/IP layer connects every OASIS node. Bridges to Web2 REST APIs and Web3 smart contracts sit behind the same interface — your code never knows the difference.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">🧭</span>
+      <div class="onet-card-title">KADEMLIA DHT ROUTING</div>
+      <p class="onet-card-desc">Real XOR-distance k-bucket routing with 160 buckets and K=20 peers per bucket. FIND_NODE iterative lookups converge in O(log n) hops — the same algorithm powering BitTorrent and Ethereum.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">🔐</span>
+      <div class="onet-card-title">ECDSA + AES-256-GCM SECURITY</div>
+      <p class="onet-card-desc">Every connection is authenticated with ECDSA P-256 key pairs and encrypted with AES-256-GCM. A zero-trust handshake with proof-of-possession is performed before any data is exchanged.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">📡</span>
+      <div class="onet-card-title">MULTI-METHOD DISCOVERY</div>
+      <p class="onet-card-desc">Nodes find each other through four parallel channels: Kademlia DHT, RFC 6762 mDNS multicast, Ethereum smart-contract registries, and HTTP bootstrap peer exchange — whichever is reachable wins.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">⚡</span>
+      <div class="onet-card-title">INTELLIGENT API GATEWAY</div>
+      <p class="onet-card-desc">ONETAPIGateway sits in front of every provider. Sliding-window rate limiting, response caching, endpoint affinity routing, and automatic retry — all configurable via OASISDNA.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">🌐</span>
+      <div class="onet-card-title">WEB2 + WEB3 BRIDGES</div>
+      <p class="onet-card-desc">Dedicated bridge layers for WEB4 REST APIs and WEB5 STAR services sit alongside HoloNET and EVM provider bridges — the full OASIS provider ecosystem reachable as a single ONET node graph.</p>
+    </div>
+  </div>
+
+  <!-- architecture stack -->
+  <div class="onet-arch">
+    <div class="onet-arch-title">ONET LAYER ARCHITECTURE</div>
+
+    <div class="onet-layer">
+      <div class="onet-layer-dot"></div>
+      <span class="onet-layer-label">ONETAPIGateway — Rate limiting · Caching · Endpoint routing</span>
+      <span class="onet-layer-tag">LAYER 5</span>
+    </div>
+    <div class="onet-arrow">↕</div>
+    <div class="onet-layer">
+      <div class="onet-layer-dot violet"></div>
+      <span class="onet-layer-label">ONETUnifiedArchitecture — WEB4 · WEB5 STAR · HyperDrive · Providers</span>
+      <span class="onet-layer-tag">LAYER 4</span>
+    </div>
+    <div class="onet-arrow">↕</div>
+    <div class="onet-layer">
+      <div class="onet-layer-dot gold"></div>
+      <span class="onet-layer-label">ONETConsensus + ONETRouting — Distributed agreement · Path selection</span>
+      <span class="onet-layer-tag">LAYER 3</span>
+    </div>
+    <div class="onet-arrow">↕</div>
+    <div class="onet-layer">
+      <div class="onet-layer-dot rose"></div>
+      <span class="onet-layer-label">ONETSecurity — ECDSA handshake · AES-256-GCM encryption · Zero-trust</span>
+      <span class="onet-layer-tag">LAYER 2</span>
+    </div>
+    <div class="onet-arrow">↕</div>
+    <div class="onet-layer">
+      <div class="onet-layer-dot"></div>
+      <span class="onet-layer-label">ONETDiscovery — Kademlia DHT · mDNS · Blockchain · Bootstrap</span>
+      <span class="onet-layer-tag">LAYER 1</span>
+    </div>
+    <div class="onet-arrow">↕</div>
+    <div class="onet-layer">
+      <div class="onet-layer-dot" style="background:#6a80a8;box-shadow:none"></div>
+      <span class="onet-layer-label">ONETProtocol — TCP transport · PING/PONG · Singleton per process</span>
+      <span class="onet-layer-tag">LAYER 0</span>
+    </div>
+  </div>
+
+  <p class="subsystem-closing">ONE NETWORK. EVERY PROVIDER. EVERY CHAIN.</p>
 </section>
 
 <!-- ── PROVIDERS ── -->
