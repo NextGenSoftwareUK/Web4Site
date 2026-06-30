@@ -1211,6 +1211,16 @@ Console.WriteLine("Subsequent calls now use the new default provider.");</code><
       <div class="onet-card-title">HOLOCHAIN DHT MODE</div>
       <p class="onet-card-desc">Switch ONET's transport to Holochain's kitsune2 P2P layer via HoloNET. NAT traversal, DHT gossip, agent cryptographic identity and peer churn resistance are handled natively by the Holochain conductor — no custom P2P code required. Native and Holochain modes are benchmarked side-by-side so deployments can choose what fits best.</p>
     </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">🤝</span>
+      <div class="onet-card-title">DISTRIBUTED CONSENSUS</div>
+      <p class="onet-card-desc">ONETConsensus coordinates agreement across ONET nodes without a central authority. Pluggable consensus strategies sit above the transport layer — working identically whether the network is running in Native or Holochain mode underneath.</p>
+    </div>
+    <div class="onet-card">
+      <span class="onet-card-icon">💾</span>
+      <div class="onet-card-title">HOLON-NATIVE STATE</div>
+      <p class="onet-card-desc">ONET peer caches and routing state are stored as holons via HyperDrive — automatically replicated and versioned across providers. Shared peer state means a cluster of ONODE instances converges on the same network view rather than each starting from scratch.</p>
+    </div>
   </div>
 
   <!-- architecture stack -->
