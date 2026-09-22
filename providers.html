@@ -45,6 +45,8 @@
   .controls select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer; }
   .controls select:focus { border-color: var(--accent); }
   .count { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .clear-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; transition: border-color .15s, color .15s; }
+  .clear-btn:hover { border-color: var(--accent); color: var(--text); }
 
   .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
@@ -95,6 +97,7 @@
   <input type="text" id="search" placeholder="Search providers…">
   <select id="folderFilter"><option value="">All</option></select>
   <select id="catFilter"><option value="">All Capabilities</option></select>
+  <button class="clear-btn" id="clearBtn">✕ Clear</button>
   <span class="count" id="count"></span>
 </div>
 
@@ -431,5 +434,11 @@ document.querySelector('th[data-col="0"] .sort-icon').textContent = '↑';
 document.getElementById('search').addEventListener('input', render);
 folderSel.addEventListener('change', render);
 catSel.addEventListener('change', render);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  document.getElementById('search').value = '';
+  folderSel.value = '';
+  catSel.value = '';
+  render();
+});
 render();
 </script>
