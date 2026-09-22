@@ -54,7 +54,10 @@
   .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: var(--bg3); }
-  th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { color: var(--text); }
+  th .sort-icon { display: inline-block; margin-left: 4px; opacity: 0.4; font-style: normal; }
+  th.sort-asc .sort-icon, th.sort-desc .sort-icon { opacity: 1; color: var(--accent); }
   td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tr:last-child td { border-bottom: none; }
   tr:hover td { background: var(--bg3); }
@@ -101,10 +104,10 @@
   <table id="tbl">
     <thead>
       <tr>
-        <th>Folder</th>
-        <th>Provider</th>
-        <th>Category (primary)</th>
-        <th>Capabilities (secondary)</th>
+        <th data-col="0">Folder <i class="sort-icon">↕</i></th>
+        <th data-col="1">Provider <i class="sort-icon">↕</i></th>
+        <th data-col="2">Category (primary) <i class="sort-icon">↕</i></th>
+        <th data-col="3">Capabilities (secondary) <i class="sort-icon">↕</i></th>
       </tr>
     </thead>
     <tbody id="tbody"></tbody>
@@ -380,7 +383,13 @@ function render() {
   const tbody = document.getElementById('tbody');
   let rows = '', count = 0;
 
-  providers.forEach(([f, name, c, caps]) => {
+  const sorted = [...providers].sort((a, b) => {
+    let av = sortCol === 3 ? a[3].join(', ') : a[sortCol];
+    let bv = sortCol === 3 ? b[3].join(', ') : b[sortCol];
+    return av.localeCompare(bv) * sortDir;
+  });
+
+  sorted.forEach(([f, name, c, caps]) => {
     if (folder && f !== folder) return;
     if (cat && c !== cat) return;
     if (q && !name.toLowerCase().includes(q) && !c.toLowerCase().includes(q) && !caps.join(' ').toLowerCase().includes(q)) return;
@@ -398,6 +407,26 @@ function render() {
   tbody.innerHTML = rows;
   document.getElementById('count').textContent = count + ' of ' + providers.length + ' providers';
 }
+
+let sortCol = 0, sortDir = 1; // default: folder asc
+
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = parseInt(th.dataset.col);
+    if (sortCol === col) sortDir = -sortDir;
+    else { sortCol = col; sortDir = 1; }
+    document.querySelectorAll('th[data-col]').forEach(h => {
+      h.classList.remove('sort-asc', 'sort-desc');
+      h.querySelector('.sort-icon').textContent = '↕';
+    });
+    th.classList.add(sortDir === 1 ? 'sort-asc' : 'sort-desc');
+    th.querySelector('.sort-icon').textContent = sortDir === 1 ? '↑' : '↓';
+    render();
+  });
+});
+// Set initial sort indicator
+document.querySelector('th[data-col="0"]').classList.add('sort-asc');
+document.querySelector('th[data-col="0"] .sort-icon').textContent = '↑';
 
 document.getElementById('search').addEventListener('input', render);
 folderSel.addEventListener('change', render);
