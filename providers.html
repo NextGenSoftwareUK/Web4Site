@@ -1,0 +1,406 @@
+<title>OASIS Provider Registry</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #161b27;
+    --bg3: #1e2535;
+    --border: #2a3346;
+    --text: #e2e8f0;
+    --muted: #8892a4;
+    --accent: #4f8ef7;
+    --evm: #a78bfa;
+    --blockchain: #34d399;
+    --storage: #60a5fa;
+    --storage-local: #3b82f6;
+    --cloud: #38bdf8;
+    --network: #fb923c;
+    --social: #f472b6;
+    --identity: #fbbf24;
+    --spatial: #86efac;
+    --ai: #e879f9;
+    --app: #94a3b8;
+    --other: #94a3b8;
+    --warn: #f59e0b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #f8fafc; --bg2: #ffffff; --bg3: #f1f5f9;
+      --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #f8fafc; --bg2: #ffffff; --bg3: #f1f5f9;
+    --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; font-size: 13px; padding: 20px 16px; }
+
+  h1 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -0.3px; }
+  .subtitle { color: var(--muted); font-size: 12px; margin-bottom: 20px; }
+
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+  .controls input { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 12px; width: 220px; outline: none; }
+  .controls input:focus { border-color: var(--accent); }
+  .controls select { background: var(--bg2); border: 1px solid var(--border); color: var(--text); border-radius: 6px; padding: 6px 10px; font-size: 12px; outline: none; cursor: pointer; }
+  .controls select:focus { border-color: var(--accent); }
+  .count { margin-left: auto; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .legend .badge { cursor: pointer; opacity: 0.85; transition: opacity 0.1s; }
+  .legend .badge:hover { opacity: 1; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--bg3); }
+  th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg3); }
+  .folder { color: var(--muted); font-size: 11px; }
+  .provider-name { font-weight: 600; font-size: 12px; }
+  .warn-icon { color: var(--warn); margin-left: 4px; font-size: 10px; }
+  .caps-cell { display: flex; flex-wrap: wrap; gap: 3px; }
+  .hidden { display: none; }
+
+  /* category badge colors */
+  .b-EVMBlockchain { background: #3b1fa833; color: var(--evm); border: 1px solid #4c2d9a55; }
+  .b-Blockchain { background: #064e3b33; color: var(--blockchain); border: 1px solid #06744655; }
+  .b-Storage { background: #1e3a5f33; color: var(--storage); border: 1px solid #2563eb55; }
+  .b-StorageLocal { background: #1e3a8a33; color: var(--storage-local); border: 1px solid #3b82f655; }
+  .b-StorageAndNetwork { background: #7f1d1d33; color: var(--warn); border: 1px solid #b45c0c55; }
+  .b-Cloud { background: #0c4a6e33; color: var(--cloud); border: 1px solid #0284c755; }
+  .b-Network { background: #431407aa; color: var(--network); border: 1px solid #ea580c55; }
+  .b-Social { background: #500724aa; color: var(--social); border: 1px solid #db277755; }
+  .b-Identity { background: #451a0333; color: var(--identity); border: 1px solid #d9770655; }
+  .b-Spatial { background: #052e1633; color: var(--spatial); border: 1px solid #16a34a55; }
+  .b-AI { background: #3b0764aa; color: var(--ai); border: 1px solid #a21caf55; }
+  .b-Application { background: #1e293b55; color: var(--app); border: 1px solid #47556955; }
+  .b-NFT { background: #3b1f4a33; color: #c084fc; border: 1px solid #9333ea55; }
+  .b-SmartContract { background: #1f3a2a33; color: #6ee7b7; border: 1px solid #10b98155; }
+  .b-KeyManager { background: #3a1f0033; color: #fca5a5; border: 1px solid #ef444455; }
+  .b-None { background: #1e2535; color: var(--muted); border: 1px solid var(--border); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+
+<h1>OASIS Provider Registry</h1>
+<p class="subtitle">227 WEB4 providers — primary category and secondary capabilities</p>
+
+<div class="controls">
+  <input type="text" id="search" placeholder="Search providers…">
+  <select id="folderFilter"><option value="">All</option></select>
+  <select id="catFilter"><option value="">All Capabilities</option></select>
+  <span class="count" id="count"></span>
+</div>
+
+<div class="legend" id="legend"></div>
+
+<div class="table-wrap">
+  <table id="tbl">
+    <thead>
+      <tr>
+        <th>Folder</th>
+        <th>Provider</th>
+        <th>Category (primary)</th>
+        <th>Capabilities (secondary)</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+const providers = [
+  ["AI","BittensorOASIS","AI",[]],
+  ["AI","GaladrielOASIS","EVMBlockchain",[]],
+  ["AI","RitualOASIS","AI",[]],
+  ["Blockchain","AbstractOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","AlgorandOASIS","Blockchain",["Network"]],
+  ["Blockchain","AptosOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","ArbitrumOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","AvalancheOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","AvalancheOASIS_Legacy","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","AxelarOASIS","Blockchain",[]],
+  ["Blockchain","AztecOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","BNBChainOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","BaseOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","BasechainOASIS","EVMBlockchain",["Network"]],
+  ["Blockchain","BerachainOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","BitcoinOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","BlockStackOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","CardanoOASIS","Blockchain",[]],
+  ["Blockchain","ChainLinkOASIS","EVMBlockchain",[]],
+  ["Blockchain","ChainflipOASIS","Blockchain",[]],
+  ["Blockchain","ChainlinkFunctionsOASIS","EVMBlockchain",[]],
+  ["Blockchain","ConnextOASIS","EVMBlockchain",[]],
+  ["Blockchain","CosmosBlockChainOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","EOSIOOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","EigenLayerOASIS","EVMBlockchain",[]],
+  ["Blockchain","ElrondOASIS","Blockchain",[]],
+  ["Blockchain","EspressoSystemsOASIS","EVMBlockchain",[]],
+  ["Blockchain","EthereumOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","FantomOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","FhenixOASIS","EVMBlockchain",[]],
+  ["Blockchain","FilecoinOASIS","Blockchain",["Network"]],
+  ["Blockchain","GelatoNetworkOASIS","EVMBlockchain",[]],
+  ["Blockchain","HashgraphOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","HyperlaneOASIS","EVMBlockchain",[]],
+  ["Blockchain","LayerZeroV2OASIS","EVMBlockchain",[]],
+  ["Blockchain","LineaOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","MidenOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","MonadOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","NEAROASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","OpenZeppelinDefenderOASIS","EVMBlockchain",[]],
+  ["Blockchain","OptimismOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","PolkadotOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","PolygonOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","RadixOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","RootstockOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","ScrollOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","SeiOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","SolanaOasis","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","StargateOASIS","EVMBlockchain",[]],
+  ["Blockchain","StarknetOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","StellarOASIS","Blockchain",["Network","Storage"]],
+  ["Blockchain","SuiOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","SynapseOASIS","EVMBlockchain",[]],
+  ["Blockchain","TONOASIS","Blockchain",[]],
+  ["Blockchain","TRONOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","TelosOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","Web3CoreOASISBaseProvider","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","WormholeOASIS","EVMBlockchain",[]],
+  ["Blockchain","ZcashOASIS","Blockchain",["NFT","SmartContract","Storage"]],
+  ["Blockchain","deBridgeOASIS","EVMBlockchain",[]],
+  ["Blockchain","zkSyncOASIS","EVMBlockchain",["NFT","SmartContract","Storage"]],
+  ["Cloud","AWSOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","AppwriteOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","AzureCosmosDBOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","AzureStorageOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","CloudflareD1OASIS","Cloud",["Storage","Network"]],
+  ["Cloud","CloudflareOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","ConvexOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","DynamoDBOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","FaunaOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","FirebaseOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","GoogleCloudOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","NeonOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","PocketBaseOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","SupabaseOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","TursoOASIS","Cloud",["Storage","Network"]],
+  ["Cloud","UpstashOASIS","Cloud",["Storage","Network"]],
+  ["Identity","ENSOffchainOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","HolonymOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","PolygonIDOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","PrivyServerWalletsOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","ProofOfHumanityOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","SelfProtocolOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Identity","zkPassOASIS","Identity",["Network","Storage","KeyManager"]],
+  ["Maps","DecentralandOASIS","Spatial",["Storage","Network"]],
+  ["Maps","ReadyPlayerMeOASIS","Spatial",["Storage","Network"]],
+  ["Maps","TheSandboxOASIS","Spatial",["Storage","Network"]],
+  ["Network","ActivityPubOASIS","Network",["Storage"]],
+  ["Network","AkashOASIS","Network",["Network","Storage"]],
+  ["Network","AlchemyOASIS","Network",["Storage","Blockchain","Network"]],
+  ["Network","AnkrOASIS","Network",["Storage"]],
+  ["Network","BlockscoutOASIS","Network",["Storage"]],
+  ["Network","CelestiaOASIS","Network",["Network","Storage"]],
+  ["Network","CeramicOASIS","Network",["Storage"]],
+  ["Network","CivicOASIS","Network",["Storage"]],
+  ["Network","CovalentOASIS","Network",["Storage"]],
+  ["Network","DuneAnalyticsOASIS","Network",["Storage"]],
+  ["Network","ENSOASIS","Network",["Storage","Blockchain"]],
+  ["Network","EclipseOASIS","Network",["Storage","Blockchain","Network"]],
+  ["Network","GitcoinPassportOASIS","Network",["Storage","Network"]],
+  ["Network","GoldskyOASIS","Network",["Storage"]],
+  ["Network","HoloOASIS","Network",["Storage"]],
+  ["Network","HoloWebOASIS","Network",["Storage"]],
+  ["Network","IPFSOASIS","Network",["Storage"]],
+  ["Network","InfuraOASIS","Network",["Blockchain","Storage"]],
+  ["Network","LayerZeroOASIS","Network",["Storage","Network"]],
+  ["Network","LivepeerOASIS","Network",["Network","Storage"]],
+  ["Network","MoralisOASIS","Network",["Storage","Network","NFT"]],
+  ["Network","MoralisStreamsOASIS","Network",["Storage"]],
+  ["Network","NATSJetStreamOASIS","Network",["Storage"]],
+  ["Network","NansenOASIS","Network",["Storage"]],
+  ["Network","PinataOASIS","Network",["Storage"]],
+  ["Network","PolybaseOASIS","Network",["Storage","Network"]],
+  ["Network","PrivyOASIS","Network",["Storage","Network"]],
+  ["Network","PushProtocolOASIS","Network",["Storage","Network"]],
+  ["Network","QuickNodeOASIS","Network",["Storage"]],
+  ["Network","ReclaimProtocolOASIS","Network",["Storage"]],
+  ["Network","ReservoirOASIS","Network",["Storage"]],
+  ["Network","SOLIDOASIS","Network",["Storage"]],
+  ["Network","SafeOASIS","Network",["Storage","Blockchain"]],
+  ["Network","ScuttlebuttOASIS","Network",["Storage"]],
+  ["Network","SubqueryOASIS","Network",["Storage"]],
+  ["Network","SuiZkLoginOASIS","Network",["Storage","Network"]],
+  ["Network","TablelandOASIS","Network",["Storage","Blockchain"]],
+  ["Network","TenderlyOASIS","Network",["Storage"]],
+  ["Network","ThreeFoldOASIS","Network",["Storage"]],
+  ["Network","WakuOASIS","Network",["Storage","Network"]],
+  ["Network","ZapperOASIS","Network",["Storage"]],
+  ["Network","ZkSyncSSOOASIS","Network",["Storage","Network"]],
+  ["Other","DaprOASIS","Network",[]],
+  ["Other","GUNOASIS","Storage",[]],
+  ["Other","IntelOpenVINOOASIS","AI",[]],
+  ["Other","OrbitDBOASIS","Storage",[]],
+  ["Other","PLANOASIS","Network",[]],
+  ["Other","SEEDSOASIS","Application",[]],
+  ["Other","TemporalOASIS","Network",[]],
+  ["Other","UrbitOASIS","Application",["Network"]],
+  ["Social","BlueSkyOASIS","Social",["Storage","Network"]],
+  ["Social","DiscordOASIS","Social",["Storage","Network"]],
+  ["Social","FarcasterOASIS","Social",["Storage","Network"]],
+  ["Social","LensOASIS","Social",["Storage","Network"]],
+  ["Social","LensV2OASIS","Social",["Storage","Network"]],
+  ["Social","LitProtocolOASIS","Social",["Storage","Network"]],
+  ["Social","LoomOASIS","Social",["Storage","Network"]],
+  ["Social","MatrixOASIS","Social",["Storage","Network"]],
+  ["Social","NostrOASIS","Social",["Storage","Network"]],
+  ["Social","StoryProtocolOASIS","Social",["Storage","Network"]],
+  ["Social","TheGraphOASIS","Social",["Storage","Network"]],
+  ["Social","WorldIDOASIS","Social",["Storage","Network"]],
+  ["Storage","AlgoliaOASIS","Storage",["Network"]],
+  ["Storage","ArangoDBOASIS","Storage",["Network"]],
+  ["Storage","ArcadeDBOASIS","Storage",["Network"]],
+  ["Storage","ArweaveOASIS","Storage",["Network"]],
+  ["Storage","BigQueryOASIS","Storage",["Network"]],
+  ["Storage","CassandraOASIS","Storage",["Network"]],
+  ["Storage","ChromaOASIS","Storage",["Network"]],
+  ["Storage","ClickHouseOASIS","Storage",["Network"]],
+  ["Storage","CloudinaryOASIS","Storage",["Network"]],
+  ["Storage","CockroachDBOASIS","Storage",["Network"]],
+  ["Storage","CouchDBOASIS","Storage",["Network"]],
+  ["Storage","CouchbaseOASIS","Storage",["Network"]],
+  ["Storage","DatabricksOASIS","Storage",["Network"]],
+  ["Storage","DenoDeployOASIS","Storage",["Network"]],
+  ["Storage","DragonflyOASIS","Storage",["Network"]],
+  ["Storage","DruidOASIS","Storage",["Network"]],
+  ["Storage","DuckDBOASIS","StorageLocal",[]],
+  ["Storage","ElasticsearchOASIS","Storage",["Network"]],
+  ["Storage","FastlyOASIS","Storage",["Network"]],
+  ["Storage","FlyIOOASIS","Storage",["Network"]],
+  ["Storage","GarnetOASIS","Storage",["Network"]],
+  ["Storage","InfluxDBOASIS","Storage",["Network"]],
+  ["Storage","KeyDBOASIS","Storage",["Network"]],
+  ["Storage","LanceDBOASIS","Storage",["Network"]],
+  ["Storage","LitestreamOASIS","Storage",["Network"]],
+  ["Storage","LocalFileOASIS","StorageLocal",[]],
+  ["Storage","MarqoOASIS","Storage",["Network"]],
+  ["Storage","MeilisearchOASIS","Storage",["Network"]],
+  ["Storage","MemcachedOASIS","Storage",["Network"]],
+  ["Storage","MilvusOASIS","Storage",["Network"]],
+  ["Storage","MinIOOASIS","Storage",["Network"]],
+  ["Storage","MongoDBOASIS","Storage",["Network"]],
+  ["Storage","MotherDuckOASIS","Storage",["Network"]],
+  ["Storage","Neo4jOASIS","Storage",["Network"]],
+  ["Storage","Neo4jOASIS.Aura","StorageAndNetwork",["Network"]],
+  ["Storage","Neo4jOASIS2","Storage",["Network"]],
+  ["Storage","NetlifyBlobsOASIS","Storage",["Network"]],
+  ["Storage","NileOASIS","Storage",["Network"]],
+  ["Storage","OpenSearchOASIS","Storage",["Network"]],
+  ["Storage","OracleDBOASIS","Storage",["Network"]],
+  ["Storage","PgVectorOASIS","Storage",["Network"]],
+  ["Storage","PineconeOASIS","Storage",["Network"]],
+  ["Storage","PinotOASIS","Storage",["Network"]],
+  ["Storage","PlanetScaleOASIS","Storage",["Network"]],
+  ["Storage","PostgreSQLOASIS","Storage",["Network"]],
+  ["Storage","PouchDBOASIS","Storage",["Network"]],
+  ["Storage","QdrantOASIS","Storage",["Network"]],
+  ["Storage","QuestDBOASIS","Storage",["Network"]],
+  ["Storage","RavenDBOASIS","Storage",["Network"]],
+  ["Storage","RedisOASIS","Storage",["Network"]],
+  ["Storage","RedshiftOASIS","Storage",["Network"]],
+  ["Storage","SQLLiteDBOASIS","StorageLocal",[]],
+  ["Storage","SQLServerDBOASIS","Storage",["Network"]],
+  ["Storage","ScyllaDBOASIS","Storage",["Network"]],
+  ["Storage","SnowflakeOASIS","Storage",["Network"]],
+  ["Storage","SolrOASIS","Storage",["Network"]],
+  ["Storage","SurrealDBOASIS","Storage",["Network"]],
+  ["Storage","TigrisOASIS","Storage",["Network"]],
+  ["Storage","TimescaleDBOASIS","Storage",["Network"]],
+  ["Storage","TypesenseOASIS","Storage",["Network"]],
+  ["Storage","ValKeyOASIS","Storage",["Network"]],
+  ["Storage","VercelKVOASIS","Storage",["Network"]],
+  ["Storage","WeaviateOASIS","Storage",["Network"]],
+  ["Storage","XataOASIS","Storage",["Network"]],
+  ["Storage","ZillizOASIS","Storage",["Network"]],
+];
+
+// Issues to flag
+const issues = {
+  "AzureStorageOASIS": "Cloud in caps is redundant (primary is Cloud)",
+  "Neo4jOASIS.Aura": "Primary should be Storage, not StorageAndNetwork",
+};
+
+const catColors = {
+  EVMBlockchain:"b-EVMBlockchain", Blockchain:"b-Blockchain",
+  Storage:"b-Storage", StorageLocal:"b-StorageLocal", StorageAndNetwork:"b-StorageAndNetwork",
+  Cloud:"b-Cloud", Network:"b-Network", Social:"b-Social", Identity:"b-Identity",
+  Spatial:"b-Spatial", AI:"b-AI", Application:"b-Application",
+  NFT:"b-NFT", SmartContract:"b-SmartContract", KeyManager:"b-KeyManager",
+  Blockchain2:"b-Blockchain", None:"b-None"
+};
+
+function badge(val) {
+  const cls = catColors[val] || "b-None";
+  return `<span class="badge ${cls}">${val}</span>`;
+}
+
+// Build legend
+const allCats = [...new Set(providers.map(p => p[2]))].sort();
+const legend = document.getElementById('legend');
+allCats.forEach(cat => {
+  const b = document.createElement('span');
+  b.className = 'badge ' + (catColors[cat]||'b-None');
+  b.textContent = cat;
+  b.title = 'Filter by ' + cat;
+  b.addEventListener('click', () => {
+    const sel = document.getElementById('catFilter');
+    sel.value = sel.value === cat ? '' : cat;
+    render();
+  });
+  legend.appendChild(b);
+});
+
+// Populate filters
+const folders = [...new Set(providers.map(p => p[0]))].sort();
+const folderSel = document.getElementById('folderFilter');
+folders.forEach(f => { const o = document.createElement('option'); o.value = f; o.textContent = f; folderSel.appendChild(o); });
+
+const catSel = document.getElementById('catFilter');
+allCats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const folder = folderSel.value;
+  const cat = catSel.value;
+  const tbody = document.getElementById('tbody');
+  let rows = '', count = 0;
+
+  providers.forEach(([f, name, c, caps]) => {
+    if (folder && f !== folder) return;
+    if (cat && c !== cat) return;
+    if (q && !name.toLowerCase().includes(q) && !c.toLowerCase().includes(q) && !caps.join(' ').toLowerCase().includes(q)) return;
+    count++;
+    const warn = issues[name] ? `<span class="warn-icon" title="${issues[name]}">⚠</span>` : '';
+    const capsHtml = caps.length ? caps.map(badge).join('') : '<span style="color:var(--muted);font-size:11px">—</span>';
+    rows += `<tr>
+      <td class="folder">${f}</td>
+      <td class="provider-name">${name}${warn}</td>
+      <td>${badge(c)}</td>
+      <td><div class="caps-cell">${capsHtml}</div></td>
+    </tr>`;
+  });
+
+  tbody.innerHTML = rows;
+  document.getElementById('count').textContent = count + ' of ' + providers.length + ' providers';
+}
+
+document.getElementById('search').addEventListener('input', render);
+folderSel.addEventListener('change', render);
+catSel.addEventListener('change', render);
+render();
+</script>
