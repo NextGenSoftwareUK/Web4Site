@@ -289,17 +289,19 @@ let holonId = null;
 $('fo-save').addEventListener('click', async () => {
   $('fo-save').disabled = true; setNote($('fo-save-note'), 'Saving and replicating…'); $('fo-copies').innerHTML = '';
   try {
-    const r = await call('POST', 'data/save-holon', {holon:{name:$('fo-name').value || 'My first holon', description:'Saved from the WEB4 sandbox'}, autoReplicationMode:'ON', waitForAutoReplicationResult:true});
+    const r = await call('POST', 'data/save-holon', {holon:{name:$('fo-name').value || 'My first holon', description:'Saved from the WEB4 sandbox'}, autoReplicationMode:'ON', waitForAutoReplicationResult:true, saveChildren:false});
     holonId = r.result?.id;
     setNote($('fo-save-note'), `Saved holon ${holonId}. Reading it back from each provider…`, 'ok');
     $('fo-load').disabled = false;
-    const rows = await Promise.all(PROVIDERS.map(async p => {
+    // One at a time: WEB4 switches its active provider per request, so parallel reads would interfere with each other.
+    const rows = [];
+    for (const p of PROVIDERS) {
       const t0 = performance.now();
       try {
         const c = await call('POST', 'data/load-holon', {id:holonId, providerType:p, autoFailOverMode:'OFF', loadChildren:false});
-        return [p, true, c.result?.name, Math.round(performance.now() - t0)];
-      } catch (e) { return [p, false, e.message, Math.round(performance.now() - t0)]; }
-    }));
+        rows.push([p, true, c.result?.name, Math.round(performance.now() - t0)]);
+      } catch (e) { rows.push([p, false, e.message, Math.round(performance.now() - t0)]); }
+    }
     $('fo-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th><th class="num">ms</th></tr></thead><tbody>' +
       rows.map(([p, ok, d, ms]) => `<tr><td>${esc(p)}</td><td class="${ok ? 'on' : 'off'}">${ok ? 'STORED' : 'MISSING'}</td><td>${esc(d)}</td><td class="num">${ms}</td></tr>`).join('') + '</tbody></table>';
   } catch (e) { setNote($('fo-save-note'), 'Save failed: ' + e.message, 'err'); }
@@ -333,15 +335,22 @@ setInterval(refreshFaults, 5000);
 $('fo-load').addEventListener('click', async () => {
   if (!holonId) return;
   $('fo-load').disabled = true; setNote($('fo-load-note'), 'Loading…'); $('fo-trace').innerHTML = '';
-  const t0 = performance.now();
   try {
+    // The sandbox counts the requests each offline provider refuses; the change across this load is the evidence.
+    const before = (await call('GET', 'sandbox/refusals')).result || {};
+    const t0 = performance.now();
     const r = await call('POST', 'data/load-holon', {id:holonId, autoFailOverMode:'ON', loadChildren:false});
     const ms = Math.round(performance.now() - t0);
+    const after = (await call('GET', 'sandbox/refusals')).result || {};
     const status = await api('status');
     setNote($('fo-load-note'), `Loaded "${r.result?.name}" in ${ms} ms.`, 'ok');
     const f = status.lastFailover, sel = status.lastProviderSelection, msgs = r.innerMessages || [];
+    const refused = Object.entries(after).map(([p, n]) => [p, n - (before[p] || 0)]).filter(([, n]) => n > 0);
     $('fo-trace').innerHTML =
-      (f ? `<details open><summary>HyperDrive's last failover</summary><pre>${esc(JSON.stringify(f, null, 2))}</pre></details>` : '<p class="empty">No failover recorded: the first provider answered.</p>') +
+      (refused.length
+        ? `<p class="note ok" style="font-size:16px">Failover happened: ${refused.map(([p, n]) => `${esc(p)} refused ${n} request(s) because it is offline`).join('; ')}. HyperDrive moved on and still served your holon from another provider.</p>`
+        : '<p class="empty">No offline provider was asked, so no failover was needed. Take a provider offline (step 2) and load again.</p>') +
+      (f ? `<details open><summary>HyperDrive's last failover</summary><pre>${esc(JSON.stringify(f, null, 2))}</pre></details>` : '') +
       (sel ? `<details><summary>Last provider selection</summary><pre>${esc(JSON.stringify(sel, null, 2))}</pre></details>` : '') +
       (msgs.length ? `<details><summary>Messages from the providers tried</summary><pre>${esc(msgs.join('\n'))}</pre></details>` : '');
   } catch (e) { setNote($('fo-load-note'), 'Load failed: ' + e.message, 'err'); }
