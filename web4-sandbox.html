@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WEB4 Sandbox — HyperDrive, COSMIC ORM &amp; CQL</title>
+<meta name="description" content="Try OASIS WEB4 live: HyperDrive auto-failover, auto-replication and auto-load-balancing, COSMIC ORM and CQL, against the real WEB4 API.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='30' fill='none' stroke='%2300e5ff' stroke-width='5'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cyan:#00e5ff;--rose:#ff5fa0;--gold:#f0a500;--green:#3ddc84;
+  --bg-deep:#030714;--bg-card:#0a1535;--bg-card2:#071028;
+  --text:#d0e4ff;--text-dim:#6a80a8;--heading:#fff;--line:rgba(0,229,255,.14);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:16px;line-height:1.55;overflow-x:hidden}
+a{color:var(--cyan)}
+.mono{font-family:'Share Tech Mono',monospace}
+
+nav{position:sticky;top:0;z-index:10;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(3,7,20,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.nav-brand{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.22em;color:#fff;text-decoration:none}
+.nav-brand span{color:var(--cyan)}
+.nav-links{display:flex;gap:8px;flex-wrap:wrap}
+.nav-cta{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.1em;color:var(--cyan);border:1px solid rgba(0,229,255,.35);border-radius:999px;padding:7px 14px;text-decoration:none}
+.nav-cta:hover{background:rgba(0,229,255,.08)}
+
+.wrap{max-width:1200px;margin:0 auto;padding:32px 24px 64px}
+.kicker{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.28em;color:var(--cyan);margin-bottom:10px}
+h1{font-family:'Orbitron',sans-serif;font-size:clamp(26px,5vw,44px);font-weight:900;letter-spacing:.06em;color:var(--heading);line-height:1.15;margin-bottom:12px}
+h1 span{color:var(--cyan)}
+.lead{font-size:18px;color:#a8bfd8;max-width:760px;margin-bottom:24px}
+h2{font-family:'Orbitron',sans-serif;font-size:15px;letter-spacing:.12em;color:var(--cyan);margin-bottom:12px}
+
+.card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input,select{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);background:var(--bg-card2);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;min-width:0}
+input:focus,select:focus{outline:none;border-color:var(--cyan)}
+button{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.1em;color:#fff;background:linear-gradient(135deg,rgba(0,229,255,.25),rgba(0,229,255,.1));border:1px solid rgba(0,229,255,.5);border-radius:999px;padding:9px 18px;cursor:pointer}
+button:hover:not(:disabled){border-color:var(--cyan);box-shadow:0 0 18px rgba(0,229,255,.25)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.ghost{background:transparent;border-color:rgba(255,255,255,.15);color:#a8bfd8}
+.note{font-size:14px;color:var(--text-dim);margin-top:8px}
+.note.err{color:var(--rose)}
+.note.ok{color:var(--green)}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 18px;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tab{background:transparent;border:1px solid transparent;color:#a8bfd8;border-radius:999px}
+.tab.active{border-color:rgba(0,229,255,.5);color:#fff;background:rgba(0,229,255,.1)}
+.tab .soon{font-size:9px;color:var(--gold);margin-left:6px;letter-spacing:.1em}
+.panel{display:none}.panel.active{display:block}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--bg-card2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.stat .k{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.16em;color:var(--text-dim);text-transform:uppercase}
+.stat .v{font-family:'Orbitron',sans-serif;font-size:20px;color:#fff;margin-top:4px;word-break:break-word}
+.on{color:var(--green)!important}.off{color:var(--rose)!important}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-family:'Share Tech Mono',monospace;font-size:11px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--bg-card2);color:var(--text)}
+.chip.best{border-color:var(--green);color:var(--green)}
+.lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.list-title{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:.14em;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase}
+
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+th{font-family:'Share Tech Mono',monospace;font-size:10px;letter-spacing:.14em;color:var(--text-dim);text-transform:uppercase;font-weight:400}
+td.num{font-variant-numeric:tabular-nums;text-align:right}
+th.num{text-align:right}
+pre{font-family:'Share Tech Mono',monospace;font-size:12px;background:var(--bg-card2);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;max-height:280px;white-space:pre-wrap;word-break:break-word}
+details summary{cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:12px;color:#a8bfd8;letter-spacing:.08em}
+.empty{color:var(--text-dim);font-size:14px}
+.soon-box{border:1px dashed rgba(240,165,0,.4);border-radius:12px;padding:20px;color:#a8bfd8}
+.soon-box b{color:var(--gold);font-family:'Share Tech Mono',monospace;letter-spacing:.1em;font-weight:400}
+footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size:14px;color:var(--text-dim)}
+
+@media(max-width:600px){
+  nav{padding:12px 16px}.wrap{padding:24px 16px 48px}
+  .nav-links .hide-sm{display:none}
+  .row input{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">OASIS <span>WEB4</span> · SANDBOX</a>
+  <div class="nav-links">
+    <a href="index.html" class="nav-cta">WEB4 HOME</a>
+    <a href="index.html#hyperdrive" class="nav-cta hide-sm">HYPERDRIVE</a>
+    <a href="https://github.com/NextGenSoftwareUK/OASIS" target="_blank" rel="noopener" class="nav-cta hide-sm">GITHUB</a>
+  </div>
+</nav>
+
+<main class="wrap">
+  <div class="kicker">WEB4 · LIVE SANDBOX</div>
+  <h1>Play with <span>WEB4</span></h1>
+  <p class="lead">Everything here runs against the real WEB4 API: no mock data, no simulations. Sign in with your OASIS avatar to see HyperDrive's live state. COSMIC ORM, CQL and the live failover demos are being added stage by stage.</p>
+
+  <section class="card" aria-labelledby="signin-h">
+    <h2 id="signin-h">Sign in</h2>
+    <div class="row">
+      <select id="env" aria-label="WEB4 environment">
+        <option value="https://api.web4.oasisomniverse.one">Production API</option>
+        <option value="https://dev.api.web4.oasisomniverse.one">Development API</option>
+      </select>
+      <input id="auth-user" placeholder="Avatar username or email" autocomplete="username" aria-label="Username">
+      <input id="auth-pass" type="password" placeholder="Password" autocomplete="current-password" aria-label="Password">
+      <button id="auth-btn">SIGN IN</button>
+      <button id="signout-btn" class="ghost" hidden>SIGN OUT</button>
+    </div>
+    <p class="note" id="auth-note">Your password goes only to the WEB4 API and is never stored. The session token lives only in this page's memory. No avatar yet? <a href="https://oportal.oasisomniverse.one" target="_blank" rel="noopener">Create one in the OPORTAL</a>.</p>
+  </section>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-tab="hyperdrive" role="tab">HyperDrive Live</button>
+    <button class="tab" data-tab="cql" role="tab">CQL Playground<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="failover" role="tab">Failover &amp; Replication<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="ask" role="tab">Ask Your Data<span class="soon">SOON</span></button>
+  </div>
+
+  <!-- HyperDrive Live -->
+  <section class="panel active" id="panel-hyperdrive">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">HyperDrive status</h2>
+        <div class="row">
+          <label class="mono" style="font-size:12px;color:#a8bfd8"><input type="checkbox" id="auto" style="min-width:0;margin-right:6px">Auto-refresh (10 s)</label>
+          <button id="refresh-btn" disabled>REFRESH</button>
+        </div>
+      </div>
+      <p class="note" id="hd-note">Sign in to load live HyperDrive state.</p>
+      <div class="grid" id="hd-stats" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Providers by role</h2>
+      <div class="lists" id="hd-lists"><p class="empty">No data yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Load balancing: provider performance</h2>
+      <p class="note" style="margin:0 0 10px">Live metrics HyperDrive uses to pick providers. <span id="best-note"></span></p>
+      <div class="table-wrap" id="hd-metrics"><p class="empty">No data yet.</p></div>
+    </div>
+
+    <div class="card">
+      <h2>Latest HyperDrive decisions</h2>
+      <p class="note" style="margin:0 0 10px">The most recent provider selection, failover and replication, as reported by the API.</p>
+      <div id="hd-diag"><p class="empty">No data yet.</p></div>
+    </div>
+  </section>
+
+  <section class="panel" id="panel-cql">
+    <div class="soon-box"><b>COMING NEXT · STAGE 3</b><p>Write CQL and run it live on SQLite (relational), MongoDB (document) and Neo4j (graph), side by side, with presets from the COSMIC CQL demo: filters, ordering, paging, projections, aggregates, child loading and federation across all three.</p></div>
+  </section>
+  <section class="panel" id="panel-failover">
+    <div class="soon-box"><b>COMING NEXT · STAGE 4</b><p>Take a provider offline in a dedicated sandbox and watch HyperDrive fail over reads and writes, replicate data and catch up when the provider comes back. Real failover, not a simulation.</p></div>
+  </section>
+  <section class="panel" id="panel-cosmic">
+    <div class="soon-box"><b>COMING NEXT</b><p>The same COSMIC ORM operation as C# SDK code and as an HTTP request, side by side, with a Run button for the HTTP form.</p></div>
+  </section>
+  <section class="panel" id="panel-ask">
+    <div class="soon-box"><b>FLAGSHIP · COMING LATER</b><p>Ask a question in plain English across your Web2, Web3 and app data. AI writes a read-only, permission-checked CQL plan, WEB4 runs it across providers, and an Explain panel shows exactly where every answer came from.</p></div>
+  </section>
+</main>
+
+<footer>
+  OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
+</footer>
+
+<script>
+const $ = id => document.getElementById(id);
+let jwt = null;
+let timer = null;
+
+function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function base(){return $('env').value}
+function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + t.dataset.tab));
+}));
+
+// Auth: same WEB4 flow as the WEB6 sandbox.
+async function signIn(){
+  const user = $('auth-user').value.trim(), pass = $('auth-pass');
+  if (!user || !pass.value){ setNote($('auth-note'), 'Enter your username and password.', 'err'); return; }
+  $('auth-btn').disabled = true;
+  try {
+    const response = await fetch(`${base()}/api/avatar/authenticate`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify({username:user, password:pass.value})
+    });
+    const data = await response.json().catch(() => null);
+    const authResult = data?.result, avatar = authResult?.result;
+    if (!response.ok || authResult?.isError || !avatar?.jwtToken)
+      throw new Error(authResult?.message || data?.message || `Sign-in failed with HTTP ${response.status}`);
+    jwt = avatar.jwtToken;
+    setNote($('auth-note'), `Signed in as ${avatar.username || user}.`, 'ok');
+    $('signout-btn').hidden = false; $('refresh-btn').disabled = false;
+    await refresh();
+  } catch (e) {
+    setNote($('auth-note'), 'Sign-in failed: ' + e.message, 'err');
+  } finally {
+    pass.value = ''; $('auth-btn').disabled = false;
+  }
+}
+function signOut(){
+  jwt = null; stopAuto(); $('auto').checked = false;
+  $('signout-btn').hidden = true; $('refresh-btn').disabled = true;
+  setNote($('auth-note'), 'Signed out.');
+  setNote($('hd-note'), 'Sign in to load live HyperDrive state.');
+}
+$('auth-btn').addEventListener('click', signIn);
+$('signout-btn').addEventListener('click', signOut);
+$('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
+$('env').addEventListener('change', () => { if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); } });
+
+async function api(path){
+  const response = await fetch(`${base()}/api/hyperdrive/${path}`, {headers:{'Accept':'application/json','Authorization':'Bearer ' + jwt}});
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data || data.isError)
+    throw new Error(data?.message || `HTTP ${response.status}`);
+  return data.result;
+}
+
+// Load all panels; each panel reports its own failure rather than hiding it.
+async function refresh(){
+  if (!jwt) return;
+  $('refresh-btn').disabled = true;
+  setNote($('hd-note'), 'Loading…');
+  const [status, metrics, connections, best] = await Promise.allSettled([api('status'), api('metrics'), api('connections'), api('best-provider')]);
+  if (status.status === 'fulfilled') { renderStatus(status.value); setNote($('hd-note'), 'Live · updated ' + new Date().toLocaleTimeString(), 'ok'); }
+  else setNote($('hd-note'), 'Could not load status: ' + status.reason.message, 'err');
+  renderMetrics(metrics, connections, best);
+  $('refresh-btn').disabled = false;
+}
+$('refresh-btn').addEventListener('click', refresh);
+function stopAuto(){ if (timer) { clearInterval(timer); timer = null; } }
+$('auto').addEventListener('change', e => { stopAuto(); if (e.target.checked) timer = setInterval(refresh, 10000); });
+
+function flag(v){ return `<span class="${v ? 'on' : 'off'}">${v ? 'ON' : 'OFF'}</span>`; }
+function stat(k, v){ return `<div class="stat"><div class="k">${esc(k)}</div><div class="v">${v}</div></div>`; }
+
+function renderStatus(s){
+  $('hd-stats').innerHTML = [
+    stat('Mode', esc(s.mode)),
+    stat('HyperDrive', flag(s.isEnabled)),
+    stat('Auto-failover', flag(s.autoFailoverEnabled)),
+    stat('Auto-replication', flag(s.autoReplicationEnabled)),
+    stat('Auto-load-balancing', flag(s.autoLoadBalancingEnabled)),
+    stat('Strategy', esc(s.defaultStrategy)),
+    stat('Active / registered', `${esc(s.activeProviders)} / ${esc(s.totalProviders)}`),
+    stat('Config source', esc(s.effectiveConfigurationSource || '—'))
+  ].join('');
+  const list = (title, items) => `<div><div class="list-title">${esc(title)} (${(items||[]).length})</div>` +
+    ((items && items.length) ? `<div class="chips">${items.map(p => `<span class="chip">${esc(p)}</span>`).join('')}</div>` : '<p class="empty">None</p>') + '</div>';
+  $('hd-lists').innerHTML = list('Failover order', s.failoverProviders) + list('Replicating to', s.replicationProviders) +
+    list('Load-balancing pool', s.loadBalancingProviders) + list('Registered', s.enabledProviders);
+  const diag = [['Last provider selection', s.lastProviderSelection], ['Last failover', s.lastFailover], ['Last replication', s.lastReplication]];
+  $('hd-diag').innerHTML = diag.map(([t, d]) => d
+    ? `<details><summary>${esc(t)}</summary><pre>${esc(JSON.stringify(d, null, 2))}</pre></details>`
+    : `<p class="empty">${esc(t)}: none recorded yet.</p>`).join('');
+}
+
+function renderMetrics(metrics, connections, best){
+  const bestName = best.status === 'fulfilled' ? best.value : null;
+  $('best-note').textContent = bestName ? `Current best provider: ${bestName}.` : (best.status === 'rejected' ? `Best provider unavailable: ${best.reason.message}` : '');
+  if (metrics.status === 'rejected') { $('hd-metrics').innerHTML = `<p class="note err">Could not load metrics: ${esc(metrics.reason.message)}</p>`; return; }
+  const conns = connections.status === 'fulfilled' ? (connections.value || {}) : {};
+  const rows = Object.entries(metrics.value || {});
+  if (!rows.length) { $('hd-metrics').innerHTML = '<p class="empty">No provider metrics recorded yet. They appear once providers handle requests.</p>'; return; }
+  const n = (v, d=1) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(d) : '—';
+  $('hd-metrics').innerHTML = `<table><thead><tr><th>Provider</th><th class="num">Requests</th><th class="num">Failed</th><th class="num">Avg latency ms</th><th class="num">Uptime %</th><th class="num">Connections</th><th class="num">Perf score</th></tr></thead><tbody>` +
+    rows.map(([name, m]) => `<tr><td>${name === bestName ? `<span class="chip best">${esc(name)} · BEST</span>` : esc(name)}</td>
+      <td class="num">${esc(m.totalRequests ?? '—')}</td><td class="num">${esc(m.failedRequests ?? '—')}</td>
+      <td class="num">${n(m.averageLatency)}</td><td class="num">${n(m.uptimePercentage)}</td>
+      <td class="num">${esc(conns[name] ?? m.activeConnections ?? '—')}</td><td class="num">${n(m.performanceScore, 2)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+</script>
+</body>
+</html>
