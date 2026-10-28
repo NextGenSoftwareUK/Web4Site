@@ -101,9 +101,8 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <h2 id="signin-h">Start</h2>
     <div class="row">
       <select id="env" aria-label="WEB4 environment">
-        <option value="https://web4-sandbox-api-dev.up.railway.app">Sandbox API (try everything)</option>
+        <option value="https://dev.api.web4.oasisomniverse.one">Development API · sandbox (try everything)</option>
         <option value="https://api.web4.oasisomniverse.one">Production API (view only)</option>
-        <option value="https://dev.api.web4.oasisomniverse.one">Development API</option>
       </select>
       <button id="demo-btn">START DEMO SESSION</button>
       <input id="auth-user" placeholder="Avatar username or email" autocomplete="username" aria-label="Username">
@@ -118,6 +117,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <button class="tab active" data-tab="hyperdrive" role="tab">HyperDrive Live</button>
     <button class="tab" data-tab="cql" role="tab">CQL Playground<span class="soon">SOON</span></button>
     <button class="tab" data-tab="failover" role="tab">Failover &amp; Replication</button>
+    <button class="tab" data-tab="import" role="tab">Import Your Data<span class="soon" style="background:var(--green)">NEW</span></button>
     <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM<span class="soon">SOON</span></button>
     <button class="tab" data-tab="ask" role="tab">Ask Your Data<span class="soon">SOON</span></button>
   </div>
@@ -170,7 +170,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     </div>
     <div class="card">
       <h2>2 · Take a provider offline</h2>
-      <p class="note" style="margin:0 0 12px">Pick a provider and take it down for 60 seconds (it always comes back on its own). Then load your holon normally and watch HyperDrive fail over.</p>
+      <p class="note" style="margin:0 0 12px">Pick a provider and take it down for 60 seconds, for your requests only: nobody else using WEB4 is affected, and it always comes back on its own. Then load your holon normally and watch HyperDrive fail over.</p>
       <div class="row">
         <select id="fo-provider" aria-label="Provider to take offline">
           <option>MongoDBOASIS</option><option>SQLLiteDBOASIS</option><option>Neo4jOASIS</option>
@@ -186,6 +186,37 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <div class="row"><button id="fo-load" disabled>LOAD MY HOLON</button></div>
       <p class="note" id="fo-load-note"></p>
       <div id="fo-trace"></div>
+    </div>
+  </section>
+  <section class="panel" id="panel-import">
+    <div class="card">
+      <h2>1 · Data from an app that has never heard of OASIS</h2>
+      <p class="note" style="margin:0 0 12px">The sandbox has a separate MongoDB database belonging to a pretend online shop: customers, products and orders, each keyed its own way. Create (or reset) it, then turn it into OASIS holons.</p>
+      <div class="row"><button id="im-seed" disabled>CREATE DEMO SHOP DATA</button></div>
+      <p class="note" id="im-seed-note"></p>
+    </div>
+    <div class="card">
+      <h2>2 · Pick a source and preview the mapping</h2>
+      <p class="note" style="margin:0 0 12px">No mapping is needed: OASIS names each holon from its <span class="mono">name</span>/<span class="mono">title</span> field, takes the description from <span class="mono">summary</span>/<span class="mono">description</span>, and keeps every other field as metadata. Override only what you want.</p>
+      <div class="row">
+        <select id="im-source" aria-label="Native source" disabled><option>Load sources first</option></select>
+        <button id="im-sources" class="ghost" disabled>LIST SOURCES</button>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input id="im-namefield" placeholder="Name field (optional, e.g. city)" aria-label="Name field override" style="flex:1 1 200px">
+        <input id="im-exclude" placeholder="Fields to leave out, comma separated" aria-label="Excluded fields" style="flex:1 1 240px">
+        <button id="im-preview" disabled>PREVIEW</button>
+      </div>
+      <p class="note" id="im-preview-note"></p>
+      <div id="im-previews"></div>
+    </div>
+    <div class="card">
+      <h2>3 · Import it, then import it again</h2>
+      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Imported holons are ordinary OASIS data: they replicate to every provider.</p>
+      <div class="row"><button id="im-import" disabled>IMPORT SOURCE</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
+      <p class="note" id="im-import-note"></p>
+      <div class="table-wrap" id="im-report"></div>
+      <div class="table-wrap" id="im-copies"></div>
     </div>
   </section>
   <section class="panel" id="panel-cosmic">
@@ -246,13 +277,15 @@ function signOut(){
 }
 $('auth-btn').addEventListener('click', signIn);
 
-const SANDBOX = 'https://web4-sandbox-api-dev.up.railway.app';
+// The sandbox controls run on the shared dev WEB4 node; every control is scoped to your own demo avatar.
+const SANDBOX = 'https://dev.api.web4.oasisomniverse.one';
 const PROVIDERS = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
 function isSandbox(){ return base() === SANDBOX; }
 function onSignedIn(name){
   setNote($('auth-note'), `Signed in as ${name}.`, 'ok');
   $('signout-btn').hidden = false; $('refresh-btn').disabled = false;
-  ['fo-save','fo-offline','fo-online'].forEach(id => $(id).disabled = !isSandbox());
+  ['fo-save','fo-offline','fo-online','im-seed','im-sources'].forEach(id => $(id).disabled = !isSandbox());
+  if (!isSandbox()) setNote($('im-seed-note'), 'The import demo runs on the Sandbox API. On other environments native import needs a Wizard avatar.');
   if (!isSandbox()) setNote($('fo-save-note'), 'Failover and replication demos run on the Sandbox API only.');
   refresh(); refreshFaults();
 }
@@ -289,7 +322,7 @@ let holonId = null;
 $('fo-save').addEventListener('click', async () => {
   $('fo-save').disabled = true; setNote($('fo-save-note'), 'Saving and replicating…'); $('fo-copies').innerHTML = '';
   try {
-    const r = await call('POST', 'data/save-holon', {holon:{name:$('fo-name').value || 'My first holon', description:'Saved from the WEB4 sandbox'}, autoReplicationMode:'ON', waitForAutoReplicationResult:true, saveChildren:false});
+    const r = await call('POST', 'data/save-holon', {operationId: crypto.randomUUID(), holon:{name:$('fo-name').value || 'My first holon', description:'Saved from the WEB4 sandbox'}, autoReplicationMode:'ON', waitForAutoReplicationResult:true, saveChildren:false});
     holonId = r.result?.id;
     setNote($('fo-save-note'), `Saved holon ${holonId}. Reading it back from each provider…`, 'ok');
     $('fo-load').disabled = false;
@@ -299,7 +332,8 @@ $('fo-save').addEventListener('click', async () => {
       const t0 = performance.now();
       try {
         const c = await call('POST', 'data/load-holon', {id:holonId, providerType:p, autoFailOverMode:'OFF', loadChildren:false});
-        rows.push([p, true, c.result?.name, Math.round(performance.now() - t0)]);
+        // "Not found" is not an error in WEB4, so the copy is only there when a holon comes back.
+        rows.push([p, !!c.result, c.result ? c.result.name : (c.message || 'Not found on this provider'), Math.round(performance.now() - t0)]);
       } catch (e) { rows.push([p, false, e.message, Math.round(performance.now() - t0)]); }
     }
     $('fo-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th><th class="num">ms</th></tr></thead><tbody>' +
@@ -343,7 +377,7 @@ $('fo-load').addEventListener('click', async () => {
     const ms = Math.round(performance.now() - t0);
     const after = (await call('GET', 'sandbox/refusals')).result || {};
     const status = await api('status');
-    setNote($('fo-load-note'), `Loaded "${r.result?.name}" in ${ms} ms.`, 'ok');
+    setNote($('fo-load-note'), r.result ? `Loaded "${r.result.name}" in ${ms} ms.` : `No copy was found on the provider HyperDrive failed over to (${ms} ms): ${r.message || 'not found'}.`, r.result ? 'ok' : 'err');
     const f = status.lastFailover, sel = status.lastProviderSelection, msgs = r.innerMessages || [];
     const refused = Object.entries(after).map(([p, n]) => [p, n - (before[p] || 0)]).filter(([, n]) => n > 0);
     $('fo-trace').innerHTML =
@@ -356,6 +390,67 @@ $('fo-load').addEventListener('click', async () => {
   } catch (e) { setNote($('fo-load-note'), 'Load failed: ' + e.message, 'err'); }
   finally { $('fo-load').disabled = false; }
 });
+// Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
+const NATIVE = 'MongoDBOASIS';
+let firstImportedId = null;
+function mapping(){
+  const m = {sourceName: $('im-source').value};
+  const name = $('im-namefield').value.trim(); if (name) m.nameField = name;
+  const ex = $('im-exclude').value.split(',').map(s => s.trim()).filter(Boolean); if (ex.length) m.excludedFields = ex;
+  return m;
+}
+async function busy(btn, note, msg, work){
+  btn.disabled = true; setNote(note, msg);
+  try { await work(); } catch (e) { setNote(note, e.message, 'err'); } finally { btn.disabled = false; }
+}
+$('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'), 'Writing the demo shop…', async () => {
+  const r = await call('POST', 'sandbox/native-demo');
+  setNote($('im-seed-note'), `${r.message} ${Object.entries(r.result || {}).map(([c, n]) => `${n} ${c}`).join(', ')}.`, 'ok');
+  await loadSources();
+}));
+async function loadSources(){
+  const r = await call('GET', `native-data/${NATIVE}/sources`);
+  const sources = r.result || [];
+  $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
+  const ok = sources.length > 0;
+  ['im-source','im-preview','im-import'].forEach(id => $(id).disabled = !ok);
+  setNote($('im-preview-note'), ok ? `${sources.length} sources found in the shop database.` : 'Create the demo shop data first.', ok ? 'ok' : '');
+}
+$('im-sources').addEventListener('click', () => busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources));
+$('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-preview-note'), 'Reading native records…', async () => {
+  const r = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent($('im-source').value)}/preview?count=3`, mapping());
+  setNote($('im-preview-note'), r.message, 'ok');
+  $('im-previews').innerHTML = (r.result || []).map(p => `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px">
+      <div><div class="list-title">NATIVE RECORD · key ${esc(p.native.nativeKey)}</div><pre>${esc(JSON.stringify(p.native.fields, null, 2))}</pre></div>
+      <div><div class="list-title">OASIS HOLON · ${esc(p.holonType)}</div>${p.error ? `<p class="note err">${esc(p.error)}</p>` :
+        `<pre>${esc(JSON.stringify({id: p.holonId, name: p.holonName, description: p.holonDescription, metaData: p.holonMetaData}, null, 2))}</pre>`}</div></div>`).join('');
+}));
+$('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
+  const source = $('im-source').value;
+  const t0 = performance.now();
+  const r = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent(source)}/import`, {mapping: mapping(), pageSize: 50, maximumRecords: 500});
+  const rep = r.result, ms = Math.round(performance.now() - t0);
+  setNote($('im-import-note'), `${r.message} (${ms} ms)` + (rep.holonsCreated === 0 && rep.holonsUpdated + rep.holonsUnchanged > 0 ? ' Same holons, no duplicates.' : ''), rep.recordsFailed ? 'err' : 'ok');
+  $('im-report').innerHTML = '<table><thead><tr><th>Source</th><th class="num">Read</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Unchanged</th><th class="num">Failed</th></tr></thead><tbody>' +
+    `<tr><td>${esc(rep.sourceName)}</td><td class="num">${rep.recordsRead}</td><td class="num">${rep.holonsCreated}</td><td class="num">${rep.holonsUpdated}</td><td class="num">${rep.holonsUnchanged}</td><td class="num">${rep.recordsFailed}</td></tr></tbody></table>` +
+    (rep.failures?.length ? `<pre>${esc(rep.failures.join('\n'))}</pre>` : '');
+  const preview = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent(source)}/preview?count=1`, mapping());
+  firstImportedId = preview.result?.[0]?.holonId || null;
+  $('im-verify').disabled = !firstImportedId;
+}));
+$('im-verify').addEventListener('click', () => busy($('im-verify'), $('im-import-note'), 'Reading the holon from each provider…', async () => {
+  const rows = [];
+  for (const p of PROVIDERS) {
+    try {
+      const c = await call('POST', 'data/load-holon', {id: firstImportedId, providerType: p, autoFailOverMode: 'OFF', loadChildren: false});
+      rows.push([p, !!c.result, c.result ? c.result.name : (c.message || 'Not found on this provider')]);
+    } catch (e) { rows.push([p, false, e.message]); }
+  }
+  setNote($('im-import-note'), `Holon ${firstImportedId}, imported from MongoDB's shop database, read from each provider separately:`, 'ok');
+  $('im-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th></tr></thead><tbody>' +
+    rows.map(([p, ok, d]) => `<tr><td>${esc(p)}</td><td class="${ok ? 'on' : 'off'}">${ok ? 'STORED' : 'MISSING'}</td><td>${esc(d)}</td></tr>`).join('') + '</tbody></table>';
+}));
+
 $('signout-btn').addEventListener('click', signOut);
 $('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
 $('env').addEventListener('change', () => { if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); } });
