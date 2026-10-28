@@ -118,7 +118,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <button class="tab" data-tab="cql" role="tab">CQL Playground<span class="soon">SOON</span></button>
     <button class="tab" data-tab="failover" role="tab">Failover &amp; Replication</button>
     <button class="tab" data-tab="import" role="tab">Import Your Data<span class="soon" style="background:var(--green)">NEW</span></button>
-    <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM</button>
     <button class="tab" data-tab="ask" role="tab">Ask Your Data<span class="soon">SOON</span></button>
   </div>
 
@@ -221,7 +221,11 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     </div>
   </section>
   <section class="panel" id="panel-cosmic">
-    <div class="soon-box"><b>COMING NEXT</b><p>The same COSMIC ORM operation as C# SDK code and as an HTTP request, side by side, with a Run button for the HTTP form.</p></div>
+    <div class="card">
+      <h2>One object model, any database</h2>
+      <p class="note" style="margin:0 0 12px">COSMIC ORM works with holons: objects with children, metadata and identity that HyperDrive stores on any provider. Each step shows the C# SDK call and the equivalent WEB4 HTTP request. <b>Run</b> sends the HTTP request live, as your demo avatar, and shows the real response.</p>
+      <div id="orm-steps"></div>
+    </div>
   </section>
   <section class="panel" id="panel-ask">
     <div class="soon-box"><b>FLAGSHIP · COMING LATER</b><p>Ask a question in plain English across your Web2, Web3 and app data. AI writes a read-only, permission-checked CQL plan, WEB4 runs it across providers, and an Explain panel shows exactly where every answer came from.</p></div>
@@ -288,7 +292,7 @@ function onSignedIn(name){
   ['fo-save','fo-offline','fo-online','im-seed','im-sources'].forEach(id => $(id).disabled = !isSandbox());
   if (!isSandbox()) setNote($('im-seed-note'), 'The import demo runs on the Sandbox API. On other environments native import needs a Wizard avatar.');
   if (!isSandbox()) setNote($('fo-save-note'), 'Failover and replication demos run on the Sandbox API only.');
-  refresh(); refreshFaults();
+  refresh(); refreshFaults(); renderOrm();
 }
 
 // Sandbox demo session: the sandbox creates a throwaway verified avatar and signs it in.
@@ -459,6 +463,57 @@ $('im-verify').addEventListener('click', () => busy($('im-verify'), $('im-import
   $('im-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th></tr></thead><tbody>' +
     rows.map(([p, ok, d]) => `<tr><td>${esc(p)}</td><td class="${ok ? 'on' : 'off'}">${ok ? 'STORED' : 'MISSING'}</td><td>${esc(d)}</td></tr>`).join('') + '</tbody></table>';
 }));
+
+// COSMIC ORM · the same operation as C# SDK code and as an HTTP request, run live
+const orm = {parentId: null, tag: Math.random().toString(16).slice(2, 10)};
+const ORM_STEPS = [
+  {title: '1 · Save a holon graph (parent + children)',
+   csharp: () => `var shelf = new Holon { Name = "Bookshelf", MetaData = { ["demoTag"] = "${orm.tag}" } };
+shelf.Children.Add(new Holon { Name = "Dune", MetaData = { ["author"] = "Herbert" } });
+shelf.Children.Add(new Holon { Name = "Neuromancer", MetaData = { ["author"] = "Gibson" } });
+
+// One owned write: HyperDrive picks the provider, replicates and records a stable operation id.
+var saved = await holonManager.SaveOwnedHolonAsync(shelf, avatarId,
+    new CosmicWriteOptions(operationId: Guid.NewGuid()), saveChildren: true);`,
+   path: 'data/save-holon',
+   body: () => ({operationId: crypto.randomUUID(), saveChildren: true, holon: {name: 'Bookshelf', description: 'A parent holon', metaData: {demoTag: orm.tag},
+     children: [{name: 'Dune', metaData: {author: 'Herbert'}}, {name: 'Neuromancer', metaData: {author: 'Gibson'}}]}}),
+   after: r => { orm.parentId = r.result?.id; }},
+  {title: '2 · Load it back with its children',
+   csharp: () => `var shelf = await holonManager.LoadHolonAsync(${orm.parentId ? `Guid.Parse("${orm.parentId}")` : 'shelfId'}, loadChildren: true);`,
+   path: 'data/load-holon', needsParent: true,
+   body: () => ({id: orm.parentId, loadChildren: true})},
+  {title: '3 · Query the children of a parent',
+   csharp: () => `var books = await holonManager.LoadHolonsForParentAsync(${orm.parentId ? `Guid.Parse("${orm.parentId}")` : 'shelfId'}, HolonType.All);`,
+   path: 'data/load-holons-for-parent', needsParent: true,
+   body: () => ({id: orm.parentId, holonType: 'All'})},
+  {title: '4 · Find a holon by its metadata',
+   csharp: () => `var shelf = await holonManager.LoadHolonByMetaDataAsync("demoTag", "${orm.tag}");`,
+   path: 'data/load-holon-by-metadata', needsParent: true,
+   body: () => ({metaKey: 'demoTag', metaValue: orm.tag})}
+];
+function renderOrm(){
+  $('orm-steps').innerHTML = ORM_STEPS.map((step, i) => `<div style="margin-top:${i ? 22 : 0}px">
+      <div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(step.title)}</h3>
+        <button id="orm-run-${i}" ${!jwt || (step.needsParent && !orm.parentId) ? 'disabled' : ''}>RUN</button></div>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-top:8px">
+        <div><div class="list-title">C# SDK</div><pre>${esc(step.csharp())}</pre></div>
+        <div><div class="list-title">HTTP · POST /api/${esc(step.path)}</div><pre>${esc(JSON.stringify(step.body(), null, 2))}</pre></div></div>
+      <div id="orm-out-${i}"></div></div>`).join('') +
+    (!jwt ? '<p class="note">Start a demo session to run these.</p>' : '');
+  ORM_STEPS.forEach((step, i) => { const b = $(`orm-run-${i}`); if (b) b.addEventListener('click', () => runOrm(i)); });
+}
+async function runOrm(i){
+  const step = ORM_STEPS[i], out = $(`orm-out-${i}`), t0 = performance.now();
+  out.innerHTML = '<p class="note">Running…</p>';
+  try {
+    const r = await call('POST', step.path, step.body());
+    step.after?.(r);
+    out.innerHTML = `<p class="note ok">${esc(r.message || 'OK')} · ${Math.round(performance.now() - t0)} ms</p><details open><summary>Response</summary><pre>${esc(JSON.stringify(r.result, null, 2).slice(0, 4000))}</pre></details>`;
+    if (step.after) { const keep = out.innerHTML; renderOrm(); $(`orm-out-${i}`).innerHTML = keep; }
+  } catch (e) { out.innerHTML = `<p class="note err">${esc(e.message)}</p>`; }
+}
+renderOrm();
 
 $('signout-btn').addEventListener('click', signOut);
 $('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
