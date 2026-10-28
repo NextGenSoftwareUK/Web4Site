@@ -200,6 +200,9 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>2 · Pick a source and preview the mapping</h2>
       <p class="note" style="margin:0 0 12px">No mapping is needed: OASIS names each holon from its <span class="mono">name</span>/<span class="mono">title</span> field, takes the description from <span class="mono">summary</span>/<span class="mono">description</span>, and keeps every other field as metadata. Override only what you want.</p>
       <div class="row">
+        <select id="im-provider" aria-label="Database to import from">
+          <option value="MongoDBOASIS">MongoDB · shop database</option><option value="SQLLiteDBOASIS">SQLite · suppliers file</option><option value="Neo4jOASIS">Neo4j · loyalty graph</option>
+        </select>
         <select id="im-source" aria-label="Native source" disabled><option>Load sources first</option></select>
         <button id="im-sources" class="ghost" disabled>LIST SOURCES</button>
       </div>
@@ -207,6 +210,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <input id="im-namefield" placeholder="Name field (optional, e.g. city)" aria-label="Name field override" style="flex:1 1 200px">
         <input id="im-exclude" placeholder="Fields to leave out, comma separated" aria-label="Excluded fields" style="flex:1 1 240px">
         <button id="im-preview" disabled>PREVIEW</button>
+        <button id="im-save-mapping" class="ghost" disabled>SAVE MAPPING</button>
       </div>
       <p class="note" id="im-preview-note"></p>
       <div id="im-previews"></div>
@@ -404,8 +408,13 @@ $('fo-load').addEventListener('click', async () => {
   finally { $('fo-load').disabled = false; }
 });
 // Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
-const NATIVE = 'MongoDBOASIS';
+const native = () => $('im-provider').value;
 let firstImportedId = null;
+// The overrides typed in step 2, or null so the server uses this avatar's saved mapping (or the naming convention).
+function typedMapping(){
+  const name = $('im-namefield').value.trim(), ex = $('im-exclude').value.split(',').map(s => s.trim()).filter(Boolean);
+  return name || ex.length ? mapping() : null;
+}
 function mapping(){
   const m = {sourceName: $('im-source').value};
   const name = $('im-namefield').value.trim(); if (name) m.nameField = name;
@@ -422,16 +431,21 @@ $('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'
   await loadSources();
 }));
 async function loadSources(){
-  const r = await call('GET', `native-data/${NATIVE}/sources`);
+  const r = await call('GET', `native-data/${native()}/sources`);
   const sources = r.result || [];
   $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
   const ok = sources.length > 0;
-  ['im-source','im-preview','im-import'].forEach(id => $(id).disabled = !ok);
+  ['im-source','im-preview','im-import','im-save-mapping'].forEach(id => $(id).disabled = !ok);
   setNote($('im-preview-note'), ok ? `${sources.length} sources found in the shop database.` : 'Create the demo shop data first.', ok ? 'ok' : '');
 }
 $('im-sources').addEventListener('click', () => busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources));
+$('im-provider').addEventListener('change', () => { if (jwt && isSandbox()) busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources); });
+$('im-save-mapping').addEventListener('click', () => busy($('im-save-mapping'), $('im-preview-note'), 'Saving mapping…', async () => {
+  await call('PUT', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/mapping`, mapping());
+  setNote($('im-preview-note'), `Mapping saved for ${$('im-source').value}. Later previews and imports of it use it without you typing it again.`, 'ok');
+}));
 $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-preview-note'), 'Reading native records…', async () => {
-  const r = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent($('im-source').value)}/preview?count=3`, mapping());
+  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/preview?count=3`, typedMapping());
   setNote($('im-preview-note'), r.message, 'ok');
   $('im-previews').innerHTML = (r.result || []).map(p => `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px">
       <div><div class="list-title">NATIVE RECORD · key ${esc(p.native.nativeKey)}</div><pre>${esc(JSON.stringify(p.native.fields, null, 2))}</pre></div>
@@ -441,13 +455,13 @@ $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-prev
 $('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
   const source = $('im-source').value;
   const t0 = performance.now();
-  const r = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent(source)}/import`, {mapping: mapping(), pageSize: 50, maximumRecords: 500});
+  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/import`, {mapping: typedMapping(), pageSize: 50, maximumRecords: 500});
   const rep = r.result, ms = Math.round(performance.now() - t0);
   setNote($('im-import-note'), `${r.message} (${ms} ms)` + (rep.holonsCreated === 0 && rep.holonsUpdated + rep.holonsUnchanged > 0 ? ' Same holons, no duplicates.' : ''), rep.recordsFailed ? 'err' : 'ok');
   $('im-report').innerHTML = '<table><thead><tr><th>Source</th><th class="num">Read</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Unchanged</th><th class="num">Failed</th></tr></thead><tbody>' +
     `<tr><td>${esc(rep.sourceName)}</td><td class="num">${rep.recordsRead}</td><td class="num">${rep.holonsCreated}</td><td class="num">${rep.holonsUpdated}</td><td class="num">${rep.holonsUnchanged}</td><td class="num">${rep.recordsFailed}</td></tr></tbody></table>` +
     (rep.failures?.length ? `<pre>${esc(rep.failures.join('\n'))}</pre>` : '');
-  const preview = await call('POST', `native-data/${NATIVE}/sources/${encodeURIComponent(source)}/preview?count=1`, mapping());
+  const preview = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/preview?count=1`, typedMapping());
   firstImportedId = preview.result?.[0]?.holonId || null;
   $('im-verify').disabled = !firstImportedId;
 }));
@@ -459,7 +473,7 @@ $('im-verify').addEventListener('click', () => busy($('im-verify'), $('im-import
       rows.push([p, !!c.result, c.result ? c.result.name : (c.message || 'Not found on this provider')]);
     } catch (e) { rows.push([p, false, e.message]); }
   }
-  setNote($('im-import-note'), `Holon ${firstImportedId}, imported from MongoDB's shop database, read from each provider separately:`, 'ok');
+  setNote($('im-import-note'), `Holon ${firstImportedId}, imported from ${native()}, read from each provider separately:`, 'ok');
   $('im-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th></tr></thead><tbody>' +
     rows.map(([p, ok, d]) => `<tr><td>${esc(p)}</td><td class="${ok ? 'on' : 'off'}">${ok ? 'STORED' : 'MISSING'}</td><td>${esc(d)}</td></tr>`).join('') + '</tbody></table>';
 }));
