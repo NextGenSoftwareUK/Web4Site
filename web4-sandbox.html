@@ -204,14 +204,8 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       </div>
       <div id="im-own" hidden>
         <p class="note" style="margin:12px 0">Point OASIS at your own database and it becomes holons, with no setup on the server. Pick the database type in step 2, fill in how to reach it, then list its sources. The connection is used for your requests only: it is never stored or logged, and secrets are removed from error messages. Use a read-only user. Only public internet addresses are reachable; localhost and private networks are refused.</p>
-        <div class="row" id="im-own-uri-row">
-          <input id="im-c-uri" type="password" autocomplete="off" placeholder="Connection URI (mongodb+srv://… or neo4j+s://…)" aria-label="Connection URI" style="flex:1 1 360px">
-          <input id="im-c-database" placeholder="Database (optional for Neo4j)" aria-label="Database name" style="flex:1 1 200px">
-        </div>
-        <div class="row" id="im-own-auth-row" style="margin-top:10px">
-          <input id="im-c-username" autocomplete="off" placeholder="Username" aria-label="Neo4j username" style="flex:1 1 180px">
-          <input id="im-c-password" type="password" autocomplete="off" placeholder="Password" aria-label="Neo4j password" style="flex:1 1 180px">
-        </div>
+        <p class="note" id="im-own-help" style="margin:0 0 10px"></p>
+        <div class="row" id="im-own-fields"></div>
         <div class="row" id="im-own-file-row" style="margin-top:10px">
           <input id="im-c-file" type="file" accept=".db,.sqlite,.sqlite3,application/vnd.sqlite3,application/octet-stream" aria-label="SQLite database file">
           <span class="note" id="im-c-file-note">Choose a SQLite file (up to 8 MB). It is read in a private temporary copy that is deleted straight after.</span>
@@ -225,6 +219,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <div class="row">
         <select id="im-provider" aria-label="Database to import from">
           <option value="MongoDBOASIS">MongoDB</option><option value="SQLLiteDBOASIS">SQLite</option><option value="Neo4jOASIS">Neo4j</option>
+          <option value="AzureCosmosDBOASIS" data-own-only>Azure Cosmos DB</option><option value="SOLIDOASIS" data-own-only>SOLID Pod</option><option value="ActivityPubOASIS" data-own-only>ActivityPub (Mastodon)</option><option value="IPFSOASIS" data-own-only>IPFS</option><option value="SolanaOASIS" data-own-only>Solana</option>
         </select>
         <select id="im-source" aria-label="Native source" disabled><option>Load sources first</option></select>
         <button id="im-sources" class="ghost" disabled>LIST SOURCES</button>
@@ -437,39 +432,67 @@ let firstImportedId = null;
 let sqliteUpload = null; // {fileName, fileBase64} once a SQLite file is chosen
 
 const importMode = () => document.querySelector('input[name="im-mode"]:checked').value;
-// The user's own database settings for the chosen type, or null to use the demo shop on the server.
+// What each database type needs to reach the user's own system. `secret` fields are masked and never stored; `optional` ones may be left empty.
+const OWN_FIELDS = {
+  MongoDBOASIS: {help: 'A MongoDB or Atlas database. Use a read-only user.', fields: [
+    {key: 'uri', label: 'Connection URI (mongodb+srv://… or mongodb://…)', secret: true},
+    {key: 'database', label: 'Database name'}]},
+  Neo4jOASIS: {help: 'A Neo4j or AuraDB database. Every node label becomes a source unless you narrow it.', fields: [
+    {key: 'uri', label: 'Connection URI (neo4j+s://… or bolt+s://…)', secret: true},
+    {key: 'username', label: 'Username'}, {key: 'password', label: 'Password', secret: true},
+    {key: 'database', label: 'Database (optional)', optional: true}, {key: 'labels', label: 'Labels, comma separated (optional)', optional: true}]},
+  SQLLiteDBOASIS: {help: 'A SQLite file from your computer (up to 8 MB). Each table becomes a source.', file: true, fields: []},
+  AzureCosmosDBOASIS: {help: 'An Azure Cosmos DB (NoSQL) account. Each container becomes a source. Use a read-only key.', fields: [
+    {key: 'endpoint', label: 'Endpoint (https://…documents.azure.com:443/)'}, {key: 'key', label: 'Account key', secret: true},
+    {key: 'database', label: 'Database'}, {key: 'containers', label: 'Containers, comma separated (optional)', optional: true}]},
+  SOLIDOASIS: {help: 'A Solid Pod. Each container you list becomes a source and each resource inside it a record.', fields: [
+    {key: 'podUrl', label: 'Pod URL (https://you.solidcommunity.net/)'}, {key: 'token', label: 'Access token (optional for public data)', secret: true, optional: true},
+    {key: 'containers', label: 'Containers, e.g. public/notes/'}]},
+  ActivityPubOASIS: {help: 'Your own Mastodon-compatible account: your statuses, followers and following.', fields: [
+    {key: 'instanceUrl', label: 'Server (https://mastodon.social)'}, {key: 'accessToken', label: 'Access token', secret: true}]},
+  IPFSOASIS: {help: 'An IPFS node\'s HTTP API. Each directory you list becomes a source; its entries are the records.', fields: [
+    {key: 'apiUrl', label: 'Node API (https://ipfs.example.com:5001/)'}, {key: 'paths', label: 'Directories, e.g. /ipfs/Qm…'}]},
+  SolanaOASIS: {help: 'A Solana RPC node. Each program address you list becomes a source; the accounts it owns are the records.', fields: [
+    {key: 'rpcUrl', label: 'RPC node (https://…)'}, {key: 'programs', label: 'Program addresses, comma separated'}]}
+};
+const DEMO_TYPES = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
+let renderedFor = '';
+// The user's own system settings for the chosen type, or null to use the demo shop on the server.
 function connection(){
   if (importMode() !== 'own') return null;
-  const value = id => $(id).value.trim();
-  switch (native()) {
-    case 'MongoDBOASIS': {
-      if (!value('im-c-uri')) throw new Error('Enter your MongoDB connection URI.');
-      const c = {uri: value('im-c-uri')}; if (value('im-c-database')) c.database = value('im-c-database'); return c;
-    }
-    case 'Neo4jOASIS': {
-      if (!value('im-c-uri') || !value('im-c-username') || !value('im-c-password')) throw new Error('Enter the Neo4j URI, username and password.');
-      const c = {uri: value('im-c-uri'), username: value('im-c-username'), password: $('im-c-password').value};
-      if (value('im-c-database')) c.database = value('im-c-database'); return c;
-    }
-    default:
-      if (!sqliteUpload) throw new Error('Choose your SQLite file first.');
-      return sqliteUpload;
+  const spec = OWN_FIELDS[native()];
+  if (spec.file) {
+    if (!sqliteUpload) throw new Error('Choose your SQLite file first.');
+    return sqliteUpload;
   }
+  const c = {};
+  for (const f of spec.fields) {
+    const v = $('im-c-' + f.key).value;
+    if (v.trim()) c[f.key] = f.secret ? v : v.trim();
+    else if (!f.optional) throw new Error(`Enter ${f.label.replace(/ \(.*\)$/, '').toLowerCase()}.`);
+  }
+  return c;
 }
 // Shows only the fields the chosen database type needs, and enables the controls that can work right now.
 function syncImportControls(){
-  const own = importMode() === 'own', type = native();
+  const own = importMode() === 'own', select = $('im-provider');
+  [...select.options].forEach(o => { o.hidden = o.disabled = !own && !DEMO_TYPES.includes(o.value); });
+  if (!own && !DEMO_TYPES.includes(select.value)) select.value = DEMO_TYPES[0];
+  const type = native(), spec = OWN_FIELDS[type], key = own + ':' + type;
   $('im-demo').hidden = own; $('im-own').hidden = !own;
-  $('im-own-uri-row').hidden = type === 'SQLLiteDBOASIS';
-  $('im-own-auth-row').hidden = type !== 'Neo4jOASIS';
-  $('im-own-file-row').hidden = type !== 'SQLLiteDBOASIS';
-  $('im-c-database').hidden = type === 'SQLLiteDBOASIS';
-  $('im-c-database').placeholder = type === 'Neo4jOASIS' ? 'Database (optional)' : 'Database name';
-  $('im-c-uri').placeholder = type === 'Neo4jOASIS' ? 'Connection URI (neo4j+s://… or bolt+s://…)' : 'Connection URI (mongodb+srv://… or mongodb://…)';
+  if (own && renderedFor !== key) {
+    renderedFor = key;
+    $('im-own-help').textContent = spec.help;
+    $('im-own-fields').innerHTML = spec.fields.map(f =>
+      `<input id="im-c-${f.key}" type="${f.secret ? 'password' : 'text'}" autocomplete="off" placeholder="${esc(f.label)}" aria-label="${esc(f.label)}" style="flex:1 1 ${f.secret ? 300 : 220}px">`).join('');
+  }
+  $('im-own-fields').hidden = !spec.fields.length;
+  $('im-own-file-row').hidden = !spec.file;
   $('im-seed').disabled = !(jwt && isSandbox());
   $('im-sources').disabled = !(jwt && (own || isSandbox()));
 }
 document.querySelectorAll('input[name="im-mode"]').forEach(r => r.addEventListener('change', syncImportControls));
+syncImportControls();
 $('im-c-file').addEventListener('change', () => {
   const file = $('im-c-file').files[0]; sqliteUpload = null;
   if (!file) return;
@@ -513,7 +536,7 @@ async function loadSources(){
   setNote($('im-preview-note'), ok ? `${sources.length} sources found${conn ? ' in your database' : ' in the shop database'}.` : (conn ? 'Connected, but no sources were found.' : 'Create the demo shop data first.'), ok ? 'ok' : '');
 }
 $('im-sources').addEventListener('click', () => busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources));
-$('im-provider').addEventListener('change', () => { ['im-c-uri','im-c-database','im-c-username','im-c-password'].forEach(id => $(id).value = ''); syncImportControls(); if (jwt && isSandbox() && importMode() === 'demo') busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources); });
+$('im-provider').addEventListener('change', () => { syncImportControls(); if (jwt && isSandbox() && importMode() === 'demo') busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources); });
 $('im-save-mapping').addEventListener('click', () => busy($('im-save-mapping'), $('im-preview-note'), 'Saving mapping…', async () => {
   await call('PUT', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/mapping`, mapping());
   setNote($('im-preview-note'), `Mapping saved for ${$('im-source').value}. Later previews and imports of it use it without you typing it again.`, 'ok');
