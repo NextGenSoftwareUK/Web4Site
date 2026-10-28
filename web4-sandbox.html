@@ -34,6 +34,7 @@ h2{font-family:'Orbitron',sans-serif;font-size:15px;letter-spacing:.12em;color:v
 
 .card{background:var(--bg-card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:18px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+[hidden]{display:none!important}
 input,select{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--text);background:var(--bg-card2);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 12px;min-width:0}
 input:focus,select:focus{outline:none;border-color:var(--cyan)}
 button{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:.1em;color:#fff;background:linear-gradient(135deg,rgba(0,229,255,.25),rgba(0,229,255,.1));border:1px solid rgba(0,229,255,.5);border-radius:999px;padding:9px 18px;cursor:pointer}
@@ -192,16 +193,38 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   <section class="panel" id="panel-import">
     <div class="card">
       <h2>1 · Data from an app that has never heard of OASIS</h2>
-      <p class="note" style="margin:0 0 12px">The sandbox has a separate MongoDB database belonging to a pretend online shop: customers, products and orders, each keyed its own way. Create (or reset) it, then turn it into OASIS holons.</p>
-      <div class="row"><button id="im-seed" disabled>CREATE DEMO SHOP DATA</button></div>
-      <p class="note" id="im-seed-note"></p>
+      <div class="row" role="group" aria-label="Where the data lives">
+        <label><input type="radio" name="im-mode" value="demo" checked> Try the demo shop</label>
+        <label><input type="radio" name="im-mode" value="own"> Import my own database</label>
+      </div>
+      <div id="im-demo">
+        <p class="note" style="margin:12px 0">The sandbox has a pretend online shop in MongoDB, SQLite and Neo4j: customers, products, suppliers and loyalty members, each keyed its own way. Create (or reset) it, then turn it into OASIS holons.</p>
+        <div class="row"><button id="im-seed" disabled>CREATE DEMO SHOP DATA</button></div>
+        <p class="note" id="im-seed-note"></p>
+      </div>
+      <div id="im-own" hidden>
+        <p class="note" style="margin:12px 0">Point OASIS at your own database and it becomes holons, with no setup on the server. Pick the database type in step 2, fill in how to reach it, then list its sources. The connection is used for your requests only: it is never stored or logged, and secrets are removed from error messages. Use a read-only user. Only public internet addresses are reachable; localhost and private networks are refused.</p>
+        <div class="row" id="im-own-uri-row">
+          <input id="im-c-uri" type="password" autocomplete="off" placeholder="Connection URI (mongodb+srv://… or neo4j+s://…)" aria-label="Connection URI" style="flex:1 1 360px">
+          <input id="im-c-database" placeholder="Database (optional for Neo4j)" aria-label="Database name" style="flex:1 1 200px">
+        </div>
+        <div class="row" id="im-own-auth-row" style="margin-top:10px">
+          <input id="im-c-username" autocomplete="off" placeholder="Username" aria-label="Neo4j username" style="flex:1 1 180px">
+          <input id="im-c-password" type="password" autocomplete="off" placeholder="Password" aria-label="Neo4j password" style="flex:1 1 180px">
+        </div>
+        <div class="row" id="im-own-file-row" style="margin-top:10px">
+          <input id="im-c-file" type="file" accept=".db,.sqlite,.sqlite3,application/vnd.sqlite3,application/octet-stream" aria-label="SQLite database file">
+          <span class="note" id="im-c-file-note">Choose a SQLite file (up to 8 MB). It is read in a private temporary copy that is deleted straight after.</span>
+        </div>
+        <p class="note" id="im-own-note"></p>
+      </div>
     </div>
     <div class="card">
       <h2>2 · Pick a source and preview the mapping</h2>
       <p class="note" style="margin:0 0 12px">No mapping is needed: OASIS names each holon from its <span class="mono">name</span>/<span class="mono">title</span> field, takes the description from <span class="mono">summary</span>/<span class="mono">description</span>, and keeps every other field as metadata. Override only what you want.</p>
       <div class="row">
         <select id="im-provider" aria-label="Database to import from">
-          <option value="MongoDBOASIS">MongoDB · shop database</option><option value="SQLLiteDBOASIS">SQLite · suppliers file</option><option value="Neo4jOASIS">Neo4j · loyalty graph</option>
+          <option value="MongoDBOASIS">MongoDB</option><option value="SQLLiteDBOASIS">SQLite</option><option value="Neo4jOASIS">Neo4j</option>
         </select>
         <select id="im-source" aria-label="Native source" disabled><option>Load sources first</option></select>
         <button id="im-sources" class="ghost" disabled>LIST SOURCES</button>
@@ -293,8 +316,9 @@ function isSandbox(){ return base() === SANDBOX; }
 function onSignedIn(name){
   setNote($('auth-note'), `Signed in as ${name}.`, 'ok');
   $('signout-btn').hidden = false; $('refresh-btn').disabled = false;
-  ['fo-save','fo-offline','fo-online','im-seed','im-sources'].forEach(id => $(id).disabled = !isSandbox());
-  if (!isSandbox()) setNote($('im-seed-note'), 'The import demo runs on the Sandbox API. On other environments native import needs a Wizard avatar.');
+  ['fo-save','fo-offline','fo-online'].forEach(id => $(id).disabled = !isSandbox());
+  syncImportControls();
+  if (!isSandbox()) setNote($('im-seed-note'), 'The demo shop runs on the Sandbox API. Choose "Import my own database" to import from your own system on any environment.');
   if (!isSandbox()) setNote($('fo-save-note'), 'Failover and replication demos run on the Sandbox API only.');
   refresh(); refreshFaults(); renderOrm();
 }
@@ -410,6 +434,55 @@ $('fo-load').addEventListener('click', async () => {
 // Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
 const native = () => $('im-provider').value;
 let firstImportedId = null;
+let sqliteUpload = null; // {fileName, fileBase64} once a SQLite file is chosen
+
+const importMode = () => document.querySelector('input[name="im-mode"]:checked').value;
+// The user's own database settings for the chosen type, or null to use the demo shop on the server.
+function connection(){
+  if (importMode() !== 'own') return null;
+  const value = id => $(id).value.trim();
+  switch (native()) {
+    case 'MongoDBOASIS': {
+      if (!value('im-c-uri')) throw new Error('Enter your MongoDB connection URI.');
+      const c = {uri: value('im-c-uri')}; if (value('im-c-database')) c.database = value('im-c-database'); return c;
+    }
+    case 'Neo4jOASIS': {
+      if (!value('im-c-uri') || !value('im-c-username') || !value('im-c-password')) throw new Error('Enter the Neo4j URI, username and password.');
+      const c = {uri: value('im-c-uri'), username: value('im-c-username'), password: $('im-c-password').value};
+      if (value('im-c-database')) c.database = value('im-c-database'); return c;
+    }
+    default:
+      if (!sqliteUpload) throw new Error('Choose your SQLite file first.');
+      return sqliteUpload;
+  }
+}
+// Shows only the fields the chosen database type needs, and enables the controls that can work right now.
+function syncImportControls(){
+  const own = importMode() === 'own', type = native();
+  $('im-demo').hidden = own; $('im-own').hidden = !own;
+  $('im-own-uri-row').hidden = type === 'SQLLiteDBOASIS';
+  $('im-own-auth-row').hidden = type !== 'Neo4jOASIS';
+  $('im-own-file-row').hidden = type !== 'SQLLiteDBOASIS';
+  $('im-c-database').hidden = type === 'SQLLiteDBOASIS';
+  $('im-c-database').placeholder = type === 'Neo4jOASIS' ? 'Database (optional)' : 'Database name';
+  $('im-c-uri').placeholder = type === 'Neo4jOASIS' ? 'Connection URI (neo4j+s://… or bolt+s://…)' : 'Connection URI (mongodb+srv://… or mongodb://…)';
+  $('im-seed').disabled = !(jwt && isSandbox());
+  $('im-sources').disabled = !(jwt && (own || isSandbox()));
+}
+document.querySelectorAll('input[name="im-mode"]').forEach(r => r.addEventListener('change', syncImportControls));
+$('im-c-file').addEventListener('change', () => {
+  const file = $('im-c-file').files[0]; sqliteUpload = null;
+  if (!file) return;
+  if (file.size > 8 * 1024 * 1024) { setNote($('im-own-note'), 'That file is over the 8 MB limit.', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const bytes = new Uint8Array(reader.result); let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    sqliteUpload = {fileName: file.name.replace(/[\\/]/g, '_').slice(0, 128), fileBase64: btoa(binary)};
+    setNote($('im-own-note'), `${file.name} ready (${Math.ceil(file.size / 1024)} KB).`, 'ok');
+  };
+  reader.readAsArrayBuffer(file);
+});
 // The overrides typed in step 2, or null so the server uses this avatar's saved mapping (or the naming convention).
 function typedMapping(){
   const name = $('im-namefield').value.trim(), ex = $('im-exclude').value.split(',').map(s => s.trim()).filter(Boolean);
@@ -431,21 +504,22 @@ $('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'
   await loadSources();
 }));
 async function loadSources(){
-  const r = await call('GET', `native-data/${native()}/sources`);
+  const conn = connection();
+  const r = conn ? await call('POST', `native-data/${native()}/sources`, {connection: conn}) : await call('GET', `native-data/${native()}/sources`);
   const sources = r.result || [];
   $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
   const ok = sources.length > 0;
   ['im-source','im-preview','im-import','im-save-mapping'].forEach(id => $(id).disabled = !ok);
-  setNote($('im-preview-note'), ok ? `${sources.length} sources found in the shop database.` : 'Create the demo shop data first.', ok ? 'ok' : '');
+  setNote($('im-preview-note'), ok ? `${sources.length} sources found${conn ? ' in your database' : ' in the shop database'}.` : (conn ? 'Connected, but no sources were found.' : 'Create the demo shop data first.'), ok ? 'ok' : '');
 }
 $('im-sources').addEventListener('click', () => busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources));
-$('im-provider').addEventListener('change', () => { if (jwt && isSandbox()) busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources); });
+$('im-provider').addEventListener('change', () => { ['im-c-uri','im-c-database','im-c-username','im-c-password'].forEach(id => $(id).value = ''); syncImportControls(); if (jwt && isSandbox() && importMode() === 'demo') busy($('im-sources'), $('im-preview-note'), 'Listing sources…', loadSources); });
 $('im-save-mapping').addEventListener('click', () => busy($('im-save-mapping'), $('im-preview-note'), 'Saving mapping…', async () => {
   await call('PUT', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/mapping`, mapping());
   setNote($('im-preview-note'), `Mapping saved for ${$('im-source').value}. Later previews and imports of it use it without you typing it again.`, 'ok');
 }));
 $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-preview-note'), 'Reading native records…', async () => {
-  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/preview?count=3`, typedMapping());
+  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent($('im-source').value)}/preview?count=3`, {mapping: typedMapping(), connection: connection()});
   setNote($('im-preview-note'), r.message, 'ok');
   $('im-previews').innerHTML = (r.result || []).map(p => `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:12px">
       <div><div class="list-title">NATIVE RECORD · key ${esc(p.native.nativeKey)}</div><pre>${esc(JSON.stringify(p.native.fields, null, 2))}</pre></div>
@@ -455,13 +529,13 @@ $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-prev
 $('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
   const source = $('im-source').value;
   const t0 = performance.now();
-  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/import`, {mapping: typedMapping(), pageSize: 50, maximumRecords: 500});
+  const r = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/import`, {mapping: typedMapping(), connection: connection(), pageSize: 50, maximumRecords: 500});
   const rep = r.result, ms = Math.round(performance.now() - t0);
   setNote($('im-import-note'), `${r.message} (${ms} ms)` + (rep.holonsCreated === 0 && rep.holonsUpdated + rep.holonsUnchanged > 0 ? ' Same holons, no duplicates.' : ''), rep.recordsFailed ? 'err' : 'ok');
   $('im-report').innerHTML = '<table><thead><tr><th>Source</th><th class="num">Read</th><th class="num">Created</th><th class="num">Updated</th><th class="num">Unchanged</th><th class="num">Failed</th></tr></thead><tbody>' +
     `<tr><td>${esc(rep.sourceName)}</td><td class="num">${rep.recordsRead}</td><td class="num">${rep.holonsCreated}</td><td class="num">${rep.holonsUpdated}</td><td class="num">${rep.holonsUnchanged}</td><td class="num">${rep.recordsFailed}</td></tr></tbody></table>` +
     (rep.failures?.length ? `<pre>${esc(rep.failures.join('\n'))}</pre>` : '');
-  const preview = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/preview?count=1`, typedMapping());
+  const preview = await call('POST', `native-data/${native()}/sources/${encodeURIComponent(source)}/preview?count=1`, {mapping: typedMapping(), connection: connection()});
   firstImportedId = preview.result?.[0]?.holonId || null;
   $('im-verify').disabled = !firstImportedId;
 }));
