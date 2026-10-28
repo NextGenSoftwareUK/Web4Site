@@ -95,7 +95,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 <main class="wrap">
   <div class="kicker">WEB4 · LIVE SANDBOX</div>
   <h1>Play with <span>WEB4</span></h1>
-  <p class="lead">Everything here runs against a real WEB4 API: no mock data, no simulations. Start a free demo session on the sandbox (its own MongoDB, SQLite and Neo4j) and try HyperDrive failover and replication for yourself.</p>
+  <p class="lead">Everything here runs against a real WEB4 API: no mock data, no simulations. Start a free demo session: you get your own demo avatar on the live WEB4 node, routed across MongoDB, SQLite and Neo4j, and anything you switch off affects only you. Try HyperDrive failover, replication and importing data for yourself.</p>
 
   <section class="card" aria-labelledby="signin-h">
     <h2 id="signin-h">Start</h2>
@@ -183,6 +183,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     </div>
     <div class="card">
       <h2>3 · Load it and watch failover</h2>
+      <p class="note" style="margin:0 0 12px">The load starts at the provider you picked in step 2. If it is offline, HyperDrive moves down your failover list and serves a replica.</p>
       <div class="row"><button id="fo-load" disabled>LOAD MY HOLON</button></div>
       <p class="note" id="fo-load-note"></p>
       <div id="fo-trace"></div>
@@ -326,16 +327,23 @@ $('fo-save').addEventListener('click', async () => {
     holonId = r.result?.id;
     setNote($('fo-save-note'), `Saved holon ${holonId}. Reading it back from each provider…`, 'ok');
     $('fo-load').disabled = false;
-    // One at a time: WEB4 switches its active provider per request, so parallel reads would interfere with each other.
-    const rows = [];
-    for (const p of PROVIDERS) {
-      const t0 = performance.now();
-      try {
-        const c = await call('POST', 'data/load-holon', {id:holonId, providerType:p, autoFailOverMode:'OFF', loadChildren:false});
-        // "Not found" is not an error in WEB4, so the copy is only there when a holon comes back.
-        rows.push([p, !!c.result, c.result ? c.result.name : (c.message || 'Not found on this provider'), Math.round(performance.now() - t0)]);
-      } catch (e) { rows.push([p, false, e.message, Math.round(performance.now() - t0)]); }
+    // HyperDrive V2 writes to one provider, then delivers the copies to the others from its outbox (normally within
+    // a second or two). Read each provider separately, retrying briefly while copies are still being delivered.
+    let rows = [];
+    for (let attempt = 0; attempt < 4; attempt++) {
+      if (attempt) { setNote($('fo-save-note'), `Saved holon ${holonId}. Waiting for replication to reach every provider…`, 'ok'); await new Promise(r => setTimeout(r, 1500)); }
+      rows = [];
+      for (const p of PROVIDERS) {
+        const t0 = performance.now();
+        try {
+          const c = await call('POST', 'data/load-holon', {id:holonId, providerType:p, autoFailOverMode:'OFF', loadChildren:false});
+          // "Not found" is not an error in WEB4, so the copy is only there when a holon comes back.
+          rows.push([p, !!c.result, c.result ? c.result.name : (c.message || 'Not found on this provider'), Math.round(performance.now() - t0)]);
+        } catch (e) { rows.push([p, false, e.message, Math.round(performance.now() - t0)]); }
+      }
+      if (rows.every(r => r[1])) break;
     }
+    setNote($('fo-save-note'), rows.every(r => r[1]) ? `Saved holon ${holonId} once; HyperDrive replicated it to every provider.` : `Saved holon ${holonId}; some copies have not arrived yet.`, rows.every(r => r[1]) ? 'ok' : 'err');
     $('fo-copies').innerHTML = '<table><thead><tr><th>Provider</th><th>Copy</th><th>Details</th><th class="num">ms</th></tr></thead><tbody>' +
       rows.map(([p, ok, d, ms]) => `<tr><td>${esc(p)}</td><td class="${ok ? 'on' : 'off'}">${ok ? 'STORED' : 'MISSING'}</td><td>${esc(d)}</td><td class="num">${ms}</td></tr>`).join('') + '</tbody></table>';
   } catch (e) { setNote($('fo-save-note'), 'Save failed: ' + e.message, 'err'); }
@@ -373,7 +381,8 @@ $('fo-load').addEventListener('click', async () => {
     // The sandbox counts the requests each offline provider refuses; the change across this load is the evidence.
     const before = (await call('GET', 'sandbox/refusals')).result || {};
     const t0 = performance.now();
-    const r = await call('POST', 'data/load-holon', {id:holonId, autoFailOverMode:'ON', loadChildren:false});
+    // Start at the provider chosen in step 2, so taking it offline really forces HyperDrive to fail over.
+    const r = await call('POST', 'data/load-holon', {id:holonId, providerType:$('fo-provider').value, autoFailOverMode:'ON', loadChildren:false});
     const ms = Math.round(performance.now() - t0);
     const after = (await call('GET', 'sandbox/refusals')).result || {};
     const status = await api('status');
