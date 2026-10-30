@@ -231,6 +231,20 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p>Keep all three records selected and click <strong>Run Mongo + protocol query</strong>. Uncheck one record to demonstrate a smaller filtered set.</p>
       <p class="note">Finish with POST /demo/shutdown on the local host and let the runner exit for owned fixture cleanup. Closing the tab does not stop it. IPFS immutable blocks remain retained; existing public statuses stay unchanged.</p>
     </div>
+    <div class="card" id="cql-solana-catalogue">
+      <h2>6 · MongoDB + Solana local demo</h2>
+      <p>Run one CQL name filter across native MongoDB and the retained Solana coffee record through its explicit SQLite index.</p>
+      <p>Matching returns two physical copies: one MongoDB copy and one Solana copy. Empty returns zero rows while retaining the index checkpoint and finalized-head evidence.</p>
+      <p class="note">This uses a local validator and a declared source range. It preserves the chain receipt and version; it does not claim a distributed snapshot, hosted-chain access or recovery of missing older history. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained MongoDB + Solana demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. The acknowledged source record, index, ledger and identities must already be configured. No chain transaction is submitted.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableSolanaMongoTests.ps1 -ArchiveCompletedDemo -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5091/" target="_blank" rel="noopener noreferrer">OPEN MONGO + SOLANA QUERY ↗</a></p>
+      <p>Choose <strong>Query matching copies</strong>, then <strong>Query empty selection</strong>. Inspect each provider and the Solana receipt, version, checkpoint and finalized head.</p>
+      <p class="note">Finish with <strong>Stop demo and clean Mongo fixture</strong> and wait for the runner to exit. Only its owned Mongo fixture is removed; the reusable chain record, index and ledger remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
