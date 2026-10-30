@@ -323,6 +323,19 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained runtime, ledger, contract, identity and source manifest configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Queries submit no chain transactions and do not claim a distributed snapshot. Finish with the local stop button and wait for the runner to exit: owned Mongo fixtures are removed, nodes stop, and reusable chain data remains.</p>
     </div>
+    <div class="card" id="cql-s3-catalogue">
+      <h2>12 · S3-compatible local storage + MongoDB</h2>
+      <p>Query three encrypted objects through AWSS3OASIS and two MongoDB copies with one CQL ID filter. Full selection returns five physical copies; the subset returns four, preserving both provider labels.</p>
+      <p class="note">This uses the owned local MinIO compatible service, not hosted AWS. Native reads, retained-data restart and Mongo federation are verified. General metadata/text queries, distributed snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the reusable S3-compatible demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the pinned cached image and retained store/key, verifies native reads and restart, then opens the paired demo. It makes no billable AWS requests.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicS3CqlNative.ps1 -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5107/" target="_blank" rel="noopener noreferrer">OPEN S3-COMPATIBLE + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. The exact owned Mongo fixture is removed and services stop; the reusable S3 source objects, store and protected key remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
