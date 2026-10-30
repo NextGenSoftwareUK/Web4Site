@@ -258,6 +258,19 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each returned copy.</p>
       <p class="note">Finish with the local page's stop button and wait for the runner to exit. The owned Mongo fixture is cleaned up; the reusable AWS seed and data remain.</p>
     </div>
+    <div class="card" id="cql-ethereum-catalogue">
+      <h2>8 · Ethereum local chain + MongoDB</h2>
+      <p>Query encrypted Ethereum records and MongoDB copies with one CQL ID filter. All returns five physical copies: Ethereum three and MongoDB two. The subset returns four: two from each provider.</p>
+      <p class="note">This uses the retained local EVM chain31338 and original storage contract. Hosted Ethereum, mainnet, finality guarantees and general metadata/text queries remain separate work. Reads preserve provider copies without claiming a distributed snapshot.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Ethereum + MongoDB demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below with the retained chain, seed and key configured. Preserve previous test reports before rerunning. No query transaction is submitted.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5097/" target="_blank" rel="noopener noreferrer">OPEN ETHEREUM + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Your hosted sign-in is never forwarded.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
