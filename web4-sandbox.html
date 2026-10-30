@@ -301,6 +301,28 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each copy; reads do not claim a distributed snapshot.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. The owned Mongo fixture is removed and services stop; the original Firestore checkpoint remains reusable.</p>
     </div>
+    <div class="card" id="cql-native-chain-catalogue">
+      <h2>11 · Cosmos blockchain, Polkadot and NEAR + MongoDB</h2>
+      <p>Run the same CQL ID-selection pattern over encrypted native chain records and MongoDB copies. Each full preset returns five physical copies: three chain records and two MongoDB copies. Each subset returns four: two from each provider.</p>
+      <p class="note">These use retained local nodes and original contract records. Cosmos blockchain is distinct from Azure Cosmos DB. Hosted networks, mainnet, finality guarantees, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Cosmos blockchain launch command</summary>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCosmosCqlNative.ps1 -Federated -Serve</pre>
+        <p><a href="http://127.0.0.1:5101/" target="_blank" rel="noopener noreferrer">OPEN COSMOS BLOCKCHAIN + MONGO ↗</a></p>
+      </details>
+      <details style="margin-top:20px">
+        <summary>Polkadot launch command</summary>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPolkadotCqlNative.ps1 -Federated -Serve</pre>
+        <p><a href="http://127.0.0.1:5102/" target="_blank" rel="noopener noreferrer">OPEN POLKADOT + MONGO ↗</a></p>
+      </details>
+      <details style="margin-top:20px">
+        <summary>NEAR launch command</summary>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicNearCqlNative.ps1 -Federated -Serve</pre>
+        <p><a href="http://127.0.0.1:5103/" target="_blank" rel="noopener noreferrer">OPEN NEAR + MONGO ↗</a></p>
+      </details>
+      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained runtime, ledger, contract, identity and source manifest configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
+      <p class="note">Queries submit no chain transactions and do not claim a distributed snapshot. Finish with the local stop button and wait for the runner to exit: owned Mongo fixtures are removed, nodes stop, and reusable chain data remains.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
