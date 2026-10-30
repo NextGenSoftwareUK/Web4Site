@@ -25,7 +25,7 @@ The runner owns the build lease. Do not wrap another lease. Stop via the local p
 - `node --check cql-playground.js` and `node --test cql-playground.test.cjs sandbox-api.test.cjs`:17pass/no skips, no package install.
 - Browser: actual existing CQL tab -> Metadata equality -> local query page automatically returns preset=metadata/count4/Mongo2/Oracle2. Anonymous catalogue works; no hosted session was created for this check.
 - Native paired runner still passes21Oracle queries/fourC#/fourHTTP/two rejected request controls and preserves source snapshot. Exact owned Mongo fixture removed and services stopped.
-- Source publication to main is next; verify its hosting deployment separately before claiming the public card is live.
+- Feature batch081023874adf5d2ef2606b434dee15a44f1cf7c2 pushed to main; production deployment7449727369 success. Public https://web4.oasisomniverse.one/web4-sandbox.html Oracle card verified in browser. Served client SHA25614713C357DA45E5411224F49E69E363B21BE80DB1882B43EF4B056B6BEAC50A4 exactly matches tested source.
 - Evidence: C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent/web4-oracle-catalogue-proof.json, screenshot web4-oracle-catalogue.png; native result screenshot under TestResults/OracleCurrent. Raw evidence never in Docs.
 
 ## Resources and recovery
