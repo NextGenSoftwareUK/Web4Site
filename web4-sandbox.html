@@ -245,6 +245,19 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p>Choose <strong>Query matching copies</strong>, then <strong>Query empty selection</strong>. Inspect each provider and the Solana receipt, version, checkpoint and finalized head.</p>
       <p class="note">Finish with <strong>Stop demo and clean Mongo fixture</strong> and wait for the runner to exit. Only its owned Mongo fixture is removed; the reusable chain record, index and ledger remain.</p>
     </div>
+    <div class="card" id="cql-aws-catalogue">
+      <h2>7 · AWS DynamoDB Local + MongoDB</h2>
+      <p>Select records by ID through one CQL query and inspect copies from both providers. All returns five physical copies: three AWS records and two MongoDB records. The subset returns four: two from each provider.</p>
+      <p class="note">This uses the AWSOASIS adapter against DynamoDB Local. Hosted AWS, general metadata/text filters and full query parity remain separate work. Reads do not claim a distributed snapshot. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained AWS + MongoDB demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run this command with the retained DynamoDB environment and seed configured. Preserve previous test reports before rerunning.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicAwsCqlNative.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5096/" target="_blank" rel="noopener noreferrer">OPEN AWS + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each returned copy.</p>
+      <p class="note">Finish with the local page's stop button and wait for the runner to exit. The owned Mongo fixture is cleaned up; the reusable AWS seed and data remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
