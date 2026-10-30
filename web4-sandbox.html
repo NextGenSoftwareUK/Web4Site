@@ -381,11 +381,27 @@ async function startDemo(){
 $('demo-btn').addEventListener('click', startDemo);
 
 async function call(method, path, body){
-  const response = await fetch(`${base()}/api/${path}`, {method, headers:{'Accept':'application/json','Content-Type':'application/json','Authorization':'Bearer ' + jwt}, body: body ? JSON.stringify(body) : undefined});
+  // One click is one logical request. Retain its identity on an uncertain outcome;
+  // never automatically repeat a write or silently replace its operation ID.
+  const key = body?.operationId || crypto.randomUUID();
+  const headers = {'Accept':'application/json', 'Content-Type':'application/json',
+    'Authorization':'Bearer ' + jwt, 'Idempotency-Key':key};
+  let response;
+  try {
+    response = await fetch(`${base()}/api/${path}`, {method, headers,
+      body: body ? JSON.stringify(body) : undefined});
+  } catch (error) {
+    throw new Error(`${error.message}. Request key: ${key}. Outcome unknown; do not repeat a write.`);
+  }
+  const operation = response.headers.get('X-OASIS-Operation-Id');
   const data = await response.json().catch(() => null);
-  // Data endpoints wrap the OASISResult in { result: OASISResult }; sandbox endpoints return the OASISResult directly.
+  // Data endpoints wrap OASISResult; sandbox endpoints return it directly.
   const r = data && data.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
-  if (!response.ok || !r || r.isError) throw new Error(r?.message || data?.message || `HTTP ${response.status}`);
+  if (!response.ok || !r || r.isError) {
+    const identity = operation || data?.operationId;
+    throw new Error(`${r?.message || data?.message || `HTTP ${response.status}`} ` +
+      `Request key: ${key}.${identity ? ` Operation: ${identity}.` : ''}`);
+  }
   return r;
 }
 

@@ -32,3 +32,5 @@ restore. Static server127.0.0.1:5151 and disposable evidence under
 C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent belong to cosmic-cql.
 See the shared ledger for lifecycle/process details; preserve source and commits.
 Full programme/status: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md.
+
+Request ownership checkpoint: the existing ORM/Failover helper now sends an explicit Idempotency-Key (the write operation ID when present). Network failures retain the key and warn against repeating uncertain writes; server errors retain the accounting operation ID. Four regression tests plus11 CQL tests pass. No UI layout change. Backend receipt/profile fixes remain task-branch candidates; hosted filtered-query acceptance and main publication remain pending.
