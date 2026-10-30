@@ -271,6 +271,23 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Your hosted sign-in is never forwarded.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
     </div>
+    <div class="card" id="cql-evm-catalogue">
+      <h2>9 · Polygon and Arbitrum + MongoDB</h2>
+      <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
+      <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Polygon launch command</summary>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Polygon -Federated -Serve</pre>
+        <p><a href="http://127.0.0.1:5098/" target="_blank" rel="noopener noreferrer">OPEN POLYGON + MONGO QUERY ↗</a></p>
+      </details>
+      <details style="margin-top:20px">
+        <summary>Arbitrum launch command</summary>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Arbitrum -Federated -Serve</pre>
+        <p><a href="http://127.0.0.1:5099/" target="_blank" rel="noopener noreferrer">OPEN ARBITRUM + MONGO QUERY ↗</a></p>
+      </details>
+      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
