@@ -13,6 +13,23 @@
     federation: 'Federation · MongoDB + SQLite + Neo4j'
   };
 
+  // This separate local demo never receives the hosted page's bearer, actor or
+  // editable request body. Its native host owns its synthetic source catalogues.
+  const localOraclePresets = {
+    name: { label: 'Exact name · 2 copies', rows: 2 },
+    description: { label: 'Description contains · 4 copies', rows: 4 },
+    metadata: { label: 'Metadata equality · 4 copies', rows: 4 },
+    combined: { label: 'AND / OR · 2 copies', rows: 2 }
+  };
+
+  function localOraclePreset(name) {
+    if (!Object.hasOwn(localOraclePresets, name)) throw new Error('Choose a supported local Oracle preset.');
+    return {
+      url: 'http://127.0.0.1:5090/?preset=' + encodeURIComponent(name),
+      expectedRows: localOraclePresets[name].rows
+    };
+  }
+
   function metadata(value) {
     return { metadataPath: ['category'], scalar: 'String', operator: 'Equal', value };
   }
@@ -199,12 +216,21 @@
     $('cql-reset').addEventListener('click', loadPreset);
     $('cql-run').addEventListener('click', run);
     $('cql-cancel').addEventListener('click', () => controller?.abort());
+    for (const [key, example] of Object.entries(localOraclePresets))
+      $('cql-oracle-preset').add(new Option(example.label, key));
+    function chooseOracleExample() {
+      const example = localOraclePreset($('cql-oracle-preset').value);
+      $('cql-oracle-open').href = example.url;
+      $('cql-oracle-note').textContent = `${example.expectedRows} expected physical copies · MongoDB + Oracle · local native demo.`;
+    }
+    $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
+    chooseOracleExample();
     loadPreset();
     syncAuth();
     return { syncAuth };
   }
 
-  const api = { providers, presets, preset, parse, unwrap, init };
+  const api = { providers, presets, preset, parse, unwrap, localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

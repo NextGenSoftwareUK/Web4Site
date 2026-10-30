@@ -165,7 +165,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <label>Provider <select id="cql-provider"></select></label>
         <button id="cql-reset" class="ghost">RESET EXAMPLE</button>
       </div>
-      <p class="note">These are request presets for the three core sandbox providers. Availability and query admission are checked when you run. Other provider demos are being enrolled separately.</p>
+      <p class="note">These hosted request presets use MongoDB, SQLite and Neo4j. For the separate Oracle + Mongo local demo, see the examples below.</p>
     </div>
 
     <div class="card">
@@ -191,6 +191,21 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <pre id="cql-response" style="margin-top:12px;line-height:1.8;max-height:480px"></pre>
       </details>
       <p class="note">Federation preserves provider copies. Seeing the same ID on several providers does not prove a globally atomic snapshot or causal agreement.</p>
+    </div>
+    <div class="card">
+      <h2>4 · Oracle + Mongo local demo</h2>
+      <p>Run the same content filter on both native databases and inspect each provider's copies.</p>
+      <p class="note">This opens your local demo in a separate tab. It uses synthetic demo records and does not receive your sandbox sign-in. Oracle is not connected to the hosted sandbox.</p>
+      <div class="row" style="margin-top:16px">
+        <label>Local example <select id="cql-oracle-preset"></select></label>
+        <a id="cql-oracle-open" href="http://127.0.0.1:5090/?preset=name" target="_blank" rel="noopener noreferrer">OPEN LOCAL QUERY ↗</a>
+      </div>
+      <p id="cql-oracle-note" class="note" role="status" aria-live="polite"></p>
+      <details style="margin-top:16px">
+        <summary>Start the reusable local demo</summary>
+        <p class="note">From C:/Source/OASIS-cosmic, run this command first, then open a local example above. Stop the local demo with its stop button when finished.</p>
+        <pre style="margin-top:12px;line-height:1.8">pwsh -File Scripts/TestHosts/Run-ReusableOracleMongoTests.ps1 -Content -Serve -ArchiveCompletedDemo</pre>
+      </details>
     </div>
   </section>
   <section class="panel" id="panel-failover">

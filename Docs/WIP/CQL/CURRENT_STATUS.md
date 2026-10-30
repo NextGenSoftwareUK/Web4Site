@@ -1,36 +1,35 @@
 # WEB4 sandbox CQL tab — current implementation
 
-30 October 2026. Work in the existing C:/Source/Web4Site checkout, branch work/cosmic-cql.
+Updated30 October2026. Existing C:/Source/Web4Site checkout, branch work/cosmic-cql.
 
-The CQL tab now sends bounded JSON requests to the selected WEB4 API, using the
-current page bearer and a new explicit Idempotency-Key per logical query.
-Seven readable presets cover row paging, exact Name, Description Contains, string
-metadata equality, AND/OR, LongCount and named Mongo/SQLite/Neo4j federation.
-The editor is JSON; it does not execute C#, SQL or Cypher.
+## Hosted CQL
 
-Start a demo session, save records using the existing ORM/Failover tabs, select a
-query and provider, edit its filters and Run. Metadata keys are case-sensitive:
-the coffee example requires records with category=coffee. Empty results stay empty.
-Inspect the response for provider copies, errors and federation selection details.
-Each Run starts a new logical operation. Retain its key/operation ID for uncertain
-outcomes; cancellation only stops browser waiting. No automatic retries occur.
-Tokens remain in page memory. Sign-out clears CQL output and aborts outstanding reads.
+Seven bounded JSON presets cover page browsing, Name equality, Description Contains, string metadata equality, AND/OR, LongCount and named Mongo/SQLite/Neo federation. Requests use the current page bearer and a fresh explicit Idempotency-Key. The editor never executes C#/SQL/Cypher. Empty results/errors remain real API outcomes, without sample substitution or automatic retries.
 
-Run checks with `node --check cql-playground.js` and
-`node --test cql-playground.test.cjs` (11 client tests; no packages required).
-Serve locally with `python -m http.server 5151 --bind 127.0.0.1` and open
-http://127.0.0.1:5151/web4-sandbox.html. Stop the server after checking.
+The backend35-step hosted demo now passes saves, exact copies, queries/counts/federation and tenant isolation on deployment1c73a0b5-3d76-4cd6-9aab-1fb178ebd45b / parent51f3c4c3a. This is backend acceptance; it does not claim every browser/account/provider configuration is verified.
 
-Live verification: session creation succeeds on dev.api.web4.oasisomniverse.one;
-row query returns HTTP503 CQL_ADMISSION_REQUIRED. Successful hosted rows/counts/
-federation are not yet verified. Host admission/usage route enrollment is next;
-no authentication/accounting bypass or mock success has been added.
+## Oracle + Mongo catalogue
 
-Resource ledger: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/ENVIRONMENT_AND_CLEANUP_LEDGER.md.
-Node24.19.0 and existing Python3.12/browser reused, no installation or dependency
-restore. Static server127.0.0.1:5151 and disposable evidence under
-C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent belong to cosmic-cql.
-See the shared ledger for lifecycle/process details; preserve source and commits.
-Full programme/status: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md.
+CQL Playground section4 now lists four local native examples: exact name2copies, description4, metadata4 and combined AND/OR2. Select an example and OPEN LOCAL QUERY. It opens only fixed127.0.0.1:5090 with a supported preset name; the native teaching host automatically runs that read. Its independently configured synthetic authorization catalogues own access. No hosted bearer, actor or editable JSON is forwarded. Oracle is explicitly labelled local and is not added to the hosted provider selector.
 
-Request ownership checkpoint: the existing ORM/Failover helper now sends an explicit Idempotency-Key (the write operation ID when present). Network failures retain the key and warn against repeating uncertain writes; server errors retain the accounting operation ID. Four regression tests plus11 CQL tests pass. No UI layout change. Backend receipt/profile fixes remain task-branch candidates; hosted filtered-query acceptance and main publication remain pending.
+Start the retained native services from C:/Source/OASIS-cosmic:
+
+```powershell
+pwsh -File Scripts/TestHosts/Run-ReusableOracleMongoTests.ps1 -Content -Serve -ArchiveCompletedDemo
+```
+
+The runner owns the build lease. Do not wrap another lease. Stop via the local page or POST/demo/shutdown for exact fixture cleanup; retained Oracle records remain unchanged.
+
+## Verification and publication
+
+- `node --check cql-playground.js` and `node --test cql-playground.test.cjs sandbox-api.test.cjs`:17pass/no skips, no package install.
+- Browser: actual existing CQL tab -> Metadata equality -> local query page automatically returns preset=metadata/count4/Mongo2/Oracle2. Anonymous catalogue works; no hosted session was created for this check.
+- Native paired runner still passes21Oracle queries/fourC#/fourHTTP/two rejected request controls and preserves source snapshot. Exact owned Mongo fixture removed and services stopped.
+- Source publication to main is next; verify its hosting deployment separately before claiming the public card is live.
+- Evidence: C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent/web4-oracle-catalogue-proof.json, screenshot web4-oracle-catalogue.png; native result screenshot under TestResults/OracleCurrent. Raw evidence never in Docs.
+
+## Resources and recovery
+
+Reuse Node24.19.0, existing Windows Python and Codex IAB; no download/install/restore. Preview127.0.0.1:5151 served only Web4Site, owned PID47884 stopped after command/listener ownership checks. Backend runner25723 exited0; ports5151/5090/27029 closed, Oracle containerexited. Persistent preview ownership journal C:/Source/OASIS-cosmic/LocalState/COSMIC/Web4SitePreview/server.json statusstopped.
+
+Shared authoritative resource ledger: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/ENVIRONMENT_AND_CLEANUP_LEDGER.md. Full programme/current next step: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md. Hosted Oracle, richer providers and full ORM parity remain separate work.

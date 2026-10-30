@@ -59,6 +59,20 @@ test('OASIS error wrapper remains an error rather than a successful data envelop
   assert.equal(cql.unwrap(failure), failure);
 });
 
+test('local Oracle examples use only the fixed loopback host and supported preset names', () => {
+  for (const [name, example] of Object.entries(cql.localOraclePresets)) {
+    const selected = cql.localOraclePreset(name);
+    const url = new URL(selected.url);
+    assert.equal(url.origin, 'http://127.0.0.1:5090');
+    assert.deepEqual([...url.searchParams], [['preset', name]]);
+    assert.equal(selected.expectedRows, example.rows);
+    assert.equal(url.username, '');
+    assert.equal(url.password, '');
+  }
+  for (const invalid of ['toString', 'constructor', 'shutdown', 'https://example.invalid'])
+    assert.throws(() => cql.localOraclePreset(invalid));
+});
+
 // Exercise the asynchronous UI boundary without installing a DOM library.
 // These are client controls; live provider/admission proof is recorded separately.
 function harness(fetcher) {
@@ -105,6 +119,19 @@ test('API failures display their status/code and never render success rows', asy
   assert.match(h.elements.get('cql-note').textContent, /503.*CQL_ADMISSION_REQUIRED/);
   assert.equal(h.elements.get('cql-results').children.length, 0);
   assert.equal(h.elements.get('cql-run').disabled, false);
+});
+
+test('local Oracle link works without signing in and never sends the hosted bearer or edited request', () => {
+  let requests = 0;
+  const h = harness(async () => { requests++; throw new Error('No native fetch through hosted auth.'); });
+  h.signOut();
+  h.elements.get('cql-request').value = '{"actorId":"private-owner","token":"never-share"}';
+  const chooser = h.elements.get('cql-oracle-preset');
+  chooser.value = 'metadata';
+  chooser.listeners.change();
+  assert.equal(h.elements.get('cql-oracle-open').href, 'http://127.0.0.1:5090/?preset=metadata');
+  assert.match(h.elements.get('cql-oracle-note').textContent, /4 expected physical copies/);
+  assert.equal(requests, 0);
 });
 
 test('a late response after sign-out cannot restore data from the previous identity', async () => {
