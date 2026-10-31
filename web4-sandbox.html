@@ -282,7 +282,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
     </div>
     <div class="card" id="cql-evm-catalogue">
-      <h2>9 · Polygon, Arbitrum and Cosmos demos</h2>
+      <h2>9 · Polygon, Arbitrum, Cosmos and Polkadot demos</h2>
       <h3>Public Polygon balances · no wallet needed</h3>
       <p>The read-only C# example queries three configured Polygon mainnet addresses, then a two-address subset, through HolonManager and LINQ. It prints exact native balances and the selected finalized block hash without creating transactions or a database.</p>
       <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted sandbox enrollment and browser verification are pending; use this local command after building the example.</p>
@@ -298,6 +298,11 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted enrollment and browser verification remain pending. State is reported by the REST server, not independently verified consensus.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --cosmos-public LocalState/COSMIC/HostedCosmosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e5bc96173/Docs/Devs/COSMOS_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Cosmos setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e5bc96173/Examples/CosmicCqlDemo/CosmosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <h3>Public Polkadot block headers · no wallet needed</h3>
+      <p>The C# walkthrough reads three configured block headers, then a two-hash subset through HolonManager and LINQ. Each header content hash is checked locally; no transaction, block body or database setup is needed.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted enrollment and browser verification remain pending. Canonical history and finality are RPC-reported, not independently verified GRANDPA proofs.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polkadot-public LocalState/COSMIC/HostedPolkadotPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/03db9a052/Docs/Devs/POLKADOT_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polkadot setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/03db9a052/Examples/CosmicCqlDemo/PolkadotPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
