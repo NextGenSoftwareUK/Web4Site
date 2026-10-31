@@ -95,7 +95,7 @@ function harness(fetcher, discover) {
   const context = {
     TextEncoder, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto,
     fetch: async (...args) => {
-      const response = args[0].endsWith('/api/data/query-cql/providers')
+      const response = args[0].endsWith('/api/data/query-cql/providers?examplesVersion=2')
         ? await (discover || (async () => ({ ok: true, status: 200, json: async () => ({ isError: false,
           result: cql.providers.map(provider => ({ provider, available: true, queryOnly: false, federationAvailable: true, examples: [] })) }) })))(...args)
         : await fetcher(...args);
@@ -231,7 +231,7 @@ test('public example uses only the hosted query endpoint and never forwards its 
   assert.equal(h.elements.get('cql-preset').value, 'host:public-posts');
   await h.elements.get('cql-run').listeners.click();
   assert.deepEqual(calls.map(call => call.url), [
-    'https://example.invalid/api/data/query-cql/providers', 'https://example.invalid/api/data/query-cql'
+    'https://example.invalid/api/data/query-cql/providers?examplesVersion=2', 'https://example.invalid/api/data/query-cql'
   ]);
   assert.equal(calls[0].options.cache, 'no-store');
   assert.equal(calls[0].options.headers.Authorization, 'Bearer test-token');
@@ -297,4 +297,67 @@ test('explicit refresh clears stale results when the hosted catalogue becomes un
   assert.equal(discoveries, 2);
   assert.equal(h.elements.get('cql-results').children.length, 0);
   assert.equal(h.elements.get('cql-run').disabled, true);
+});
+function federationSource() {
+  const source = publicSource();
+  source.federationAvailable = true;
+  source.examples = [{ id: 'paired', label: 'Public posts and my Mongo records', operation: 'Federation', available: true,
+    request: { scope: 'Named', providers: ['MongoDBOASIS', source.provider], identityMode: 'PreserveCopies',
+      source: { orderBy: 'None', take: 25, filters: source.examples[0].request.filters }, maximumProviderAttempts: 2, take: 25 } }];
+  return source;
+}
+
+function federationCatalogue() {
+  return cql.catalogue({ result: [federationSource(), {
+    provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true, examples: []
+  }] });
+}
+
+test('explicit hosted federation selects only the fixed WEB4 federation endpoint and owns its body', () => {
+  const sources = federationCatalogue();
+  const request = cql.profilePreset(sources[0], 'host:paired');
+  assert.equal(request.path, 'data/query-cql/federation');
+  assert.deepEqual(request.body.providers, ['MongoDBOASIS', 'ActivityPubOASIS']);
+  request.body.source.filters[0].value.push('changed');
+  assert.equal(cql.profilePreset(sources[0], 'host:paired').body.source.filters[0].value.length, 3);
+});
+
+test('unavailable dependency disables the federation choice while keeping leaf examples', () => {
+  const sources = federationCatalogue();
+  sources[0].examples.push({ ...publicSource().examples[0], operation: 'Rows', available: true });
+  sources[1].available = false;
+  const choices = cql.profileChoices(sources[0], sources);
+  assert.equal(choices[0].disabled, true);
+  assert.equal(choices[1].disabled, false);
+  sources[0].examples[0].available = false;
+  assert.throws(() => cql.profilePreset(sources[0], 'host:paired'), /unavailable/);
+  assert.equal(cql.profilePreset(sources[0], 'host:public-posts').path, 'data/query-cql');
+});
+
+test('server examples cannot supply executable routes or rebind federation scope', () => {
+  for (const fault of ['operation', 'owner', 'duplicate', 'scope', 'provider', 'cursor', 'identity']) {
+    const source = federationSource(); const example = source.examples[0]; const request = example.request;
+    if (fault === 'operation') example.operation = 'https://example.invalid/steal';
+    if (fault === 'owner') request.providers[1] = 'Neo4jOASIS';
+    if (fault === 'duplicate') request.providers[0] = 'ActivityPubOASIS';
+    if (fault === 'scope') request.scope = 'AllEligible';
+    if (fault === 'provider') request.source.provider = 'MongoDBOASIS';
+    if (fault === 'cursor') request.enableContinuation = true;
+    if (fault === 'identity') request.identityMode = 'ProviderPriority';
+    assert.throws(() => cql.catalogue({ result: [source] }), /operation|scope/);
+  }
+});
+
+test('hosted federation run keeps the bearer on WEB4 and sends the selected bounded intent', async () => {
+  const calls = [];
+  const h = harness(async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, status: 200, json: async () => ({ result: { rows: [] } }) };
+  }, async () => ({ ok: true, status: 200, json: async () => ({ result: federationCatalogue() }) }));
+  await h.ui.ready;
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://example.invalid/api/data/query-cql/federation');
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer test-token');
+  assert.deepEqual(JSON.parse(calls[0].options.body).providers, ['MongoDBOASIS', 'ActivityPubOASIS']);
 });

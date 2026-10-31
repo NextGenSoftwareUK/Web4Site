@@ -104,8 +104,22 @@
           throw new Error('Invalid hosted example identity.');
         ids.add(row.id);
         const request = parse(JSON.stringify(row.request));
-        if (request.provider !== source.provider) throw new Error('Hosted example changed its provider scope.');
-        return { id: row.id, label: row.label, request };
+        const operation = row.operation ?? 'Rows';
+        if (!['Rows', 'Federation'].includes(operation) ||
+            row.available !== undefined && typeof row.available !== 'boolean')
+          throw new Error('Invalid hosted example operation or availability.');
+        if (operation === 'Rows') {
+          if (request.provider !== source.provider) throw new Error('Hosted example changed its provider scope.');
+        } else if (request.scope !== 'Named' || !Array.isArray(request.providers) ||
+            request.providers.length < 2 || request.providers.length > 8 ||
+            request.providers.some(provider => typeof provider !== 'string' || !provider || provider.length > 40) ||
+            new Set(request.providers).size !== request.providers.length || !request.providers.includes(source.provider) ||
+            !request.source || Array.isArray(request.source) || typeof request.source !== 'object' ||
+            request.source.provider != null || request.enableContinuation === true || request.cursor != null ||
+            request.identityMode !== 'PreserveCopies') {
+          throw new Error('Hosted federation changed its explicit provider scope.');
+        }
+        return { id: row.id, label: row.label, request, operation, available: row.available !== false };
       });
       return { provider: source.provider, available: source.available, queryOnly: source.queryOnly,
         federationAvailable: source.federationAvailable, examples };
@@ -118,7 +132,12 @@
       .filter(([id]) => id !== 'federation' || providers.every(provider => sources.some(row =>
         row.provider === provider && row.available && row.federationAvailable)))
       .map(([id, label]) => ({ id, label })) : [];
-    return ordinary.concat(source.examples.map(row => ({ id: 'host:' + row.id, label: row.label })));
+    return ordinary.concat(source.examples.map(row => {
+      const disabled = row.available === false || row.operation === 'Federation' &&
+        (!source.federationAvailable || !row.request.providers.every(provider => sources.some(target =>
+          target.provider === provider && target.available && target.federationAvailable)));
+      return { id: 'host:' + row.id, label: row.label + (disabled ? ' (unavailable)' : ''), disabled };
+    }));
   }
 
   function profilePreset(source, id) {
@@ -126,8 +145,11 @@
     if (!id.startsWith('host:')) return preset(id, source.provider);
     const example = source.examples.find(row => 'host:' + row.id === id);
     if (!example) throw new Error('Choose a configured hosted example.');
-    // The API owns the body template; the browser owns this one fixed row-query endpoint.
-    return { path: 'data/query-cql', body: parse(JSON.stringify(example.request)) };
+    if (example.available === false || example.operation === 'Federation' && !source.federationAvailable)
+      throw new Error('The hosted example is unavailable.');
+    // Operation selects from two fixed WEB4 routes; the server cannot supply a URL.
+    return { path: example.operation === 'Federation' ? 'data/query-cql/federation' : 'data/query-cql',
+      body: parse(JSON.stringify(example.request)) };
   }
 
   function init({ getToken, getBase }) {
@@ -159,7 +181,7 @@
 
     function loadPreset() {
       const selected = sources?.find(row => row.provider === $('cql-provider').value);
-      if (!selected || !profileChoices(selected, sources).length) {
+      if (!selected || !profileChoices(selected, sources).some(choice => !choice.disabled)) {
         endpoint = ''; $('cql-request').value = ''; $('cql-endpoint').textContent = '';
         controls(); return;
       }
@@ -176,8 +198,13 @@
     function chooseProvider() {
       const selected = sources?.find(row => row.provider === $('cql-provider').value);
       $('cql-preset').replaceChildren();
-      for (const choice of profileChoices(selected, sources ?? []))
-        $('cql-preset').add(new Option(choice.label, choice.id));
+      const choices = profileChoices(selected, sources ?? []);
+      for (const choice of choices) {
+        const option = new Option(choice.label, choice.id);
+        option.disabled = !!choice.disabled;
+        $('cql-preset').add(option);
+      }
+      $('cql-preset').value = choices.find(choice => !choice.disabled)?.id ?? '';
       loadPreset();
     }
 
@@ -282,7 +309,7 @@
       const timeout = setTimeout(() => pending.abort(), 15000);
       note('Loading hosted provider availability…'); controls();
       try {
-        const response = await fetch(`${base}/api/data/query-cql/providers`, {
+        const response = await fetch(`${base}/api/data/query-cql/providers?examplesVersion=2`, {
           signal: pending.signal, redirect: 'error', cache: 'no-store',
           headers: { Accept: 'application/json', Authorization: 'Bearer ' + token }
         });
