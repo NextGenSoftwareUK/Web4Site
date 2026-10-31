@@ -15,3 +15,5 @@ Shared detailed inventory: [COSMIC ledger](C:/Source/OASIS-cosmic/Docs/WIP/COSMI
 31October Polygon preparation: existing checkout/Node reused;50terminal-only controls, no install/download/runtime/server/dataset. Backend fixture/candidate resources recorded in shared COSMIC ledger; no frontend output/environment created.
 
 31October Polygon CLI catalogue links: existing HTML/docs/Node only,50controls pass; no install/output/server/dataset. Task branch only pending next website publication, no backend config/deploy. Shared COSMIC ledger records native proof and source282B.
+
+31October Arbitrum preparation: same checkout/Node reused,51terminal-only controls. No new runtime/download/install/server/dataset/output; backend owned fixture and protected joint candidate are in shared COSMIC ledger.
