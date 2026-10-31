@@ -263,7 +263,13 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Finish with the local page's stop button and wait for the runner to exit. The owned Mongo fixture is cleaned up; the reusable AWS seed and data remain.</p>
     </div>
     <div class="card" id="cql-ethereum-catalogue">
-      <h2>8 · Ethereum local chain + MongoDB</h2>
+      <h2>8 · Ethereum public balances and local storage demos</h2>
+      <h3>Public mainnet balances · no wallet needed</h3>
+      <p>The read-only C# demo queries three configured Ethereum addresses, then a two-address subset, through HolonManager and LINQ. It shows exact balances in wei and the selected finalized block hash. It creates no transaction or local database.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing checks pass. Hosted sandbox enrollment and browser verification are pending; use this local command after building the example.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --ethereum-public LocalState/COSMIC/HostedEthereumPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e9283978b39936d705debc2a7668a9115ec622f7/Docs/Devs/ETHEREUM_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Ethereum setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e9283978b39936d705debc2a7668a9115ec622f7/Examples/CosmicCqlDemo/EthereumPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <h3>Owned-record demo · local chain + MongoDB</h3>
       <p>Query encrypted Ethereum records and MongoDB copies with one CQL ID filter. All returns five physical copies: Ethereum three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses the retained local EVM chain31338 and original storage contract. Hosted Ethereum, mainnet, finality guarantees and general metadata/text queries remain separate work. Reads preserve provider copies without claiming a distributed snapshot.</p>
       <details style="margin-top:20px">
@@ -293,7 +299,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
     <div class="card" id="cql-google-catalogue">
-      <h2>10 · Google Firestore emulator + MongoDB</h2>
+      <h2>10 · Google public metadata and Firestore demos</h2>
       <p><strong>Public Google Cloud metadata, no account needed:</strong> a separate read-only C# demo queries three configured public Landsat objects, then a two-object subset, through HolonManager and LINQ. It reads object metadata without downloading imagery or writing records.</p>
       <p class="note">This public Cloud Storage profile has passed native C# and local HTTP/Mongo pairing checks. Hosted sandbox enrollment and browser verification are pending; use the local command below for now. The Firestore emulator example remains separate.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --google-public LocalState/COSMIC/HostedGcsPublicSourceCurrent/source.json</pre>

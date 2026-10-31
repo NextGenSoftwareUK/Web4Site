@@ -7,3 +7,5 @@ Shared detailed inventory: [COSMIC ledger](C:/Source/OASIS-cosmic/Docs/WIP/COSMI
 31October Google local-demo card: existing frontend checkout/Node reused,48node controls pass. StaticHTML/docs changes only; no install/server/cache/download or generated artifact. Browser rendering gate pending (transport closed). Public hosting unchanged in this step; task branch retains pinned demo links.
 
 31October Ethereum preparation: existing checkout/Node reused;49client tests terminal-only, no runtime/package/download/server/new dataset/output. Source/docs retained; shared COSMIC ledger tracks backend native fixture/candidate lifecycle.
+
+31October Ethereum CLI links/static catalogue update: reuse same checkout/Node;49controls, no new environment/download/server/output. Static public release may publish these scoped tested links; backend deployment/configuration remains separate.

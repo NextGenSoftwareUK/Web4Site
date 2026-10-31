@@ -37,3 +37,5 @@ Google public Cloud Storage preparation: one new case verifies exact Landsat hos
 Google public metadata card now links pinned OASIS2627bae37guide/C# console demo and its exact --google-public command. Labelled native/local HTTP verified, hosted/browser pending; no new hosted-provider claim. Separate Firestore emulator text retained. Browser tool transport still unavailable; no rendering acceptance claimed.
 
 Ethereum preparation adds one source-specific case: three-address federation template stays unchanged, first2selected keys use Core-mapped private IDs, both writes targetMongo only, repeat0writes/2existing.49client tests pass. No production JS branch or hosted Ethereum enrollment; backend native HTTP5/4/isolation proof remains separate from browser/production billing.
+
+Ethereum catalogue card links the pinned OASISe9283978bCLI/guide/sample, labelled native/local HTTP verified and hosted/browser pending. Public balances and retained local owned-record chain clearly separated; Google heading likewise distinguishes public metadata/Firestore.49client controls pass; no browser rendering acceptance or backend enrollment inferred.
