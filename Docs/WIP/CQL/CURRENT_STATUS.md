@@ -25,6 +25,13 @@ provider case or new frontend deployment needed. Backend SDK ABI failure was
 reproduced/fixed at source dependency composition; original evidence preserved.
 Select IPFSOASIS, then IPFS records + my Mongo records, prepare and run.
 
+## Prepared source-link release
+
+- Added direct links to released C# SOLID resource selection and HTTP/host guide.
+- Local protocol launcher instructions name their verified preserved source revision; hosted playground needs no local services.
+- Client controls39passed/0failed/0skipped; log TestResults/CqlCurrent/solid-links-client-tests.log. No runtime installation or generated native data.
+- Backend SOLID batch d41d4ec83 is pushed to Development; image/browser acceptance pending. Do not increase verified hosted count until it passes.
+
 ## Next
 
 Actual hosted Oracle/SOLID/Solana/AWS and remaining approved providers: filtered multiple records, one Mongo pairing and minimal setup. Azure pending/free-only. Keep local runner links without counting launchers as hosted support. Deep parity paused.

@@ -215,6 +215,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card" id="cql-protocol-catalogue">
       <h2>5 · IPFS, SOLID and ActivityPub + MongoDB</h2>
       <p>Select several native records with a CQL metadata membership filter, then inspect copies from both providers.</p>
+      <p>Use CQL Playground above for providers marked ready on this host. Optional <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/README.md" target="_blank" rel="noopener noreferrer">C# and HTTP examples ↗</a> are available alongside the local launchers below.</p>
       <p class="note">These local demos support bounded native-key queries. General content searches and full query parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>IPFS + MongoDB · encrypted records selected by CID</summary>
@@ -225,13 +226,14 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <summary>SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider SOLID -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected Pod records plus two MongoDB records: five physical copies.</p>
+        <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/SolidPointWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# resource-selection example ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLID_CQL_HOST_CONFIGURATION.md" target="_blank" rel="noopener noreferrer">HTTP example and host guide ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>ActivityPub + MongoDB · existing public Mastodon statuses</summary>
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider ActivityPub -Serve -ArchiveCompletedDemo</pre>
         <p>Three public statuses selected by status ID plus two MongoDB records: five physical copies. No posts or accounts are created.</p>
       </details>
-      <p style="margin-top:24px">Run one command from C:/Source/OASIS-cosmic first, using the retained configured environment. These demos share port5088, so start only one at a time.</p>
+      <p style="margin-top:24px">These local launcher commands use the <a href="https://github.com/NextGenSoftwareUK/OASIS/tree/237403a75b6983e013141cf7ba44bf66858abafd/Examples/CosmicCqlDemo" target="_blank" rel="noopener noreferrer">preserved local-demo source revision ↗</a> and require its configured native services. Run from the matching checkout. They share port5088, so start only one at a time. The hosted playground needs no local services.</p>
       <p><a href="http://127.0.0.1:5088/" target="_blank" rel="noopener noreferrer">OPEN LOCAL PROTOCOL DEMO ↗</a></p>
       <p>Keep all three records selected and click <strong>Run Mongo + protocol query</strong>. Uncheck one record to demonstrate a smaller filtered set.</p>
       <p class="note">Finish with POST /demo/shutdown on the local host and let the runner exit for owned fixture cleanup. Closing the tab does not stop it. IPFS immutable blocks remain retained; existing public statuses stay unchanged.</p>
