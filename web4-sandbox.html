@@ -585,6 +585,19 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops REST, Mongo and PostgreSQL; the original Supabase-provider database, credentials and receipts remain.</p>
     </div>
+    <div class="card" id="cql-firebase-catalogue">
+      <h2>32 · Firebase Realtime Database + MongoDB</h2>
+      <p>Run one CQL ID selection over three retained Realtime Database records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded. This is separate from Firestore.</p>
+      <p class="note">This uses the official Firebase RTDB 4.11.2 emulator. The volatile service imports the exact retained export checkpoint; it does not demonstrate native disk or crash durability. Selection uses bounded native key queries. Hosted credentials/rules, general metadata/text queries, wider numeric/array/graph roundtrips and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Firebase RTDB demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original checkpoint and IDs, verifies export restoration, then starts the Windows Mongo-paired demo.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirebaseCqlNative.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5126/" target="_blank" rel="noopener noreferrer">OPEN FIREBASE RTDB + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops both processes only after checking the Firebase checkpoint; original IDs, export and receipts remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
