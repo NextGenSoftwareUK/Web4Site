@@ -75,7 +75,7 @@ test('local Oracle examples use only the fixed loopback host and supported prese
 
 // Exercise the asynchronous UI boundary without installing a DOM library.
 // These are client controls; live provider/admission proof is recorded separately.
-function harness(fetcher, discover) {
+function harness(fetcher, discover, setup = {}) {
   const vm = require('node:vm');
   const fs = require('node:fs');
   const elements = new Map();
@@ -94,6 +94,7 @@ function harness(fetcher, discover) {
   }
   const context = {
     TextEncoder, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto,
+    CqlDemoPreparation: require('./cql-demo-preparation.js'), localStorage: setup.storage,
     fetch: async (...args) => {
       const response = args[0].endsWith('/api/data/query-cql/providers?examplesVersion=2')
         ? await (discover || (async () => ({ ok: true, status: 200, json: async () => ({ isError: false,
@@ -111,7 +112,8 @@ function harness(fetcher, discover) {
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(require.resolve('./cql-playground.js'), 'utf8'), context);
   let token = 'test-token';
-  const ui = context.CqlPlayground.init({ getToken: () => token, getBase: () => 'https://example.invalid' });
+  const ui = context.CqlPlayground.init({ getToken: () => token, getBase: () => 'https://example.invalid',
+    request: setup.request ?? null, canPrepare: () => setup.canPrepare === true });
   return { elements, ui, signOut() { token = null; ui.syncAuth(); } };
 }
 
@@ -360,4 +362,47 @@ test('hosted federation run keeps the bearer on WEB4 and sends the selected boun
   assert.equal(calls[0].url, 'https://example.invalid/api/data/query-cql/federation');
   assert.equal(calls[0].options.headers.Authorization, 'Bearer test-token');
   assert.deepEqual(JSON.parse(calls[0].options.body).providers, ['MongoDBOASIS', 'ActivityPubOASIS']);
+});
+
+test('private preparation uses the configured example rather than edited JSON and clears acknowledged intents', async () => {
+  const owner = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const entries = new Map(); const writes = []; const reads = [];
+  const storage = { get length() { return entries.size; }, key: i => [...entries.keys()][i] ?? null,
+    getItem: key => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value), removeItem: key => entries.delete(key) };
+  const request = async (method, path, body) => {
+    assert.equal(method, 'POST');
+    if (path.endsWith('demo-identities')) return { result: { ownerId: owner, provider: 'ActivityPubOASIS',
+      records: body.keys.map((nativeKey, i) => ({ id: `11111111-1111-4111-8111-11111111111${i}`, nativeKey, metadata: {
+        'oasis.native.provider': 'ActivityPubOASIS', 'oasis.native.source': 'cosmic-cql-demo', 'oasis.native.key': nativeKey
+      } })) } };
+    if (path === 'data/query-cql' && body.provider === 'ActivityPubOASIS') {
+      reads.push(body);
+      return { result: { rows: body.filters[0].value.map((key, i) => ({
+        id: `22222222-2222-4222-8222-22222222222${i}`, name: 'Native ' + key, description: null, metadata: { NativeKey: key }
+      })) } };
+    }
+    if (path === 'data/query-cql') return { result: { rows: [] } };
+    writes.push(body); return { isSaved: true, result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false } };
+  };
+  const h = harness(async () => { throw new Error('Query run was not requested.'); },
+    async () => ({ ok: true, status: 200, json: async () => ({ result: federationCatalogue() }) }),
+    { storage, request, canPrepare: true });
+  await h.ui.ready;
+  h.elements.get('cql-request').value = '{"source":{"filters":[{"value":["edited-private-key"]}]}}';
+  assert.equal(h.elements.get('cql-prepare').disabled, false);
+  await h.elements.get('cql-prepare').listeners.click();
+  assert.deepEqual(Array.from(reads[0].filters[0].value), ['101', '102']);
+  assert.equal(writes.length, 2); assert.equal(entries.size, 0);
+  assert.match(h.elements.get('cql-note').textContent, /2 saved/);
+});
+
+test('view-only environment cannot start record preparation', async () => {
+  let calls = 0;
+  const h = harness(async () => { throw new Error('No query requested.'); },
+    async () => ({ ok: true, status: 200, json: async () => ({ result: federationCatalogue() }) }),
+    { request: async () => { calls++; }, canPrepare: false });
+  await h.ui.ready;
+  assert.equal(h.elements.get('cql-prepare').disabled, true);
+  await h.elements.get('cql-prepare').listeners.click();
+  assert.equal(calls, 0);
 });

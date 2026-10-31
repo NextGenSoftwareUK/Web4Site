@@ -148,11 +148,13 @@
     if (example.available === false || example.operation === 'Federation' && !source.federationAvailable)
       throw new Error('The hosted example is unavailable.');
     // Operation selects from two fixed WEB4 routes; the server cannot supply a URL.
-    return { path: example.operation === 'Federation' ? 'data/query-cql/federation' : 'data/query-cql',
+    const selected = { path: example.operation === 'Federation' ? 'data/query-cql/federation' : 'data/query-cql',
       body: parse(JSON.stringify(example.request)) };
+    if (root.CqlDemoPreparation) selected.preparation = root.CqlDemoPreparation.recipe(source, example);
+    return selected;
   }
 
-  function init({ getToken, getBase }) {
+  function init({ getToken, getBase, request = null, canPrepare = () => false }) {
     const $ = id => document.getElementById(id);
     let controller = null;
     let generation = 0;
@@ -161,6 +163,8 @@
     let sessionBase = null;
     let sources = null;
     let discovery = null;
+    let preparation = null;
+    let preparing = false;
 
     function note(message, error = false) {
       $('cql-note').textContent = message;
@@ -168,24 +172,29 @@
     }
 
     function controls() {
-      const busy = controller !== null;
+      const busy = controller !== null || preparing;
       const ready = sources !== null && endpoint !== '';
       $('cql-run').disabled = busy || discovery !== null || !getToken() || !ready;
-      $('cql-cancel').disabled = !busy;
+      $('cql-cancel').disabled = controller === null;
       $('cql-preset').disabled = busy || !ready || discovery !== null;
       $('cql-provider').disabled = busy || sources === null || discovery !== null;
       $('cql-reset').disabled = busy || !ready || discovery !== null;
       $('cql-refresh').disabled = busy || discovery !== null || !getToken();
+      $('cql-prepare').hidden = !preparation;
+      $('cql-prepare-panel').hidden = !preparation;
+      $('cql-prepare').disabled = busy || discovery !== null || !getToken() || !preparation || !canPrepare() || !request;
       $('cql-request').readOnly = busy || !ready;
     }
 
     function loadPreset() {
       const selected = sources?.find(row => row.provider === $('cql-provider').value);
       if (!selected || !profileChoices(selected, sources).some(choice => !choice.disabled)) {
+        preparation = null;
         endpoint = ''; $('cql-request').value = ''; $('cql-endpoint').textContent = '';
         controls(); return;
       }
       const chosen = profilePreset(selected, $('cql-preset').value);
+      preparation = chosen.preparation ?? null;
       endpoint = chosen.path;
       $('cql-endpoint').textContent = 'POST /api/' + endpoint;
       $('cql-request').value = JSON.stringify(chosen.body, null, 2);
@@ -238,7 +247,7 @@
     }
 
     async function run() {
-      if (controller || discovery || !getToken() || !endpoint) return;
+      if (controller || preparing || discovery || !getToken() || !endpoint) return;
       let body;
       try { body = parse($('cql-request').value); }
       catch (error) { note(error.message, true); return; }
@@ -339,6 +348,25 @@
       }
     }
 
+    async function prepareRecords() {
+      if (preparing || controller || discovery || !preparation || !request || !getToken() || !canPrepare()) return;
+      const token = getToken(); const base = getBase(); const current = ++generation;
+      const isCurrent = () => current === generation && token === getToken() && base === getBase();
+      preparing = true; controls();
+      note('Preparing private Mongo snapshots from the configured example…');
+      try {
+        const result = await root.CqlDemoPreparation.prepare({ recipe: preparation,
+          request: (path, body) => request('POST', path, body), storage: root.localStorage, base,
+          isCurrent, randomUUID: () => crypto.randomUUID() });
+        if (isCurrent()) {
+          note(`${result.saved} saved · ${result.existing} already prepared. Run the federation query to inspect both providers.`);
+          $('cql-operation').textContent = result.keys.length ? 'Acknowledged save request keys: ' + result.keys.join(', ') : 'Existing records were left unchanged.';
+        }
+      } catch (error) { if (isCurrent()) note(error.message, true); }
+      finally { preparing = false; controls(); }
+    }
+
+    $('cql-prepare').addEventListener('click', prepareRecords);
     $('cql-provider').addEventListener('change', chooseProvider);
     $('cql-preset').addEventListener('change', loadPreset);
     $('cql-reset').addEventListener('click', loadPreset);

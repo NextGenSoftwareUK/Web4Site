@@ -1,3 +1,14 @@
+## Visitor preparation milestone — 31 October 2026
+
+Pending publication: sandbox-only PREPARE MY MONGO RECORDS uses configured source
+examples, Core-derived private identities and ordinary create-only saves. Existing
+edited/foreign records are preserved. Per-operation localStorage journals keep
+uncertain outcomes without retries; no tokens/payloads are stored.39client tests
+pass/no skips; backend86API/383Core pass. Actual hosted preparation and5/4federation
+acceptance remain pending. Public production still has four verified leaf providers.
+Local demo links remain alongside hosted examples; local-only providers must not
+be counted as working hosted sources.
+
 # WEB4 sandbox CQL tab â€” current implementation
 
 Updated31 October2026. Existing C:/Source/Web4Site checkout, branch work/cosmic-cql.

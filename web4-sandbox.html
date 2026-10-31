@@ -167,6 +167,10 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       </div>
       <div class="row" style="margin-top:16px"><button id="cql-refresh" class="ghost" disabled>REFRESH PROVIDERS</button></div>
       <p class="note" id="cql-sources" role="status" aria-live="polite">Sign in to load the providers available on this WEB4 node. Local developer demos are linked separately below.</p>
+      <div id="cql-prepare-panel" hidden>
+        <button id="cql-prepare" disabled>PREPARE MY MONGO RECORDS</button>
+        <p class="note">Copies the example's first two records into your private Mongo storage. Existing or edited records are left unchanged. Then run the federation query.</p>
+      </div>
     </div>
 
     <div class="card">
@@ -886,7 +890,7 @@ async function call(method, path, body){
     'Authorization':'Bearer ' + jwt, 'Idempotency-Key':key};
   let response;
   try {
-    response = await fetch(`${base()}/api/${path}`, {method, headers,
+    response = await fetch(`${base()}/api/${path}`, {method, headers, redirect:'error', cache:'no-store',
       body: body ? JSON.stringify(body) : undefined});
   } catch (error) {
     throw new Error(`${error.message}. Request key: ${key}. Outcome unknown; do not repeat a write.`);
@@ -1283,9 +1287,10 @@ function renderMetrics(metrics, connections, best){
     '</tbody></table>';
 }
 </script>
+<script src="cql-demo-preparation.js"></script>
 <script src="cql-playground.js"></script>
 <script>
-window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base() });
+window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), request: call, canPrepare: isSandbox });
 </script>
 </body>
 </html>
