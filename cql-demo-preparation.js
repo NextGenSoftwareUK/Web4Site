@@ -37,6 +37,18 @@
       : { provider: source.provider, metadataKey: filter.metadataPath[0], keys, read };
   }
 
+  function composeIdPair(plan, copies) {
+    if (plan?.selectionKind !== 'Id' || !Array.isArray(copies) || copies.length < 1 || copies.length > 2)
+      throw new Error('An ID recipe and one or two acknowledged snapshot identities are required.');
+    const originals = plan.pairedRequest.source.filters[0].value.map(id => id.toLowerCase());
+    if (copies.some(id => !nonemptyGuid(id) || originals.includes(id.toLowerCase())) ||
+        new Set(copies.map(id => id.toLowerCase())).size !== copies.length)
+      throw new Error('Mapped snapshot identities overlap the source. No save was sent.');
+    const paired = clone(plan.pairedRequest);
+    paired.source.filters[0].value = [...originals, ...copies];
+    return paired;
+  }
+
   async function prepare({ recipe: supplied, request, storage, base, isCurrent, randomUUID }) {
     const plan = clone(supplied);
     if (!plan || !Array.isArray(plan.keys) || plan.keys.length < 1 || plan.keys.length > 2 ||
@@ -66,13 +78,7 @@
       // A snapshot has a Core-mapped, avatar-scoped ID, not its source ID.
       // Both sets belong in the shared federation predicate. Oracle's separate
       // authoritative catalogue still limits its native side of the query.
-      const originals = plan.pairedRequest.source.filters[0].value.map(id => id.toLowerCase());
-      const copies = identity.records.map(record => record.id);
-      if (copies.some(id => !nonemptyGuid(id) || originals.includes(id.toLowerCase())) ||
-          new Set(copies.map(id => id.toLowerCase())).size !== copies.length)
-        throw new Error('Mapped snapshot identities overlap the source. No save was sent.');
-      result.pairedRequest = clone(plan.pairedRequest);
-      result.pairedRequest.source.filters[0].value = [...originals, ...copies];
+      result.pairedRequest = composeIdPair(plan, identity.records.map(record => record.id));
     }
     for (const record of identity.records) {
       current();
@@ -124,7 +130,7 @@
     return result;
   }
 
-  const api = { recipe, prepare };
+  const api = { recipe, prepare, composeIdPair };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlDemoPreparation = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

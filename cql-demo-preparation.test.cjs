@@ -100,6 +100,17 @@ test('ID recipes reject mixed fields, malformed IDs and equivalent duplicate GUI
   }
 });
 
+test('the shared ID compositor rejects invalid copy sets and never mutates a source template', () => {
+  const f = idFixture();
+  const before = structuredClone(f.recipe);
+  assert.deepEqual(prep.composeIdPair(f.recipe, ids).source.filters[0].value, [...f.nativeIds, ...ids]);
+  assert.deepEqual(f.recipe, before);
+  for (const invalid of [[], null, [f.nativeIds[0]], ['bad-id'],
+    ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA']])
+    assert.throws(() => prep.composeIdPair(f.recipe, invalid));
+  assert.throws(() => prep.composeIdPair(fixture().recipe, ids));
+});
+
 test('ID preparation rejects source/mapping mismatch before writing', async () => {
   for (const fault of ['source', 'mapping']) {
     const f = idFixture();
