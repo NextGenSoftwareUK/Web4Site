@@ -507,6 +507,19 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup and generation retirement. It removes the exact owned Mongo fixture and stops both daemons; canonical identities and retirement evidence remain.</p>
     </div>
+    <div class="card" id="cql-valkey-catalogue">
+      <h2>26 · Valkey + MongoDB</h2>
+      <p>Run one CQL ID filter over three retained encrypted Valkey records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
+      <p class="note">This uses the independently identified Valkey 9.0.4 server and its original persistent source. Redis protocol compatibility is not used as proof of Valkey readiness. General metadata/text queries, cluster replication/failover, shared snapshots and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Valkey demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies a clean server restart, then starts the Linux Mongo-paired demo.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicValKeyLinuxDemo.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5120/" target="_blank" rel="noopener noreferrer">OPEN VALKEY + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original Valkey data, keys and receipts remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
