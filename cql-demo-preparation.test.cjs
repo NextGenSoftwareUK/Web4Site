@@ -340,3 +340,32 @@ test('Arbitrum address snapshots keep the source filter and never request a sign
   assert.equal(f.saves.length, 2);
   assert.equal(f.journal.length, 0);
 });
+
+test('Cosmos validator snapshots keep the source filter and never request a signed chain write', async () => {
+  const keys = ['cosmosvaloper1qphf0ferqcch0jca9hlqfm3x0eds3dpkcvpafp',
+    'cosmosvaloper1qr6sk28w4r6kqsg0737wzgu05505t4glezetwn',
+    'cosmosvaloper1q9p73lx07tjqc34vs8jrsu5pg3q4ha534uqv4w'];
+  const f = fixture(2, { provider: 'CosmosBlockChainOASIS', metadataKey: 'CosmosValidatorAddress', keys });
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  const original = structuredClone(f.example);
+
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.deepEqual(plan.read.filters[0].value, keys.slice(0, 2));
+  assert.deepEqual(f.example, original);
+
+  for (const [index, save] of f.saves.entries()) {
+    assert.equal(save.providerType, 'MongoDBOASIS');
+    assert.equal(save.holon.id, ids[index]);
+    assert.equal(save.holon.metaData.CosmosValidatorAddress, keys[index]);
+    assert.equal(save.holon.metaData['oasis.native.provider'], 'CosmosBlockChainOASIS');
+    assert.equal(save.holon.isPublic, false);
+  }
+
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.equal(f.journal.length, 0);
+});
