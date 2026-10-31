@@ -663,6 +663,19 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Qdrant points and vectors, then stops both services. Original data, certificates, credentials and receipts remain.</p>
     </div>
+    <div class="card" id="cql-weaviate-catalogue">
+      <h2>38 · Weaviate + MongoDB</h2>
+      <p>Run one CQL ID selection over three retained Weaviate objects and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
+      <p class="note">This uses real Weaviate 1.39.8 and its configured C# gRPC client over authenticated TLS. GraphQL is disabled in this demo service. Original object JSON, timestamps and schema are checked through restart and federation. Vectorization is disabled; semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Weaviate demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original node, objects, private CA and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicWeaviateLinuxDemo.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5132/" target="_blank" rel="noopener noreferrer">OPEN WEAVIATE + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Weaviate objects, then stops both services. Original data, certificates, credentials and receipts remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
