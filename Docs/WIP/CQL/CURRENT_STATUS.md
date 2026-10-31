@@ -33,3 +33,5 @@ Reused existing Node/Python and checkout; no install/restore/native services or 
 
 
 Google public Cloud Storage preparation: one new case verifies exact Landsat host keys, Core-mapped private snapshot IDs, unchanged three-key federation template and repeat0writes/2existing. All48client controls pass. No Google-specific production JS required: discovery/presets/preparation already dispatch by explicit host provider and metadata key. Backend native HTTP3/2/5/4and tenant isolation passed on OASIS task branchf26d6d668; hosted enrollment/browser remain pending. Public host still lists8verified HTTPsources.
+
+Google public metadata card now links pinned OASIS2627bae37guide/C# console demo and its exact --google-public command. Labelled native/local HTTP verified, hosted/browser pending; no new hosted-provider claim. Separate Firestore emulator text retained. Browser tool transport still unavailable; no rendering acceptance claimed.

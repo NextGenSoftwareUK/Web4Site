@@ -294,6 +294,11 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     </div>
     <div class="card" id="cql-google-catalogue">
       <h2>10 · Google Firestore emulator + MongoDB</h2>
+      <p><strong>Public Google Cloud metadata, no account needed:</strong> a separate read-only C# demo queries three configured public Landsat objects, then a two-object subset, through HolonManager and LINQ. It reads object metadata without downloading imagery or writing records.</p>
+      <p class="note">This public Cloud Storage profile has passed native C# and local HTTP/Mongo pairing checks. Hosted sandbox enrollment and browser verification are pending; use the local command below for now. The Firestore emulator example remains separate.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --google-public LocalState/COSMIC/HostedGcsPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2627bae379c12a5f9156819e99eb798bc2b32b95/Docs/Devs/GOOGLE_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Google setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2627bae379c12a5f9156819e99eb798bc2b32b95/Examples/CosmicCqlDemo/GooglePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <p>Run one CQL ID filter over native Firestore documents and MongoDB copies. Full selection returns five physical copies: Google three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses GoogleCloudOASIS against the retained Firestore emulator. Hosted Google Cloud, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
