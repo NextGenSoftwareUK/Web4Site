@@ -455,6 +455,19 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Exact name</strong>, <strong>Description Contains</strong>, <strong>Metadata equality</strong> and <strong>AND / OR</strong>. The page also includes full and subset ID examples. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original SQL Server databases, records and source evidence remain.</p>
     </div>
+    <div class="card" id="cql-duckdb-catalogue">
+      <h2>22 · DuckDB + MongoDB</h2>
+      <p>Run one CQL ID filter over three retained DuckDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. The retained deleted record stays excluded.</p>
+      <p class="note">This uses a real embedded DuckDB file, not MotherDuck or a hosted service. Records use plaintext canonical JSON. General metadata/text queries, shared snapshots, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained DuckDB demo</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reopens the original database file and reuses the cached native driver and Mongo runtime.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDuckDbCqlNative.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5116/" target="_blank" rel="noopener noreferrer">OPEN DUCKDB + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture, closes database connections and stops the teaching host; the original DuckDB file and source evidence remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
