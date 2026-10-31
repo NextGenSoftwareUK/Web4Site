@@ -5,8 +5,8 @@ Updated 31 October 2026. Existing C:/Source/Web4Site, task work/cosmic-cql.
 ## Verified public release
 
 - main 2b46dedfcfc41695ba36d232a1ff098e4ae711bc, production 7456696386 success.
-- Backend Development 51fc64f5e/Core 249a223, Railway 14b4e5e7-6646-4e20-b05f-a3025b3819d1 SUCCESS.
-- Four hosted query providers: MongoDB, SQLite, Neo4j, ActivityPub. Local-only entries are not hosted coverage.
+- Backend Development913b9d0bf/Core249a223, Railway64bbc646-5d06-412a-a5bd-eb62ca9ae737 SUCCESS.
+- Five hosted query providers: MongoDB, SQLite, Neo4j, ActivityPub, IPFS. Local-only entries are not hosted coverage.
 - Fresh visitor prepared2 private Mongo records, queried AP3+Mongo2=5 rows and AP2+Mongo2=4. Repeat0 saved / 2 existing; another visitor sees3 public posts and0 foreign Mongo IDs.
 - Those2 writes auto-replicated to SQLite/Neo4j with matching IDs, versions, ownership and metadata. No manual repair. Full HyperDrive fault matrix remains incomplete.
 - Server operation ID visible in browser. Published scripts match tested bytes.39 client / 86 API / 383 Core controls pass, no skips.
@@ -19,9 +19,15 @@ Discovery version2 supplies fixed Rows/Federation operations and capability-chec
 
 Preparation uses configured source examples, Core-derived private IDs and ordinary create-only saves. Edited/foreign records are preserved. Per-operation localStorage intents contain identifiers only; uncertain outcomes require reconciliation, never automatic retry. Tokens live only in page memory.
 
+IPFS is now verified through the same generic controls: native3/2, paired5/4,
+repeat0writes, other-visitor private-ID0, matching SQLite/Neo4j replicas. No client
+provider case or new frontend deployment needed. Backend SDK ABI failure was
+reproduced/fixed at source dependency composition; original evidence preserved.
+Select IPFSOASIS, then IPFS records + my Mongo records, prepare and run.
+
 ## Next
 
-Actual hosted Oracle/IPFS/SOLID/Solana/AWS and remaining approved providers: filtered multiple records, one Mongo pairing and minimal setup. Azure pending/free-only. Keep local runner links without counting launchers as hosted support. Deep parity paused.
+Actual hosted Oracle/SOLID/Solana/AWS and remaining approved providers: filtered multiple records, one Mongo pairing and minimal setup. Azure pending/free-only. Keep local runner links without counting launchers as hosted support. Deep parity paused.
 
 ## Recovery
 
