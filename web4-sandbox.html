@@ -282,7 +282,13 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
     </div>
     <div class="card" id="cql-evm-catalogue">
-      <h2>9 · Polygon and Arbitrum + MongoDB</h2>
+      <h2>9 · Polygon and Arbitrum demos</h2>
+      <h3>Public Polygon balances · no wallet needed</h3>
+      <p>The read-only C# example queries three configured Polygon mainnet addresses, then a two-address subset, through HolonManager and LINQ. It prints exact native balances and the selected finalized block hash without creating transactions or a database.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted sandbox enrollment and browser verification are pending; use this local command after building the example.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polygon-public LocalState/COSMIC/HostedPolygonPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8c1473758e0f86e9d9204513d406c0f9af77a51e/Docs/Devs/POLYGON_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polygon setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8c1473758e0f86e9d9204513d406c0f9af77a51e/Examples/CosmicCqlDemo/PolygonPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">

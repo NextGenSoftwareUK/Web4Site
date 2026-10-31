@@ -43,3 +43,5 @@ Ethereum catalogue card links the pinned OASISe9283978bCLI/guide/sample, labelle
 Public9b65a88HTTP observation: canonical HTML and both unchanged CQL scripts exactly match committed git blobs. Google/Ethereum C# guide/CLI links are live, explicitly labelled hosted/browser pending. Comparison uses git blobs rather than Windows checkout line endings. Evidence in assigned OASIS worktree TestResults/HostedCqlIntegrationCurrent/frontend-google-ethereum-publication.json; this is HTTP publication, not browser query acceptance.
 
 Polygon preparation: one new address-key case verifies unchanged3address template, private Core-mapped IDs, Mongo-only create writes and repeat0writes/2existing.50client controls pass. Backend Polygon WEB4/HTTP/native pairing passes locally; no hosted source/browser count increase or productionJSbranch.
+
+Polygon public-balance CLI/guide/sample links staged in the existing Polygon/Arbitrum card, pinned to OASIS8c1473758. Public main9b65a88remains unchanged; new card awaits next website batch. Distinguishes public mainnet native reads from retained local signed-record demos.50client controls pass; hosted Polygon/browser still pending.

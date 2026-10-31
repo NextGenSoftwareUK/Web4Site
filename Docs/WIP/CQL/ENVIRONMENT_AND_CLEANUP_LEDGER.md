@@ -13,3 +13,5 @@ Shared detailed inventory: [COSMIC ledger](C:/Source/OASIS-cosmic/Docs/WIP/COSMI
 31October static publication9b65a88: task/main fast-forward pushed/ls-remote verified afterfetch,49controls. Existing host served exact committed HTML/preparation/playground bytes via3boundedGETs; transient report only in assigned OASIS TestResults/HostedCqlIntegrationCurrent, no raw page download saved. No backend deploy/config/session/account change. Browser execution gate unchanged.
 
 31October Polygon preparation: existing checkout/Node reused;50terminal-only controls, no install/download/runtime/server/dataset. Backend fixture/candidate resources recorded in shared COSMIC ledger; no frontend output/environment created.
+
+31October Polygon CLI catalogue links: existing HTML/docs/Node only,50controls pass; no install/output/server/dataset. Task branch only pending next website publication, no backend config/deploy. Shared COSMIC ledger records native proof and source282B.
