@@ -15,20 +15,26 @@
         body.providers?.length !== 2 || !body.providers.includes('MongoDBOASIS') || !body.providers.includes(source.provider) ||
         input?.filters?.length !== 1 || input.orderBy !== 'None' || input.skip || input.descending || input.graph ||
         [input.anyOf, input.anyChildren, input.anyDescendants].some(group => group?.length) ||
-        filter.field != null || filter.operator !== 'In' || filter.scalar !== 'String' || filter.metadataPath?.length !== 1 ||
-        !/^[A-Za-z][A-Za-z0-9_.]{0,63}$/.test(filter.metadataPath[0]) ||
-        ['constructor', 'prototype', 'COSMIC.Demo.Dataset', 'COSMIC.Demo.SourceHolonId',
-          'oasis.native.provider', 'oasis.native.source'].includes(filter.metadataPath[0]) ||
+        filter.operator !== 'In' ||
         !Array.isArray(filter.value) || !filter.value.length || filter.value.length > 40 ||
         filter.value.some(key => typeof key !== 'string' || !/^[!-~]{1,128}$/.test(key)) ||
         new Set(filter.value).size !== filter.value.length) return null;
-    const keys = filter.value.slice(0, 2);
+    const byId = filter.field === 'Id' && filter.scalar === 'Guid' && filter.metadataPath == null;
+    if (byId) {
+      if (filter.value.some(key => !nonemptyGuid(key)) ||
+          new Set(filter.value.map(key => key.toLowerCase())).size !== filter.value.length) return null;
+    } else if (filter.field != null || filter.scalar !== 'String' || filter.metadataPath?.length !== 1 ||
+        !/^[A-Za-z][A-Za-z0-9_.]{0,63}$/.test(filter.metadataPath[0]) ||
+        ['constructor', 'prototype', 'COSMIC.Demo.Dataset', 'COSMIC.Demo.SourceHolonId',
+          'oasis.native.provider', 'oasis.native.source'].includes(filter.metadataPath[0])) return null;
+    const keys = filter.value.slice(0, 2).map(key => byId ? key.toLowerCase() : key);
     const read = clone(input);
     read.provider = source.provider;
     read.filters[0].value = keys;
     read.take = keys.length;
     read.includeMetadata = true;
-    return { provider: source.provider, metadataKey: filter.metadataPath[0], keys, read };
+    return byId ? { provider: source.provider, selectionKind: 'Id', keys, read, pairedRequest: clone(body) }
+      : { provider: source.provider, metadataKey: filter.metadataPath[0], keys, read };
   }
 
   async function prepare({ recipe: supplied, request, storage, base, isCurrent, randomUUID }) {
@@ -44,7 +50,7 @@
       throw new Error('The source did not return the selected records. No save was sent.');
     const sourceRows = new Map();
     for (const row of rows) {
-      const key = row.metadata?.[plan.metadataKey];
+      const key = plan.selectionKind === 'Id' && nonemptyGuid(row.id) ? row.id.toLowerCase() : row.metadata?.[plan.metadataKey];
       if (!plan.keys.includes(key) || sourceRows.has(key) || !nonemptyGuid(row.id) || typeof row.name !== 'string')
         throw new Error('Source identity did not match the configured example. No save was sent.');
       sourceRows.set(key, row);
@@ -56,6 +62,18 @@
         new Set(identity.records.map(record => record.nativeKey)).size !== plan.keys.length)
       throw new Error('WEB4 did not acknowledge the preparation identities. No save was sent.');
     const result = { saved: 0, existing: 0, keys: [] };
+    if (plan.selectionKind === 'Id') {
+      // A snapshot has a Core-mapped, avatar-scoped ID, not its source ID.
+      // Both sets belong in the shared federation predicate. Oracle's separate
+      // authoritative catalogue still limits its native side of the query.
+      const originals = plan.pairedRequest.source.filters[0].value.map(id => id.toLowerCase());
+      const copies = identity.records.map(record => record.id);
+      if (copies.some(id => !nonemptyGuid(id) || originals.includes(id.toLowerCase())) ||
+          new Set(copies.map(id => id.toLowerCase())).size !== copies.length)
+        throw new Error('Mapped snapshot identities overlap the source. No save was sent.');
+      result.pairedRequest = clone(plan.pairedRequest);
+      result.pairedRequest.source.filters[0].value = [...originals, ...copies];
+    }
     for (const record of identity.records) {
       current();
       if (!nonemptyGuid(record.id) || !sourceRows.has(record.nativeKey) ||
@@ -70,7 +88,7 @@
         if (storage.key(index)?.startsWith(prefix))
           throw new Error('An earlier save requires reconciliation. Do not repeat it. ' + storage.key(index).slice(prefix.length));
       const source = sourceRows.get(record.nativeKey);
-      const metadata = { ...record.metadata, [plan.metadataKey]: record.nativeKey,
+      const metadata = { ...record.metadata, ...(plan.selectionKind === 'Id' ? {} : { [plan.metadataKey]: record.nativeKey }),
         'COSMIC.Demo.Dataset': dataset, 'COSMIC.Demo.SourceHolonId': source.id };
       const loaded = await call('data/query-cql', { provider: 'MongoDBOASIS', orderBy: 'Id', take: 1, includeMetadata: true,
         filters: [{ field: 'Id', scalar: 'Guid', operator: 'Equal', value: record.id }] });

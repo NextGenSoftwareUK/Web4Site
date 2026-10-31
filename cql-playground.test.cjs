@@ -396,6 +396,50 @@ test('private preparation uses the configured example rather than edited JSON an
   assert.match(h.elements.get('cql-note').textContent, /2 saved/);
 });
 
+test('ID preparation publishes the actor-specific query only after complete save acknowledgements', async () => {
+  const native = ['44444444-4444-4444-8444-444444444441',
+    '44444444-4444-4444-8444-444444444442', '44444444-4444-4444-8444-444444444443'];
+  const copies = ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'];
+  const owner = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  for (const incomplete of [false, true]) {
+    const source = federationSource();
+    source.provider = 'OracleDBOASIS';
+    source.examples[0].request.providers = ['MongoDBOASIS', source.provider];
+    source.examples[0].request.source.filters = [{ field: 'Id', scalar: 'Guid', operator: 'In', value: native }];
+    const entries = new Map(); let writes = 0; let executed;
+    const storage = { get length() { return entries.size; }, key: i => [...entries.keys()][i] ?? null,
+      getItem: key => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value), removeItem: key => entries.delete(key) };
+    const request = async (_, path, body) => {
+      if (path.endsWith('demo-identities')) return { result: { ownerId: owner, provider: source.provider,
+        records: body.keys.map((nativeKey, i) => ({ id: copies[i], nativeKey, metadata: {
+          'oasis.native.provider': source.provider, 'oasis.native.source': 'cosmic-cql-demo', 'oasis.native.key': nativeKey
+        } })) } };
+      if (path === 'data/query-cql') return { result: { rows: body.provider === source.provider
+        ? body.filters[0].value.map(id => ({ id, name: 'Native ' + id, metadata: {} })) : [] } };
+      writes++;
+      return { isSaved: !(incomplete && writes === 2), result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false } };
+    };
+    const h = harness(async (url, options) => {
+      assert.match(url, /\/api\/data\/query-cql\/federation$/);
+      executed = JSON.parse(options.body);
+      return { ok: true, status: 200, json: async () => ({ result: { rows: [] } }) };
+    }, async () => ({ ok: true, status: 200, json: async () => ({ result: [source,
+      { provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true, examples: [] }] }) }),
+    { storage, request, canPrepare: true });
+    await h.ui.ready;
+    await h.elements.get('cql-prepare').listeners.click();
+    const displayed = JSON.parse(h.elements.get('cql-request').value);
+    assert.deepEqual(displayed.source.filters[0].value, incomplete ? native : [...native, ...copies]);
+    assert.equal(writes, 2); assert.equal(entries.size, incomplete ? 1 : 0);
+    if (incomplete) assert.match(h.elements.get('cql-note').textContent, /acknowledgement is incomplete/);
+    else {
+      assert.match(h.elements.get('cql-note').textContent, /query now includes your private snapshot IDs/);
+      await h.elements.get('cql-run').listeners.click();
+      assert.deepEqual(executed.source.filters[0].value, [...native, ...copies]);
+    }
+  }
+});
+
 test('view-only environment cannot start record preparation', async () => {
   let calls = 0;
   const h = harness(async () => { throw new Error('No query requested.'); },

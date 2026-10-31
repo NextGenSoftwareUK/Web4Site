@@ -47,6 +47,86 @@ function fixture(count = 2) {
   return { recipe, source, example, db, saves, calls, journal, request, options, changeSession() { current = false; } };
 }
 
+function idFixture() {
+  const f = fixture();
+  const nativeIds = ['44444444-4444-4444-8444-444444444441',
+    '44444444-4444-4444-8444-444444444442', '44444444-4444-4444-8444-444444444443'];
+  f.source.provider = 'OracleDBOASIS';
+  f.example.request.providers = ['MongoDBOASIS', f.source.provider];
+  f.example.request.source.filters = [{ field: 'Id', scalar: 'Guid', operator: 'In', value: nativeIds }];
+  const previous = f.request;
+  f.request = async (path, body) => {
+    if (path.endsWith('demo-identities')) return { result: { ownerId: owner, provider: f.source.provider,
+      records: body.keys.map((nativeKey, i) => ({ id: ids[i], nativeKey, metadata: {
+        'oasis.native.provider': f.source.provider, 'oasis.native.source': 'cosmic-cql-demo', 'oasis.native.key': nativeKey
+      } })) } };
+    if (path === 'data/query-cql' && body.provider === f.source.provider) return { result: {
+      rows: body.filters[0].value.map(id => ({ id, name: 'Native ' + id, description: null, metadata: {} })) } };
+    return previous(path, body);
+  };
+  f.recipe = prep.recipe(f.source, f.example);
+  f.options = { ...f.options, recipe: f.recipe, request: f.request };
+  return { ...f, nativeIds };
+}
+
+test('ID pairing uses original and Core-mapped IDs, preserving three/two-record server selections', async () => {
+  const f = idFixture();
+  const first = await prep.prepare(f.options);
+  assert.equal(first.saved, 2);
+  assert.deepEqual(first.pairedRequest.source.filters[0].value, [...f.nativeIds, ...ids]);
+  assert.deepEqual(f.example.request.source.filters[0].value, f.nativeIds);
+  assert.equal(f.saves[0].holon.metaData['COSMIC.Demo.SourceHolonId'], f.nativeIds[0]);
+  assert.equal(Object.hasOwn(f.saves[0].holon.metaData, 'undefined'), false);
+  const repeated = await prep.prepare(f.options);
+  assert.equal(repeated.saved, 0); assert.equal(repeated.existing, 2);
+  assert.deepEqual(repeated.pairedRequest, first.pairedRequest);
+  const subset = structuredClone(f.example);
+  subset.request.source.filters[0].value = f.nativeIds.slice(0, 2);
+  const smaller = await prep.prepare({ ...f.options, recipe: prep.recipe(f.source, subset) });
+  assert.equal(smaller.saved, 0); assert.equal(smaller.existing, 2);
+  assert.deepEqual(smaller.pairedRequest.source.filters[0].value, [...f.nativeIds.slice(0, 2), ...ids]);
+  assert.equal(f.saves.length, 2);
+});
+
+test('ID recipes reject mixed fields, malformed IDs and equivalent duplicate GUIDs', () => {
+  const f = idFixture();
+  for (const change of [filter => { filter.metadataPath = ['category']; },
+    filter => { filter.value[0] = 'not-a-guid'; },
+    filter => { filter.scalar = 'String'; },
+    filter => { filter.value = ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA']; }]) {
+    const example = structuredClone(f.example);
+    change(example.request.source.filters[0]);
+    assert.equal(prep.recipe(f.source, example), null);
+  }
+});
+
+test('ID preparation rejects source/mapping mismatch before writing', async () => {
+  for (const fault of ['source', 'mapping']) {
+    const f = idFixture();
+    const request = async (path, body) => {
+      const value = await f.request(path, body);
+      if (fault === 'source' && body.provider === 'OracleDBOASIS') value.result.rows[0].id = randomUUID();
+      if (fault === 'mapping' && path.endsWith('demo-identities')) value.result.records[0].id = f.nativeIds[0];
+      return value;
+    };
+    await assert.rejects(prep.prepare({ ...f.options, request }), /identity|identities/i);
+    assert.equal(f.saves.length, 0);
+  }
+});
+
+test('ID preparation retains unknown save outcome and does not replay it', async () => {
+  const f = idFixture();
+  const request = async (path, body) => {
+    const value = await f.request(path, body);
+    if (path === 'data/save-holon') throw new Error('outcome unknown');
+    return value;
+  };
+  await assert.rejects(prep.prepare({ ...f.options, request }), /unknown/);
+  assert.equal(f.saves.length, 1); assert.equal(f.journal.length, 1);
+  await assert.rejects(prep.prepare(f.options), /reconciliation/);
+  assert.equal(f.saves.length, 1);
+});
+
 test('preparation creates private snapshots once and reuses acknowledged identities without overwriting', async () => {
   const f = fixture();
   assert.equal((await prep.prepare(f.options)).saved, 2);

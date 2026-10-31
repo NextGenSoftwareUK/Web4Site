@@ -359,7 +359,10 @@
           request: (path, body) => request('POST', path, body), storage: root.localStorage, base,
           isCurrent, randomUUID: () => crypto.randomUUID() });
         if (isCurrent()) {
-          note(`${result.saved} saved · ${result.existing} already prepared. Run the federation query to inspect both providers.`);
+          if (result.pairedRequest) $('cql-request').value = JSON.stringify(result.pairedRequest, null, 2);
+          note(`${result.saved} saved · ${result.existing} already prepared. ` +
+            (result.pairedRequest ? 'The query now includes your private snapshot IDs. ' : '') +
+            'Run the federation query to inspect both providers.');
           $('cql-operation').textContent = result.keys.length ? 'Acknowledged save request keys: ' + result.keys.join(', ') : 'Existing records were left unchanged.';
         }
       } catch (error) { if (isCurrent()) note(error.message, true); }
