@@ -468,6 +468,19 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture, closes database connections and stops the teaching host; the original DuckDB file and source evidence remain.</p>
     </div>
+    <div class="card" id="cql-upstash-catalogue">
+      <h2>23 · Temporary hosted Upstash + MongoDB</h2>
+      <p>Run one CQL ID filter over three hosted Upstash records and two local MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
+      <p class="note"><strong>The retained free scratch admission expires 31 October 2026 at 21:15 UTC.</strong> The runner refuses expired admission; permanent free hosting remains pending. This is a real hosted REST query with plaintext canonical JSON, not an emulator. General metadata/text queries, atomic multi-command writes, shared snapshots and full parity remain separate work. Your sandbox sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Upstash demo before expiry</summary>
+        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the protected existing hosted identity, original records and Mongo runtime. Do not paste credentials into the browser or replace the expired source.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicUpstashCqlNative.ps1 -Federated -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5117/" target="_blank" rel="noopener noreferrer">OPEN UPSTASH + MONGO QUERY ↗</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops local services; the original hosted source remains subject to its expiry.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
