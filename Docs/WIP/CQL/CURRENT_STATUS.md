@@ -47,3 +47,5 @@ Polygon preparation: one new address-key case verifies unchanged3address templat
 Polygon public-balance CLI/guide/sample links staged in the existing Polygon/Arbitrum card, pinned to OASIS8c1473758. Public main9b65a88remains unchanged; new card awaits next website batch. Distinguishes public mainnet native reads from retained local signed-record demos.50client controls pass; hosted Polygon/browser still pending.
 
 Arbitrum preparation adds one address-key case: unchanged three-address template, Core-derived private IDs, Mongo-only create writes and repeat0writes/2existing.51client controls pass. Backend native WEB4/Mongo HTTP pairing verified locally; hosted/public-browser counts unchanged.
+
+Arbitrum CLI/guide/sample links staged beside Polygon in the existing card, pinned to OASIS2c06411c0. Both pending next website batch; publicmain9b65a88unchanged.51client tests pass. New read-only mainnet views clearly separated from retained local owned-record demos; no hosted/browser availability claim.
