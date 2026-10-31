@@ -75,16 +75,16 @@ test('local Oracle examples use only the fixed loopback host and supported prese
 
 // Exercise the asynchronous UI boundary without installing a DOM library.
 // These are client controls; live provider/admission proof is recorded separately.
-function harness(fetcher) {
+function harness(fetcher, discover) {
   const vm = require('node:vm');
   const fs = require('node:fs');
   const elements = new Map();
   function element() {
     return {
       value: '', textContent: '', children: [], listeners: {}, disabled: false,
-      add(option) { if (!this.value) this.value = option.value; },
+      add(option) { this.children.push(option); if (!this.value) this.value = option.value; },
       append(child) { this.children.push(child); },
-      replaceChildren(...children) { this.children = children; },
+      replaceChildren(...children) { this.children = children; this.value = ''; },
       addEventListener(name, action) { this.listeners[name] = action; },
       createTHead() { const child = element(); this.children.push(child); return child; },
       createTBody() { const child = element(); this.children.push(child); return child; },
@@ -95,7 +95,10 @@ function harness(fetcher) {
   const context = {
     TextEncoder, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto,
     fetch: async (...args) => {
-      const response = await fetcher(...args);
+      const response = args[0].endsWith('/api/data/query-cql/providers')
+        ? await (discover || (async () => ({ ok: true, status: 200, json: async () => ({ isError: false,
+          result: cql.providers.map(provider => ({ provider, available: true, queryOnly: false, federationAvailable: true, examples: [] })) }) })))(...args)
+        : await fetcher(...args);
       response.headers ??= { get: () => null };
       return response;
     },
@@ -115,15 +118,17 @@ function harness(fetcher) {
 test('API failures display their status/code and never render success rows', async () => {
   const h = harness(async () => ({ ok: false, status: 503,
     json: async () => ({ isError: true, errorCode: 'CQL_ADMISSION_REQUIRED', message: 'Admission required' }) }));
+  await h.ui.ready;
   await h.elements.get('cql-run').listeners.click();
   assert.match(h.elements.get('cql-note').textContent, /503.*CQL_ADMISSION_REQUIRED/);
   assert.equal(h.elements.get('cql-results').children.length, 0);
   assert.equal(h.elements.get('cql-run').disabled, false);
 });
 
-test('local Oracle link works without signing in and never sends the hosted bearer or edited request', () => {
+test('local Oracle link works without signing in and never sends the hosted bearer or edited request', async () => {
   let requests = 0;
   const h = harness(async () => { requests++; throw new Error('No native fetch through hosted auth.'); });
+  await h.ui.ready;
   h.signOut();
   h.elements.get('cql-request').value = '{"actorId":"private-owner","token":"never-share"}';
   const chooser = h.elements.get('cql-oracle-preset');
@@ -137,6 +142,7 @@ test('local Oracle link works without signing in and never sends the hosted bear
 test('a late response after sign-out cannot restore data from the previous identity', async () => {
   let release;
   const h = harness(() => new Promise(resolve => { release = resolve; }));
+  await h.ui.ready;
   const running = h.elements.get('cql-run').listeners.click();
   h.signOut();
   release({ ok: true, status: 200, json: async () => ({ isError: false, result: {
@@ -155,6 +161,7 @@ test('stored markup is assigned to textContent and each query uses the current b
     return { ok: true, status: 200, json: async () => ({ isError: false,
       result: { provider: 'MongoDBOASIS', rows: [{ name: markup, metadata: {} }] } }) };
   });
+  await h.ui.ready;
   await h.elements.get('cql-run').listeners.click();
   const table = h.elements.get('cql-results').children[0];
   assert.equal(table.children[1].children[0].children[1].textContent, markup);
@@ -169,9 +176,125 @@ test('cancelling an in-flight query does not retry or claim server cancellation'
     calls++;
     return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('aborted'))));
   });
+  await h.ui.ready;
   const running = h.elements.get('cql-run').listeners.click();
   h.elements.get('cql-cancel').listeners.click();
   await running;
   assert.equal(calls, 1);
   assert.match(h.elements.get('cql-note').textContent, /Server work may already have executed/);
+});
+
+function publicSource(provider = 'ActivityPubOASIS') {
+  return { provider, available: true, queryOnly: true, federationAvailable: false, examples: [{
+    id: 'public-posts', label: 'Read public native records', request: {
+      provider, orderBy: 'None', take: 25, filters: [{ metadataPath: ['NativeKey'], scalar: 'String',
+        operator: 'In', value: ['101', '102', '103'] }]
+    }
+  }] };
+}
+
+test('server-owned examples work for discovered sources without adding client provider cases', () => {
+  for (const provider of ['ActivityPubOASIS', 'IPFSOASIS']) {
+    const sources = cql.catalogue({ result: [publicSource(provider)] });
+    assert.deepEqual(cql.profileChoices(sources[0], sources).map(row => row.id), ['host:public-posts']);
+    const chosen = cql.profilePreset(sources[0], 'host:public-posts');
+    assert.equal(chosen.path, 'data/query-cql');
+    assert.equal(chosen.body.provider, provider);
+    chosen.body.filters[0].value.push('changed');
+    assert.equal(cql.profilePreset(sources[0], 'host:public-posts').body.filters[0].value.length, 3);
+  }
+});
+
+test('malformed, duplicate or mis-scoped catalogue entries reject instead of enabling a source', () => {
+  assert.throws(() => cql.catalogue({ result: [publicSource(), publicSource()] }));
+  const missing = publicSource(); delete missing.provider;
+  assert.throws(() => cql.catalogue({ result: [missing] }));
+  const wrongScope = publicSource(); wrongScope.examples[0].request.provider = 'MongoDBOASIS';
+  assert.throws(() => cql.catalogue({ result: [wrongScope] }));
+  const noId = publicSource(); delete noId.examples[0].id;
+  assert.throws(() => cql.catalogue({ result: [noId] }));
+  const excessive = publicSource(); excessive.examples[0].request.extra = '😀'.repeat(8192);
+  assert.throws(() => cql.catalogue({ result: [excessive] }), /32 KiB/);
+});
+
+test('public example uses only the hosted query endpoint and never forwards its bearer to native storage', async () => {
+  const calls = [];
+  const h = harness(async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, status: 200, json: async () => ({ result: { provider: 'ActivityPubOASIS', rows: [] } }) };
+  }, async (url, options) => {
+    calls.push({ url, options });
+    return { ok: true, status: 200, json: async () => ({ result: [publicSource()] }) };
+  });
+  await h.ui.ready;
+  assert.equal(h.elements.get('cql-provider').value, 'ActivityPubOASIS');
+  assert.equal(h.elements.get('cql-preset').value, 'host:public-posts');
+  await h.elements.get('cql-run').listeners.click();
+  assert.deepEqual(calls.map(call => call.url), [
+    'https://example.invalid/api/data/query-cql/providers', 'https://example.invalid/api/data/query-cql'
+  ]);
+  assert.equal(calls[0].options.cache, 'no-store');
+  assert.equal(calls[0].options.headers.Authorization, 'Bearer test-token');
+  assert.equal(calls[1].options.headers.Authorization, 'Bearer test-token');
+  assert.deepEqual(JSON.parse(calls[1].options.body).filters[0].value, ['101', '102', '103']);
+});
+
+test('failed discovery disables queries and does not invent the original three providers', async () => {
+  let queries = 0;
+  const h = harness(async () => { queries++; throw new Error('No query permitted.'); }, async () => ({
+    ok: false, status: 503, json: async () => ({ isError: true, errorCode: 'CQL_SOURCE_CATALOGUE_UNAVAILABLE' })
+  }));
+  await h.ui.ready;
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(queries, 0);
+  assert.equal(h.elements.get('cql-run').disabled, true);
+  assert.equal(h.elements.get('cql-provider').children.length, 0);
+  assert.match(h.elements.get('cql-note').textContent, /503.*CQL_SOURCE_CATALOGUE_UNAVAILABLE/);
+});
+
+test('late discovery after sign-out cannot restore the previous source catalogue', async () => {
+  let release;
+  const h = harness(async () => { throw new Error('No query.'); }, () => new Promise(resolve => { release = resolve; }));
+  h.signOut();
+  release({ ok: true, status: 200, json: async () => ({ result: [publicSource()] }) });
+  await h.ui.ready;
+  assert.equal(h.elements.get('cql-provider').children.length, 0);
+  assert.equal(h.elements.get('cql-run').disabled, true);
+  assert.equal(h.elements.get('cql-sources').textContent, '');
+});
+
+test('unavailable or unconfigured native examples never offer a runnable preset', async () => {
+  const source = publicSource(); source.available = false;
+  assert.equal(cql.profileChoices(source, [source]).length, 0);
+  assert.throws(() => cql.profilePreset(source, 'host:public-posts'));
+  const unknown = publicSource('IPFSOASIS'); unknown.examples = [];
+  const h = harness(async () => { throw new Error('No query.'); }, async () => ({
+    ok: true, status: 200, json: async () => ({ result: [unknown] })
+  }));
+  await h.ui.ready;
+  assert.equal(h.elements.get('cql-run').disabled, true);
+  assert.match(h.elements.get('cql-note').textContent, /No hosted demo query is ready/);
+});
+
+test('three-provider federation is offered only when every original target is ready', () => {
+  const rows = cql.providers.map(provider => ({ provider, available: true, federationAvailable: true, examples: [] }));
+  assert.ok(cql.profileChoices(rows[0], rows).some(row => row.id === 'federation'));
+  rows[1].available = false;
+  assert.equal(cql.profileChoices(rows[0], rows).some(row => row.id === 'federation'), false);
+});
+
+test('explicit refresh clears stale results when the hosted catalogue becomes unavailable', async () => {
+  let discoveries = 0;
+  const h = harness(async () => ({ ok: true, status: 200, json: async () => ({
+    result: { provider: 'ActivityPubOASIS', rows: [{ name: 'previous result' }] }
+  }) }), async () => ++discoveries === 1
+    ? { ok: true, status: 200, json: async () => ({ result: [publicSource()] }) }
+    : { ok: false, status: 503, json: async () => ({ isError: true, errorCode: 'CQL_SOURCE_CATALOGUE_UNAVAILABLE' }) });
+  await h.ui.ready;
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(h.elements.get('cql-results').children.length, 1);
+  await h.ui.syncAuth(true);
+  assert.equal(discoveries, 2);
+  assert.equal(h.elements.get('cql-results').children.length, 0);
+  assert.equal(h.elements.get('cql-run').disabled, true);
 });

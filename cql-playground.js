@@ -84,12 +84,61 @@
     return data?.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
   }
 
+  function catalogue(data) {
+    const result = unwrap(data);
+    if (result?.isError || !Array.isArray(result?.result) || result.result.length > 128)
+      throw new Error('WEB4 returned no valid hosted provider catalogue.');
+    const seen = new Set();
+    return result.result.map(source => {
+      if (!source || typeof source.provider !== 'string' || !/^[A-Za-z][A-Za-z0-9]{0,39}$/.test(source.provider) || seen.has(source.provider) ||
+          ['Default', 'None'].includes(source.provider) || typeof source.available !== 'boolean' ||
+          typeof source.queryOnly !== 'boolean' || typeof source.federationAvailable !== 'boolean')
+        throw new Error('WEB4 returned an invalid or duplicate hosted source.');
+      seen.add(source.provider);
+      const rows = source.examples ?? [];
+      if (!Array.isArray(rows) || rows.length > 8) throw new Error('Invalid hosted examples.');
+      const ids = new Set();
+      const examples = rows.map(row => {
+        if (!row || typeof row.id !== 'string' || !/^[A-Za-z0-9-]{1,40}$/.test(row.id) || ids.has(row.id) ||
+            typeof row.label !== 'string' || !row.label.trim() || row.label.length > 100 || /[\u0000-\u001f\u007f-\u009f]/.test(row.label))
+          throw new Error('Invalid hosted example identity.');
+        ids.add(row.id);
+        const request = parse(JSON.stringify(row.request));
+        if (request.provider !== source.provider) throw new Error('Hosted example changed its provider scope.');
+        return { id: row.id, label: row.label, request };
+      });
+      return { provider: source.provider, available: source.available, queryOnly: source.queryOnly,
+        federationAvailable: source.federationAvailable, examples };
+    });
+  }
+
+  function profileChoices(source, sources) {
+    if (!source?.available) return [];
+    const ordinary = providers.includes(source.provider) ? Object.entries(presets)
+      .filter(([id]) => id !== 'federation' || providers.every(provider => sources.some(row =>
+        row.provider === provider && row.available && row.federationAvailable)))
+      .map(([id, label]) => ({ id, label })) : [];
+    return ordinary.concat(source.examples.map(row => ({ id: 'host:' + row.id, label: row.label })));
+  }
+
+  function profilePreset(source, id) {
+    if (!source?.available) throw new Error('The hosted source is unavailable.');
+    if (!id.startsWith('host:')) return preset(id, source.provider);
+    const example = source.examples.find(row => 'host:' + row.id === id);
+    if (!example) throw new Error('Choose a configured hosted example.');
+    // The API owns the body template; the browser owns this one fixed row-query endpoint.
+    return { path: 'data/query-cql', body: parse(JSON.stringify(example.request)) };
+  }
+
   function init({ getToken, getBase }) {
     const $ = id => document.getElementById(id);
     let controller = null;
     let generation = 0;
     let endpoint = '';
     let sessionToken = null;
+    let sessionBase = null;
+    let sources = null;
+    let discovery = null;
 
     function note(message, error = false) {
       $('cql-note').textContent = message;
@@ -98,16 +147,23 @@
 
     function controls() {
       const busy = controller !== null;
-      $('cql-run').disabled = busy || !getToken();
+      const ready = sources !== null && endpoint !== '';
+      $('cql-run').disabled = busy || discovery !== null || !getToken() || !ready;
       $('cql-cancel').disabled = !busy;
-      $('cql-preset').disabled = busy;
-      $('cql-provider').disabled = busy || $('cql-preset').value === 'federation';
-      $('cql-reset').disabled = busy;
-      $('cql-request').readOnly = busy;
+      $('cql-preset').disabled = busy || !ready || discovery !== null;
+      $('cql-provider').disabled = busy || sources === null || discovery !== null;
+      $('cql-reset').disabled = busy || !ready || discovery !== null;
+      $('cql-refresh').disabled = busy || discovery !== null || !getToken();
+      $('cql-request').readOnly = busy || !ready;
     }
 
     function loadPreset() {
-      const chosen = preset($('cql-preset').value, $('cql-provider').value);
+      const selected = sources?.find(row => row.provider === $('cql-provider').value);
+      if (!selected || !profileChoices(selected, sources).length) {
+        endpoint = ''; $('cql-request').value = ''; $('cql-endpoint').textContent = '';
+        controls(); return;
+      }
+      const chosen = profilePreset(selected, $('cql-preset').value);
       endpoint = chosen.path;
       $('cql-endpoint').textContent = 'POST /api/' + endpoint;
       $('cql-request').value = JSON.stringify(chosen.body, null, 2);
@@ -115,6 +171,14 @@
       $('cql-response').textContent = 'Run a query to see the actual API response.';
       note('Edit the JSON, then run. Provider capabilities and access are checked by WEB4.');
       controls();
+    }
+
+    function chooseProvider() {
+      const selected = sources?.find(row => row.provider === $('cql-provider').value);
+      $('cql-preset').replaceChildren();
+      for (const choice of profileChoices(selected, sources ?? []))
+        $('cql-preset').add(new Option(choice.label, choice.id));
+      loadPreset();
     }
 
     function render(result) {
@@ -147,7 +211,7 @@
     }
 
     async function run() {
-      if (controller || !getToken()) return;
+      if (controller || discovery || !getToken() || !endpoint) return;
       let body;
       try { body = parse($('cql-request').value); }
       catch (error) { note(error.message, true); return; }
@@ -195,27 +259,65 @@
       }
     }
 
-    function syncAuth() {
+    async function syncAuth(force = false) {
+      const token = getToken(); const base = getBase();
+      if (!force && token === sessionToken && base === sessionBase && (sources !== null || discovery)) return;
       generation++;
       controller?.abort();
       controller = null;
-      if (sessionToken !== getToken()) {
-        sessionToken = getToken();
+      discovery?.abort(); discovery = null;
+      if (force || sessionToken !== token || sessionBase !== base) {
         $('cql-results').replaceChildren();
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
       }
-      note(getToken() ? 'Ready. Choose a preset or edit the request.' : 'Start a demo session or sign in above to query your visible records.');
+      sessionToken = token; sessionBase = base; sources = null; endpoint = '';
+      $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
+      $('cql-request').value = ''; $('cql-endpoint').textContent = '';
+      $('cql-sources').textContent = '';
       controls();
+      if (!token) { note('Start a demo session or sign in above to load live providers.'); return; }
+      const current = generation;
+      const pending = new AbortController(); discovery = pending;
+      const timeout = setTimeout(() => pending.abort(), 15000);
+      note('Loading hosted provider availability…'); controls();
+      try {
+        const response = await fetch(`${base}/api/data/query-cql/providers`, {
+          signal: pending.signal, redirect: 'error', cache: 'no-store',
+          headers: { Accept: 'application/json', Authorization: 'Bearer ' + token }
+        });
+        const data = await response.json();
+        if (current !== generation || token !== getToken() || base !== getBase()) return;
+        const result = unwrap(data);
+        if (!response.ok || result?.isError)
+          throw new Error(`Provider discovery failed: HTTP ${response.status} · ${result?.errorCode || 'CQL_CATALOGUE_UNAVAILABLE'}`);
+        sources = catalogue(result);
+        for (const source of sources) {
+          const playable = profileChoices(source, sources).length > 0;
+          const option = new Option(source.provider + (!source.available ? ' · unavailable' : !playable ? ' · examples pending' : ''), source.provider);
+          option.disabled = !playable; $('cql-provider').add(option);
+        }
+        const first = sources.find(source => source.available && source.examples.length) ||
+          sources.find(source => profileChoices(source, sources).length);
+        $('cql-sources').textContent = `${sources.filter(source => source.available).length} available hosted sources. ` +
+          'Separate local demo links are below. Refresh to recheck availability.';
+        if (first) { $('cql-provider').value = first.provider; chooseProvider(); }
+        else note('No hosted demo query is ready. Refresh providers to recheck.', true);
+      } catch (error) {
+        if (current === generation) note(pending.signal.aborted
+          ? 'Provider discovery stopped. No automatic retry was made.' : error.message, true);
+      } finally {
+        clearTimeout(timeout);
+        if (current === generation) { discovery = null; controls(); }
+      }
     }
 
-    for (const provider of providers) $('cql-provider').add(new Option(provider, provider));
-    for (const [key, label] of Object.entries(presets)) $('cql-preset').add(new Option(label, key));
-    $('cql-provider').addEventListener('change', loadPreset);
+    $('cql-provider').addEventListener('change', chooseProvider);
     $('cql-preset').addEventListener('change', loadPreset);
     $('cql-reset').addEventListener('click', loadPreset);
     $('cql-run').addEventListener('click', run);
     $('cql-cancel').addEventListener('click', () => controller?.abort());
+    $('cql-refresh').addEventListener('click', () => syncAuth(true));
     for (const [key, example] of Object.entries(localOraclePresets))
       $('cql-oracle-preset').add(new Option(example.label, key));
     function chooseOracleExample() {
@@ -225,12 +327,12 @@
     }
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
-    loadPreset();
-    syncAuth();
-    return { syncAuth };
+    const ready = syncAuth();
+    return { syncAuth, ready };
   }
 
-  const api = { providers, presets, preset, parse, unwrap, localOraclePresets, localOraclePreset, init };
+  const api = { providers, presets, preset, parse, unwrap, catalogue, profileChoices, profilePreset,
+    localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

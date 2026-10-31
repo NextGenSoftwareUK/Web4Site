@@ -159,13 +159,14 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
       <p>Query your visible holons through the same WEB4 API across document, relational and graph storage.</p>
-      <p class="note">Start a demo session above. Save records in the COSMIC ORM or Failover tabs first, or query your existing data after signing in. An empty result is a real result; no sample rows are substituted.</p>
+      <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
         <label>Provider <select id="cql-provider"></select></label>
         <button id="cql-reset" class="ghost">RESET EXAMPLE</button>
       </div>
-      <p class="note">These hosted request presets use MongoDB, SQLite and Neo4j. For the separate Oracle + Mongo local demo, see the examples below.</p>
+      <div class="row" style="margin-top:16px"><button id="cql-refresh" class="ghost" disabled>REFRESH PROVIDERS</button></div>
+      <p class="note" id="cql-sources" role="status" aria-live="polite">Sign in to load the providers available on this WEB4 node. Local developer demos are linked separately below.</p>
     </div>
 
     <div class="card">
@@ -173,7 +174,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="mono" id="cql-endpoint" style="margin-bottom:12px"></p>
       <label for="cql-request">JSON query description</label>
       <textarea id="cql-request" spellcheck="false" rows="20" style="display:block;width:100%;margin:10px 0 16px;padding:16px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:13px/1.8 'Share Tech Mono',monospace;tab-size:2" aria-describedby="cql-help"></textarea>
-      <p class="note" id="cql-help">filters are combined with AND. anyOf adds an OR group. metadataPath selects a metadata key. skip and take page the results. This editor accepts JSON, not executable C#, SQL or Cypher. The server checks permissions, bounds and provider capabilities.</p>
+      <p class="note" id="cql-help">filters are combined with AND. anyOf adds an OR group. In selects an array of exact values. metadataPath selects a metadata key. skip and take page the results. This editor accepts JSON, not executable C#, SQL or Cypher. The server checks permissions, bounds and provider capabilities.</p>
       <div class="row" style="margin-top:16px">
         <button id="cql-run" disabled>RUN QUERY</button>
         <button id="cql-cancel" class="ghost" disabled>CANCEL</button>

@@ -1,6 +1,12 @@
 # WEB4 sandbox CQL tab — current implementation
 
-Updated30 October2026. Existing C:/Source/Web4Site checkout, branch work/cosmic-cql.
+Updated31 October2026. Existing C:/Source/Web4Site checkout, branch work/cosmic-cql.
+
+## Pending hosted discovery rollout
+
+Feature branch now fetches the authenticated /api/data/query-cql/providers catalogue and loads server-owned public examples, without adding frontend provider cases. Invalid/unavailable sources and discovery failures disable queries; no three-provider fallback, native bearer forwarding or automatic retry. Sign-out/refresh discards stale data. Existing local catalogue links remain.25client controls pass/no skips; raw evidence C:/Source/OASIS-cosmic/TestResults/HostedCqlIntegrationCurrent/hosted-client-discovery.log SHA2568AC51CA822FE1BF286BE7DB1D6A6CCE550BA9801D957CBB5D922FD28FDBF3373.
+
+Hold main/public publication until the matching backend source-discovery/examples release is deployed and verified. Current public main d8afd91 and actual hosted count3 remain unchanged. Backend60API controls pass and actual dev-node public native batch returned3posts/19371B/274ms; this is not hosted CQL4proof. Backend status/resource owner: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/{CURRENT_STATUS,HOSTED_SANDBOX_INTEGRATION_PLAN,ENVIRONMENT_AND_CLEANUP_LEDGER}.md. Node24.19.0 reused, no install/download/new environment.
 
 ## Hosted CQL
 
