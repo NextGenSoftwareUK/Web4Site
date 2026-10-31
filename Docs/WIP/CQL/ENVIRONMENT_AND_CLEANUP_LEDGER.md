@@ -11,3 +11,5 @@ Shared detailed inventory: [COSMIC ledger](C:/Source/OASIS-cosmic/Docs/WIP/COSMI
 31October Ethereum CLI links/static catalogue update: reuse same checkout/Node;49controls, no new environment/download/server/output. Static public release may publish these scoped tested links; backend deployment/configuration remains separate.
 
 31October static publication9b65a88: task/main fast-forward pushed/ls-remote verified afterfetch,49controls. Existing host served exact committed HTML/preparation/playground bytes via3boundedGETs; transient report only in assigned OASIS TestResults/HostedCqlIntegrationCurrent, no raw page download saved. No backend deploy/config/session/account change. Browser execution gate unchanged.
+
+31October Polygon preparation: existing checkout/Node reused;50terminal-only controls, no install/download/runtime/server/dataset. Backend fixture/candidate resources recorded in shared COSMIC ledger; no frontend output/environment created.
