@@ -1,12 +1,12 @@
-# WEB4 sandbox CQL tab — current implementation
+# WEB4 sandbox CQL tab â€” current implementation
 
 Updated31 October2026. Existing C:/Source/Web4Site checkout, branch work/cosmic-cql.
 
-## Pending hosted discovery rollout
+## Live hosted discovery and ActivityPub examples
 
 Feature branch now fetches the authenticated /api/data/query-cql/providers catalogue and loads server-owned public examples, without adding frontend provider cases. Invalid/unavailable sources and discovery failures disable queries; no three-provider fallback, native bearer forwarding or automatic retry. Sign-out/refresh discards stale data. Existing local catalogue links remain.25client controls pass/no skips; raw evidence C:/Source/OASIS-cosmic/TestResults/HostedCqlIntegrationCurrent/hosted-client-discovery.log SHA2568AC51CA822FE1BF286BE7DB1D6A6CCE550BA9801D957CBB5D922FD28FDBF3373.
 
-Hold main/public publication until the matching backend source-discovery/examples release is deployed and verified. Current public main d8afd91 and actual hosted count3 remain unchanged. Backend60API controls pass and actual dev-node public native batch returned3posts/19371B/274ms; this is not hosted CQL4proof. Backend status/resource owner: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/{CURRENT_STATUS,HOSTED_SANDBOX_INTEGRATION_PLAN,ENVIRONMENT_AND_CLEANUP_LEDGER}.md. Node24.19.0 reused, no install/download/new environment.
+Published main16553be/Production7455754340SUCCESS after backend correction6735c4d46/94623078SUCCESS. Actual authenticated HTTP and a fresh browser visitor returned3public ActivityPub posts and the2-post subset; four providers now have hosted query evidence, while ActivityPub + Mongo pairing remains incomplete. Browser selects the public AP examples automatically after a normal free session; local links remain separate. Screenshots/evidence under the backend worktree TestResults/HostedCqlIntegrationCurrent, hashes in its integration plan. Backend427API controls pass (12environment-dependent skips); ActivityPub344pass, verifier8pass and existing25client controls pass. Browser operation-ID header remains hidden by CORS; tested3-control root fix is on backend task47ee67601 for the next deployment batch. Backend status/resource owner: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/{CURRENT_STATUS,HOSTED_SANDBOX_INTEGRATION_PLAN,ENVIRONMENT_AND_CLEANUP_LEDGER}.md. Node24.19.0 reused, no install/download/new environment.
 
 ## Hosted CQL
 
@@ -39,14 +39,14 @@ The runner owns the build lease. Do not wrap another lease. Stop via the local p
 Reuse Node24.19.0, existing Windows Python and Codex IAB; no download/install/restore. Preview127.0.0.1:5151 served only Web4Site, owned PID47884 stopped after command/listener ownership checks. Backend runner25723 exited0; ports5151/5090/27029 closed, Oracle containerexited. Persistent preview ownership journal C:/Source/OASIS-cosmic/LocalState/COSMIC/Web4SitePreview/server.json statusstopped.
 
 Shared authoritative resource ledger: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/ENVIRONMENT_AND_CLEANUP_LEDGER.md. Full programme/current next step: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md. Hosted Oracle, richer providers and full ORM parity remain separate work.
-## Protocol catalogue milestone — 30 October
+## Protocol catalogue milestone â€” 30 October
 
 CQL Playground section5 now lists IPFS, SOLID and ActivityPub with individual retained-environment runner commands and one fixed loopback5088 launch link. Each profile supports native-key metadata membership, three selected native records and two Mongo copies; general content predicates remain deferred. Run one profile at a time, then use POST/demo/shutdown and wait for exact fixture cleanup. No hosted bearer is forwarded. These providers remain local demo profiles, not hosted provider-selector entries.
 
 17 existing client controls passed. Browser verified CQL tab -> expanded ActivityPub instructions -> local launch -> Run Mongo + protocol query -> count5, Mongo2/ActivityPub3 with provenance. Runner exited0 after shutdown; pending fixture absent. Screenshots: C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent/protocol-catalogue.png and protocol-catalogue-native-result.png. No packages installed. Publication confirmation follows after deployment.
 `nPublication verified: main a5cc53b3ec16fbdb345871433f16cdb174d59803; production7450130226 success. Public CQL tab section5 and expanded ActivityPub command confirmed in browser, screenshot protocol-catalogue-public.png (282677bytes/SHA256E21031710B084F659B33DCC501AAFDACF17841850977F632C2EE4380C83E4A4D). Static preview5151 and native5088/Mongo27029 stopped; original reusable resources retained. Next backend Solana browser admission.
 
-## Mongo + Solana catalogue — 30 October
+## Mongo + Solana catalogue â€” 30 October
 
 Section6 lists the verified local mixed-federation demo on fixed loopback5091. Launch Run-ReusableSolanaMongoTests.ps1 -ArchiveCompletedDemo -Serve from C:/Source/OASIS-cosmic; runner owns the lease. Matching returns2physical copies/Mongo1/Solana1; empty preserves indexed-read assurance. Explicit SQLite execution, declared source range/local validator, source receipt/version, no chain writes and exact Mongo-only cleanup are explained. No hosted bearer forwarded.17 existing client controls pass; native/browser matching/empty/shutdown proof is in backend CQL_MONGO_SOLANA_NATIVE_VERIFICATION.md. Publication/browser catalogue verification follows.
 `nPublic confirmation: main00992cdd8ef9e497b9a27ca37063bae00fb15ad5 / production7450271298success. CQL section6/expanded command/fixed5091link verified. Screenshot C:/Source/OASIS-cosmic/TestResults/Web4SandboxCqlCurrent/solana-catalogue-public.png339225bytes/SHA256DD3CA59B2BFA7981A16DB65926D9046112200B64E9D9AAAD1106ACB0DDBC2BC5. No services started or new sessions/data created for publication.
