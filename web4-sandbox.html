@@ -158,7 +158,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   <section class="panel" id="panel-cql">
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
-      <p>Query your visible holons through the same WEB4 API across document, relational and graph storage.</p>
+      <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata and Solana account metadata. The provider list shows what is ready on this host.</p>
       <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
@@ -239,18 +239,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">Finish with POST /demo/shutdown on the local host and let the runner exit for owned fixture cleanup. Closing the tab does not stop it. IPFS immutable blocks remain retained; existing public statuses stay unchanged.</p>
     </div>
     <div class="card" id="cql-solana-catalogue">
-      <h2>6 · MongoDB + Solana local demo</h2>
-      <p>Run one CQL name filter across native MongoDB and the retained Solana coffee record through its explicit SQLite index.</p>
-      <p>Matching returns two physical copies: one MongoDB copy and one Solana copy. Empty returns zero rows while retaining the index checkpoint and finalized-head evidence.</p>
-      <p class="note">This uses a local validator and a declared source range. It preserves the chain receipt and version; it does not claim a distributed snapshot, hosted-chain access or recovery of missing older history. Your hosted sign-in is never forwarded.</p>
+      <h2>6 · Solana public accounts + MongoDB</h2>
+      <p>In the hosted playground above, select a Solana public-account example. Read three configured mainnet accounts, then select the two-account subset. These are account metadata reads; no wallet, payment or transaction is required.</p>
+      <p>Choose the Solana + Mongo federation example, prepare your two private Mongo records, then run it. The full query returns five physical rows (three Solana and two Mongo); the subset returns four. Other visitors can read the public accounts but cannot read your private copies.</p>
+      <p class="note">The source is a bounded account catalogue, not arbitrary chain search or transaction history. Browser acceptance of this provider remains pending; its hosted HTTP query, isolation and replica checks have passed.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d4cde8226/Docs/Devs/SOLANA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Solana CQL guide and HTTP requests ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d4cde8226/Examples/CosmicCqlDemo/NativeKeySetWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# example ↗</a></p>
       <details style="margin-top:20px">
-        <summary>Start the retained MongoDB + Solana demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. The acknowledged source record, index, ledger and identities must already be configured. No chain transaction is submitted.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableSolanaMongoTests.ps1 -ArchiveCompletedDemo -Serve</pre>
+        <summary>Historical local indexed-holon demo — unavailable</summary>
+        <p>The older MongoDB + Solana coffee-record demo requires its original local validator history and SQLite index. Part of that ledger history is missing and no backup is known. It is not a ready launcher. Use the hosted public-account examples above.</p>
       </details>
-      <p style="margin-top:24px"><a href="http://127.0.0.1:5091/" target="_blank" rel="noopener noreferrer">OPEN MONGO + SOLANA QUERY ↗</a></p>
-      <p>Choose <strong>Query matching copies</strong>, then <strong>Query empty selection</strong>. Inspect each provider and the Solana receipt, version, checkpoint and finalized head.</p>
-      <p class="note">Finish with <strong>Stop demo and clean Mongo fixture</strong> and wait for the runner to exit. Only its owned Mongo fixture is removed; the reusable chain record, index and ledger remain.</p>
     </div>
     <div class="card" id="cql-aws-catalogue">
       <h2>7 · AWS DynamoDB Local + MongoDB</h2>
