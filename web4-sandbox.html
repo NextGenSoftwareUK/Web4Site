@@ -976,16 +976,19 @@ $('fo-load').addEventListener('click', async () => {
     const r = await call('POST', 'data/load-holon', {id:holonId, providerType:$('fo-provider').value, autoFailOverMode:'ON', loadChildren:false});
     const ms = Math.round(performance.now() - t0);
     const after = (await call('GET', 'sandbox/refusals')).result || {};
-    const status = await api('status');
     setNote($('fo-load-note'), r.result ? `Loaded "${r.result.name}" in ${ms} ms.` : `No copy was found on the provider HyperDrive failed over to (${ms} ms): ${r.message || 'not found'}.`, r.result ? 'ok' : 'err');
-    const f = status.lastFailover, sel = status.lastProviderSelection, msgs = r.innerMessages || [];
+    // These facts belong to this response. Shared "last" diagnostics can describe
+    // another visitor or a request that completed while this load was in flight.
+    const f = r.metaData?.hyperDriveFailoverDiagnostic ? JSON.parse(r.metaData.hyperDriveFailoverDiagnostic) : null;
+    const sel = r.metaData?.hyperDriveRoute ? JSON.parse(r.metaData.hyperDriveRoute) : null;
+    const msgs = r.innerMessages || [];
     const refused = Object.entries(after).map(([p, n]) => [p, n - (before[p] || 0)]).filter(([, n]) => n > 0);
     $('fo-trace').innerHTML =
       (refused.length
         ? `<p class="note ok" style="font-size:16px">Failover happened: ${refused.map(([p, n]) => `${esc(p)} refused ${n} request(s) because it is offline`).join('; ')}. HyperDrive moved on and still served your holon from another provider.</p>`
         : '<p class="empty">No offline provider was asked, so no failover was needed. Take a provider offline (step 2) and load again.</p>') +
-      (f ? `<details open><summary>HyperDrive's last failover</summary><pre>${esc(JSON.stringify(f, null, 2))}</pre></details>` : '') +
-      (sel ? `<details><summary>Last provider selection</summary><pre>${esc(JSON.stringify(sel, null, 2))}</pre></details>` : '') +
+      (f ? `<details open><summary>This request's failover</summary><pre>${esc(JSON.stringify(f, null, 2))}</pre></details>` : '') +
+      (sel ? `<details><summary>This request's provider route</summary><pre>${esc(JSON.stringify(sel, null, 2))}</pre></details>` : '') +
       (msgs.length ? `<details><summary>Messages from the providers tried</summary><pre>${esc(msgs.join('\n'))}</pre></details>` : '');
   } catch (e) { setNote($('fo-load-note'), 'Load failed: ' + e.message, 'err'); }
   finally { $('fo-load').disabled = false; }

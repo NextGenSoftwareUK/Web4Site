@@ -39,3 +39,35 @@ test('accounting rejection retains the key and server operation identity',async(
   const call=client(async()=> response(503,{message:'Settlement pending',operationId:'body-op'},'header-op'));
   await assert.rejects(call('POST','data/save-holon',{operationId:'write-key'}),/Settlement pending.*write-key.*header-op/);
 });
+
+for (const captured of [true, false]) test(`failover display uses only this response's diagnostics (captured=${captured})`, async()=> {
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, {value:'MongoDBOASIS', innerHTML:'',
+      addEventListener:(_, handler)=> {elements.get(id).handler=handler;}});
+    return elements.get(id);
+  };
+  let refusalReads = 0;
+  const calls = [];
+  const context = vm.createContext({$:element, holonId:'owned-record',
+    performance:{now:()=>1}, esc:value=>String(value), setNote:()=>{},
+    api:()=> {throw new Error('Shared status must never provide per-request route evidence.');},
+    call:async(method,path)=> {
+      calls.push(path);
+      if (path === 'sandbox/refusals') return {result:{MongoDBOASIS:refusalReads++}};
+      if (path !== 'data/load-holon') throw new Error('Unexpected operation');
+      return {result:{id:'owned-record',name:'Coffee'}, metaData:captured ? {
+        hyperDriveFailoverDiagnostic:JSON.stringify({SelectedProvider:'SQLLiteDBOASIS',marker:'this-failover'}),
+        hyperDriveRoute:JSON.stringify({InitialProvider:'MongoDBOASIS',ServingProvider:'SQLLiteDBOASIS',marker:'this-route'})
+      } : {}};
+    }});
+  const from = html.indexOf("$('fo-load').addEventListener('click'");
+  const to = html.indexOf('// Import Your Data',from);
+  assert.ok(from >= 0 && to > from);
+  vm.runInContext(html.slice(from,to),context);
+  await element('fo-load').handler();
+  assert.equal(element('fo-load').disabled,false);
+  assert.deepEqual(calls,['sandbox/refusals','data/load-holon','sandbox/refusals']);
+  assert.equal(element('fo-trace').innerHTML.includes('this-route'),captured);
+  assert.equal(element('fo-trace').innerHTML.includes('this-failover'),captured);
+});
