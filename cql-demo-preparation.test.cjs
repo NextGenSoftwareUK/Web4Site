@@ -10,12 +10,13 @@ function storage() {
   return { entries, get length() { return entries.size; }, key: i => [...entries.keys()][i] ?? null,
     getItem: key => entries.get(key) ?? null, setItem: (key, value) => entries.set(key, value), removeItem: key => entries.delete(key) };
 }
-function fixture(count = 2) {
-  const keys = ['101', '102'].slice(0, count);
-  const source = { provider: 'ActivityPubOASIS', available: true, federationAvailable: true };
+function fixture(count = 2, profile = {}) {
+  const keys = (profile.keys ?? ['101', '102']).slice(0, count);
+  const metadataKey = profile.metadataKey ?? 'MastodonStatusId';
+  const source = { provider: profile.provider ?? 'ActivityPubOASIS', available: true, federationAvailable: true };
   const example = { operation: 'Federation', available: true, request: { scope: 'Named',
     providers: ['MongoDBOASIS', source.provider], source: { orderBy: 'None', take: 25, filters: [{
-      metadataPath: ['MastodonStatusId'], scalar: 'String', operator: 'In', value: keys
+      metadataPath: [metadataKey], scalar: 'String', operator: 'In', value: keys
     }] } } };
   const recipe = prep.recipe(source, example);
   const db = new Map(); const saves = []; const calls = []; const journal = storage();
@@ -28,7 +29,7 @@ function fixture(count = 2) {
       } })) } };
     if (path === 'data/query-cql' && body.provider === source.provider) return { result: { rows: keys.map((key, i) => ({
       id: `33333333-3333-4333-8333-33333333333${i}`, name: 'Native ' + key, description: null,
-      metadata: { MastodonStatusId: key }
+      metadata: { [metadataKey]: key }
     })) } };
     if (path === 'data/query-cql') return { result: { rows: db.has(body.filters[0].value) ? [db.get(body.filters[0].value)] : [] } };
     if (path === 'data/save-holon') {
@@ -220,4 +221,38 @@ test('preparation only derives bounded native-key pairing recipes, without modif
   assert.equal(f.example.request.source.filters[0].value.length, 2);
   f.example.request.source.filters[0].metadataPath = ['constructor'];
   assert.equal(prep.recipe(f.source, f.example), null);
+});
+
+
+test('Google public metadata uses host keys and Core identities for repeat-safe Mongo snapshots', async () => {
+  const prefix = 'LC08/01/001/003/LC08_L1GT_001003_20140812_20170420_01_T2/';
+  const name = 'LC08_L1GT_001003_20140812_20170420_01_T2_';
+  const keys = ['ANG.txt', 'B1.TIF', 'B10.TIF'].map(suffix => prefix + name + suffix);
+  const f = fixture(2, { provider: 'GoogleCloudOASIS', metadataKey: 'GCSObjectKey', keys });
+
+  // The three-object federation keeps its original predicate; preparation reads
+  // only the first two objects and saves two avatar-scoped Mongo snapshots.
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  const before = structuredClone(f.example);
+  assert.deepEqual(plan.keys, keys.slice(0, 2));
+  assert.deepEqual(plan.read.filters[0].value, keys.slice(0, 2));
+  assert.equal(plan.read.provider, 'GoogleCloudOASIS');
+  assert.equal(plan.read.includeMetadata, true);
+
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.deepEqual(f.example, before);
+  for (const [index, save] of f.saves.entries()) {
+    assert.equal(save.providerType, 'MongoDBOASIS');
+    assert.equal(save.holon.id, ids[index]);
+    assert.equal(save.holon.metaData.GCSObjectKey, keys[index]);
+    assert.equal(save.holon.metaData['oasis.native.provider'], 'GoogleCloudOASIS');
+  }
+
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.equal(f.journal.length, 0);
 });
