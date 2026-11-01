@@ -1,18 +1,14 @@
 # CQL website current status
 
-Updated1November2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
+Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
 
-- Scoped hosted HTTP proof:28providers. Browser proof:5;23open. File/HTTP/client-module checks are separate from browser interaction.
-- XRPL passes native3/2, pairedMongo5/4, repeat0new/2existing, private0/public3 and replicas2/2 atc6e7f14ba/Coree032d0a, correction74bdf044 SUCCESS.
-- Original XRPL endpoint returned402 from cloud. Explicit free Ripple full-history migration preserves source owner/catalogue/admission/presets/DNA; no payment/fallback. Old expired empty visitor cohort retained; named post-fix cohort owns success ACKs.
-- XRPL card now publishes free-endpoint local CLI command, guide pinned123340f6c and C# pinnedc6e7f14ba. Generic JS production modules unchanged; one focused XRPL preparation case passes.
-- Bitcoin and earlier source proofs retain their original deployments; no broad green acceptance rerun.
-- Azure/Oracle hosting remains explicitly deferred. Public metadata demos do not certify signed chain writes/full ORM.
-- Browser CUA transport unavailable; do not restart OS control stopped by Escape or ask David to reopen the page.
-- Next: verify the exact public HTML after publication; then Stellar native XDR/CQL work remains in backend task.
+- Scoped hosted HTTP proof: **29 providers**. Browser proof: **5**; **24 open**. HTTP/client-module checks remain separate from browser interaction.
+- Stellar passes native 3/2, paired Mongo 5/4, repeat 0 new/2 existing, foreign-private 0/public 3 and replicas 2/2 at parent637a6d49f/Core2dd3c37; settings deployment3eda0ea7 SUCCESS.
+- Stellar card includes readable local CLI, guide and commented C# links. Public headers are hash-pinned and decoded; no signed writes or consensus/signature verification claim.
+- Original successful cohorts/save ACKs retained. No broad green acceptance rerun.
+- XRPL uses explicitly qualified free Ripple endpoint after original cloud402; original failed/expired cohort preserved separately.
+- Azure/Oracle hosting remains explicitly deferred. Public metadata demos do not certify full ORM.
+- Browser transport still unavailable; no OS control resumed and David need not reopen the page.
+- Next: publish this verified Stellar card to main, compare exact live HTML, then continue provider breadth.
 
-Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger: ENVIRONMENT_AND_CLEANUP_LEDGER.md.
-
-Stellar native complete-XDR CQL/C#/CLI3/2 and21source controls pass at backend7587f9727; separate cloud egress200. One new generic client preparation contract passes (two private Mongo targets, exact sequence metadata/provenance and repeat0new). API/HTTP/hosting remain separate gates in progress; no Stellar live count/card claim.
-
-Stellar API/local HTTP3/2+Mongo5/4/private0 passed at candidate637a6d49f/Core2dd3c37. Exact app6f4d9a65 building; card with spaced CLI/guide/commented C# links is task-only until hosted acceptance. Mainb71d25f remains28-provider published scope.
+Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
