@@ -16,3 +16,5 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 [Preserved milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
 
 Azure Blob helper milestone (1 November): explicit512-character AzureStorageOASIS keys now prepare/reuse private snapshots; other profiles retain128. All root client tests pass; raw report C:/Source/OASIS-cosmic/TestResults/AzurePublicSourceCurrent/frontend-tests.log. Source change staged on work/cosmic-cql, not published. Backend/source guide tracked in OASIS-cosmic Docs/WIP/COSMIC ORM/AZURE_PUBLIC_BLOB_STATUS.md.
+
+Azure hosted proof completed at backendbccef53d6/Cored133cc2/settings8e382a80 SUCCESS: native3/2, Mongo5/4, reuse0new/2existing, foreign-private0/public3, exactSQLite/Neo2/2, savesversion1; completion ACK prevents replay. Frontend Azure card and512-character preparation support ready for publication; guideb887f1262/C#bccef53d6 pinned. Programme now40hosted, browser5/open35. No Azure account/source write or Cosmos DB hosting claim.

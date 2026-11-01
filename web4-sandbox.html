@@ -158,7 +158,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   <section class="panel" id="panel-cql">
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
-      <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata and Solana account metadata. The provider list shows what is ready on this host.</p>
+      <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata, Azure Blob properties and Solana account metadata. The provider list shows what is ready on this host.</p>
       <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
@@ -487,6 +487,19 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       </details>
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
+    </div>
+    <div class="card" id="cql-azure-blob-catalogue">
+      <h2>Azure public Blob Storage + MongoDB</h2>
+      <p>Query three real Azure object-property records, then filter to two by blob name. The public catalogue includes a census Parquet file and two completion markers. File sizes remain exact.</p>
+      <p class="note">Select AzureStorageOASIS in the CQL tab above. Hosted HTTP checks verify native three/two records, Mongo pairing five/four, private-copy reuse, visitor privacy and matching SQLite/Neo4j replicas. The source uses anonymous Azure SDK properties reads: no Azure account, subscription or object-body download is needed. This demonstrates object metadata, not census rows or hosted Cosmos DB. Browser verification remains open.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once to create your reusable public catalogue and build. Keep that catalogue between runs.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --azure-blob-public LocalState/COSMIC/AzureBlobDemo/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/b887f1262eb7343df1f4269fc97db910417a0755/Docs/Devs/AZURE_PUBLIC_BLOB_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/bccef53d6dbe0ec75028220b34eb0d3f2b0f4db8/Examples/CosmicCqlDemo/AzureBlobPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Key equality and bounded membership are supported. General content searches, source writes, a shared multi-object snapshot and full ORM parity remain separate work.</p>
     </div>
     <div class="card" id="cql-google-catalogue">
       <h2>10 · Google public metadata and Firestore demos</h2>
@@ -1488,7 +1501,7 @@ function renderMetrics(metrics, connections, best){
     '</tbody></table>';
 }
 </script>
-<script src="cql-demo-preparation.js?v=cql-duration-v2"></script>
+<script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-playground.js?v=cql-duration-v2"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
