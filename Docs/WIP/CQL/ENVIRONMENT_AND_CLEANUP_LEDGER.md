@@ -78,3 +78,5 @@ Sui website main9679699d391b5b49117c3009ee2bfcc0add41464 served148135bytes exact
 1 November MultiversX/Elrond card draft: existing task checkout/HTML only; hosted-pending/task-only, no main publication before acceptance. Reuse production generic JS; no downloads/install/runtime/local service/port/raw artifact. Reviewed first-setup and C# links801795a64. Owner COSMIC CQL.
 
 Elrond hosted verification passed; publish staged card with guide676a164eb/C#801795a64. Reuse same checkout and unchanged generic client modules; no download/install/runtime/service/port. Exact served/git HTML check planned memory-only; no raw evidence in docs. Backend owns durable cohorts and evidence hashes; browser remains unverified.
+
+Elrond website main95c53ccd3d20a99df4e8059c105c2aa4fcb8ebbb published; exact live/git HTML149523bytes, SHA256988e89929f268a5a447f00a09e7602d0c59a01e6bd15ef44ed0c37be16343a63. Comparison in memory/no file/download/new environment/process; browser not verified.
