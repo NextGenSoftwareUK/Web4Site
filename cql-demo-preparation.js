@@ -29,6 +29,13 @@
           'oasis.native.provider', 'oasis.native.source'].includes(filter.metadataPath[0])) return null;
     const keys = filter.value.slice(0, 2).map(key => byId ? key.toLowerCase() : key);
     const read = clone(input);
+    // A paired request's global budget governs its source. When setup derives
+    // an independent native read, carry that explicit budget into the leaf call.
+    if (body.maximumDurationMilliseconds !== undefined) {
+      if (!Number.isInteger(body.maximumDurationMilliseconds) ||
+          body.maximumDurationMilliseconds < 1 || body.maximumDurationMilliseconds > 30000) return null;
+      read.maximumDurationMilliseconds = body.maximumDurationMilliseconds;
+    }
     read.provider = source.provider;
     read.filters[0].value = keys;
     read.take = keys.length;

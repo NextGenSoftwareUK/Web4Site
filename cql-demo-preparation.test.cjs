@@ -48,6 +48,23 @@ function fixture(count = 2, profile = {}) {
   return { recipe, source, example, db, saves, calls, journal, request, options, changeSession() { current = false; } };
 }
 
+test('derived native preparation request preserves the paired execution budget before saves', async () => {
+  const f = fixture();
+  f.example.request.maximumDurationMilliseconds = 30000;
+  const before = structuredClone(f.example);
+  const recipe = prep.recipe(f.source, f.example);
+  assert.equal(recipe.read.maximumDurationMilliseconds, 30000);
+  assert.deepEqual(f.example, before);
+  await prep.prepare({ ...f.options, recipe });
+  assert.equal(f.calls[0].path, 'data/query-cql');
+  assert.equal(f.calls[0].body.maximumDurationMilliseconds, 30000);
+  assert.equal(f.saves.length, 2);
+  for (const invalid of [0, -1, 30001, 1.5, '30000']) {
+    f.example.request.maximumDurationMilliseconds = invalid;
+    assert.equal(prep.recipe(f.source, f.example), null);
+  }
+});
+
 function idFixture() {
   const f = fixture();
   const nativeIds = ['44444444-4444-4444-8444-444444444441',
