@@ -98,3 +98,5 @@ Session client terminal local tests80/80 in-memory, including12new session/conte
 - Starknet hosted native3/2, paired5/4, reuse/isolation/replicas verified, original cohort ACK retained by backend. Publish reviewed card with guide164b4bb96/C#cafd0f8c8; no new install/environment/local service. Compare HTML response in memory, retain compact proof in backend TestResults/StarknetPublicSourceCandidateCurrent; browser evidence remains separate.
 
 - 2026-11-01: Cardano HTML card staged in existing checkout; no new environment/download/generated build output. Guide/C# links pinnedac29a07b2; no main publication until hosted acceptance. Native/privacy local evidence owned by backend; static source change only, browser verification separate.
+
+- Cardano hosted acceptance complete on original backend cohort: two private copies reused/isolated/replicated, no native chain write. Existing website HTML/docs edited in place; no install/build/runtime/new environment. Publication check will compare response bytes in memory and retain only compact summary in backend TestResults/CardanoPublicSourceCandidateCurrent; source HTML retained in git. Browser gate remains open.
