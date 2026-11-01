@@ -54,3 +54,5 @@ Stellar publication complete: focused test1pass, main d88a0a4 pushed. Live HTML 
 1 November Algorand verified publication: reuse existing main/task checkout, Node24 fixture. Main fast-forwarded only through91035b5, excluding later Aptos card/test commits; current Algorand hosted proof applied. Focused test and exact committed/live HTML comparison, no new runtime/service/port/download; transient responses memory-only.
 
 Algorand publication verified1November: mainada6e92 exact live/git-object HTML SHA256cfff7aa51aafe061966682309ed258ca3e000d313b79c9dbdf678224375c95be, Aptos card absent. Earlier first observation served prior release during publication; second observation exact, no republish/restart. Responses memory-only/no new resources.
+
+1 November Hedera/Hashgraph candidate: reuse Node24 memory-only generic preparation fixture, no runtime/install/source writes/port. Focused numeric-account metadata/provenance/repeat reuse case; production JS unchanged, hosted card/count unchanged until backend acceptance. Output transient/unmeasured.
