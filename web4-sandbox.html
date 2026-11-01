@@ -372,9 +372,9 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public XRPL ledger headers · no wallet needed</h3>
       <p>Read three configured ledger headers, then filter to two with HolonManager and LINQ. Native SHA512Half hashes are checked; Mainnet and validation are reported by the public API.</p>
-      <p class="note">C# and local HTTP/Mongo checks pass. Hosted rollout is pending; XRPLOASIS appears in the live CQL selector only after discovery marks it ready. This public read profile submits no XRPL transaction.</p>
-      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --xrpl-public LocalState/COSMIC/HostedXrplPublicSourceCurrent/source.json</pre>
-      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/XRPL_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c6e7f14ba/Examples/CosmicCqlDemo/XrplPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">C# and local HTTP/Mongo checks pass. Hosted HTTP/Mongo, private isolation and SQLite/Neo4j replica checks pass. Select XRPLOASIS in the CQL tab when discovery marks it ready. Browser verification remains open. This public read profile submits no XRPL transaction.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --xrpl-public LocalState/COSMIC/HostedXrplPublicSourceCurrent/source-free-endpoint.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/123340f6c/Docs/Devs/XRPL_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c6e7f14ba/Examples/CosmicCqlDemo/XrplPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
       <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>

@@ -1,16 +1,14 @@
 # CQL website current status
 
-Updated1November2026. Live mainc932346 HTML was verified byte-identical to its committed artifact. Berachain hosted labels are current; no browser proof inferred.
+Updated1November2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
 
-- Hosted HTTP proof covers27providers; browser proof remains5. HTTP/client-module tests do not certify browser interaction.
-- Berachain hosted native3/2, Mongo5/4, repeat0writes, isolation and replicas2/2 pass on1b2626499/Core08c4977, settings rolloutc6fb86d9 SUCCESS. Browser proof remains separate.
-- Generic preparation module supports Berachain without a second production path. Its one focused preparation contract passes; existing sources stay frozen absent bugs.
-- Maintained guide links follow Development; commented Berachain walkthrough is pinned to verified1b2626499. Canonical owned-chain/local-emulator limitations are preserved separately from public projections.
-- Backend exact state and all-provider report: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
-- Browser CUA transport remains unavailable; do not restart Windows control stopped by Escape or ask David to reopen the page.
+- Scoped hosted HTTP proof:28providers. Browser proof:5;23open. File/HTTP/client-module checks are separate from browser interaction.
+- XRPL passes native3/2, pairedMongo5/4, repeat0new/2existing, private0/public3 and replicas2/2 atc6e7f14ba/Coree032d0a, correction74bdf044 SUCCESS.
+- Original XRPL endpoint returned402 from cloud. Explicit free Ripple full-history migration preserves source owner/catalogue/admission/presets/DNA; no payment/fallback. Old expired empty visitor cohort retained; named post-fix cohort owns success ACKs.
+- XRPL card now publishes free-endpoint local CLI command, guide pinned123340f6c and C# pinnedc6e7f14ba. Generic JS production modules unchanged; one focused XRPL preparation case passes.
+- Bitcoin and earlier source proofs retain their original deployments; no broad green acceptance rerun.
+- Azure/Oracle hosting remains explicitly deferred. Public metadata demos do not certify signed chain writes/full ORM.
+- Browser CUA transport unavailable; do not restart OS control stopped by Escape or ask David to reopen the page.
+- Next: verify the exact public HTML after publication; then Stellar native XDR/CQL work remains in backend task.
 
-Bitcoin native C#/CLI3/2 and20source controls pass in backend task branch. One new focused generic client preparation test passes (two private Mongo snapshots, exact hash metadata/provenance, repeated preparation zero writes). API/local HTTP3/2+Mongo5/4 and private isolation pass. Bitcoin card with CLI/guide/C# links is staged on task branch only; Hosted Bitcoin3/2+Mongo5/4, repeat0new, isolation and replicas2/2 now pass at19ebbfe2c/Core7317ba1/f71e482c. Browser remains open. Its card is now ready to publish; guide pinned to verified797f58279 and C# to19ebbfe2c.
-
-XRPL native C#/CLI3/2 and21source controls pass on backend eed706cfe. Its one new generic preparation contract passes: exact uppercase ledger-hash metadata/provenance, two private Mongo targets, repeat0writes. API/local HTTP/hosted gates are being implemented separately; no XRPL live count/card claim.
-
-XRPL API/local HTTP3/2+Mongo5/4/private0 pass at candidatec6e7f14ba/Coree032d0a. Card with spaced CLI command/guide/commented C# links staged on task branch only while exact backend deployment9ee52c89 builds. Mainbc00ef2 remains27-provider published scope; no XRPL live/browser claim.
+Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger: ENVIRONMENT_AND_CLEANUP_LEDGER.md.
