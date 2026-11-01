@@ -720,3 +720,30 @@ test('Berachain address snapshots keep the source filter and never request a sig
   assert.equal(f.saves.length, 2);
   assert.equal(f.journal.length, 0);
 });
+
+test('Bitcoin header snapshots keep the source filter and never request a signed chain write', async () => {
+  const keys = [1, 2, 3].map(value => value.toString(16).padStart(64, '0'));
+  const f = fixture(2, { provider: 'BitcoinOASIS', metadataKey: 'BitcoinBlockHash', keys });
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  const original = structuredClone(f.example);
+
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.deepEqual(plan.read.filters[0].value, keys.slice(0, 2));
+  assert.deepEqual(f.example, original);
+
+  for (const [index, save] of f.saves.entries()) {
+    assert.equal(save.providerType, 'MongoDBOASIS');
+    assert.equal(save.holon.id, ids[index]);
+    assert.equal(save.holon.metaData.BitcoinBlockHash, keys[index]);
+    assert.equal(save.holon.metaData['oasis.native.provider'], 'BitcoinOASIS');
+    assert.equal(save.holon.isPublic, false);
+  }
+
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.equal(f.journal.length, 0);
+});
