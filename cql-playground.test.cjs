@@ -498,3 +498,58 @@ test('token rotation during a query preserves the same identity response', async
   release({ ok: true, status: 200, json: async () => ({ isError: false, result: { rows: [] } }) });
   await query; assert.match(h.elements.get('cql-response').textContent, /"rows"/);
 });
+
+
+test('query timeout survives the explicit server budget with bounded transport allowance', () => {
+  assert.equal(cql.requestTimeout({}), 15000);
+  assert.equal(cql.requestTimeout({ maximumDurationMilliseconds: 1 }), 15000);
+  assert.equal(cql.requestTimeout({ maximumDurationMilliseconds: 5000 }), 15000);
+  assert.equal(cql.requestTimeout({ maximumDurationMilliseconds: 30000 }), 35000);
+  // The federation top-level budget owns timing, not a nested source request.
+  assert.equal(cql.requestTimeout({ maximumDurationMilliseconds: 30000,
+    source: { maximumDurationMilliseconds: 1 } }), 35000);
+});
+
+test('query timeout rejects invalid or unbounded explicit durations before dispatch', () => {
+  for (const value of [0, -1, 30001, 1.5, '30000', true, Infinity, NaN])
+    assert.throws(() => cql.requestTimeout({ maximumDurationMilliseconds: value }));
+});
+
+test('shipped query runner gives a 30-second preset 35 seconds and dispatches only once', async () => {
+  const fs = require('node:fs');
+  const vm = require('node:vm');
+  const source = fs.readFileSync(`${__dirname}/cql-playground.js`, 'utf8');
+  const start = source.indexOf('    async function run() {');
+  const end = source.indexOf('    async function syncAuth(', start);
+  assert.ok(start > 0 && end > start);
+  const body = { provider: 'TONOASIS', maximumDurationMilliseconds: 30000 };
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, { value: JSON.stringify(body), replaceChildren() {} });
+    return elements.get(id);
+  };
+  const timers = [], cleared = [], errors = [];
+  let dispatched = 0;
+  const context = vm.createContext({
+    controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0,
+    getToken: () => 'controlled', getIdentity: () => 'same-avatar', getBase: () => 'https://example.invalid',
+    ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout,
+    unwrap: cql.unwrap, $: element, crypto: { randomUUID: () => 'one-operation' }, AbortController,
+    controls() {}, render() {}, note: (text, error) => { if (error) errors.push(text); },
+    setTimeout: (_callback, delay) => { timers.push(delay); return 7; },
+    clearTimeout: handle => cleared.push(handle),
+    fetch: async (_url, options) => {
+      dispatched++;
+      assert.equal(options.signal.aborted, false);
+      assert.deepEqual(JSON.parse(options.body), body);
+      return { ok: true, headers: { get: () => 'one-operation' },
+        json: async () => ({ isError: false, result: { rows: [] } }) };
+    }
+  });
+  vm.runInContext(source.slice(start, end), context);
+  await context.run();
+  assert.deepEqual(timers, [35000]);
+  assert.deepEqual(cleared, [7]);
+  assert.equal(dispatched, 1);
+  assert.deepEqual(errors, []);
+});

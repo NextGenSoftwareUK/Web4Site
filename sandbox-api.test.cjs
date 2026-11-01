@@ -8,7 +8,11 @@ const start = html.indexOf('async function call(method, path, body){');
 const end = html.indexOf('\n// 1 ', start);
 assert.ok(start >= 0 && end > start);
 function client(fetch) {
-  const context = vm.createContext({fetch, jwt:'controlled-token', base:()=> 'https://example.invalid',
+  // call() consumes the session snapshot; lifecycle behavior is tested separately.
+  const access = { base: 'https://example.invalid', token: 'controlled-token' };
+  const session = { accessContext: async () => access,
+    assertContext: observed => assert.equal(observed, access) };
+  const context = vm.createContext({fetch, session,
     crypto:{randomUUID:()=> 'new-key'}});
   vm.runInContext(html.slice(start, end), context);
   return context.call;

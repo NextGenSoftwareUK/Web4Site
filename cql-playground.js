@@ -79,6 +79,15 @@
     return body;
   }
 
+  // Keep the browser alive through the admitted server budget plus transport
+  // time. This does not extend the server deadline or retry uncertain work.
+  function requestTimeout(body) {
+    const duration = body.maximumDurationMilliseconds ?? 5000;
+    if (!Number.isInteger(duration) || duration < 1 || duration > 30000)
+      throw new Error('Query duration must be an integer from 1 to 30000 milliseconds.');
+    return Math.max(15000, duration + 5000);
+  }
+
   function unwrap(data) {
     // WEB4 data controllers may wrap their OASISResult in an outer result object.
     return data?.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
@@ -249,7 +258,11 @@
     async function run() {
       if (controller || preparing || discovery || !getToken() || !endpoint) return;
       let body;
-      try { body = parse($('cql-request').value); }
+      let timeoutMilliseconds;
+      try {
+        body = parse($('cql-request').value);
+        timeoutMilliseconds = requestTimeout(body);
+      }
       catch (error) { note(error.message, true); return; }
 
       const identity = getIdentity();
@@ -260,7 +273,7 @@
       const pending = new AbortController();
       controller = pending;
       let timedOut = false;
-      const timeout = setTimeout(() => { timedOut = true; pending.abort(); }, 15000);
+      const timeout = setTimeout(() => { timedOut = true; pending.abort(); }, timeoutMilliseconds);
       controls();
       $('cql-results').replaceChildren();
       $('cql-response').textContent = '';
@@ -395,7 +408,7 @@
     return { syncAuth, ready };
   }
 
-  const api = { providers, presets, preset, parse, unwrap, catalogue, profileChoices, profilePreset,
+  const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
     localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;
