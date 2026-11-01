@@ -376,6 +376,12 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --xrpl-public LocalState/COSMIC/HostedXrplPublicSourceCurrent/source-free-endpoint.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/123340f6c/Docs/Devs/XRPL_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c6e7f14ba/Examples/CosmicCqlDemo/XrplPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
+      <h3>Public Stellar ledger headers · no wallet needed</h3>
+      <p>Query three configured ledgers, then filter to two with HolonManager and LINQ. Complete native XDR and hashes are checked before metadata is returned; this is not independent SCP consensus verification.</p>
+      <p class="note">C# and local HTTP/Mongo checks pass. Hosted rollout is pending; StellarOASIS appears in the CQL selector after discovery marks it ready. No Stellar transaction is submitted.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --stellar-public LocalState/COSMIC/HostedStellarPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/STELLAR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/637a6d49f/Examples/CosmicCqlDemo/StellarPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>

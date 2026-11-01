@@ -14,3 +14,5 @@ Updated1November2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger: ENVIRONMENT_AND_CLEANUP_LEDGER.md.
 
 Stellar native complete-XDR CQL/C#/CLI3/2 and21source controls pass at backend7587f9727; separate cloud egress200. One new generic client preparation contract passes (two private Mongo targets, exact sequence metadata/provenance and repeat0new). API/HTTP/hosting remain separate gates in progress; no Stellar live count/card claim.
+
+Stellar API/local HTTP3/2+Mongo5/4/private0 passed at candidate637a6d49f/Core2dd3c37. Exact app6f4d9a65 building; card with spaced CLI/guide/commented C# links is task-only until hosted acceptance. Mainb71d25f remains28-provider published scope.
