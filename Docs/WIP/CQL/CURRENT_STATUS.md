@@ -15,3 +15,5 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
 
 - MultiversX/Elrond hosted HTTP native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 pass at801795a64/Coref41b2a1; app19f65f59/settings18c4f04e SUCCESS. Website main95c53cc published/byte-verified149523bytes, SHA256988e89929f268a5a447f00a09e7602d0c59a01e6bd15ef44ed0c37be16343a63. Reviewed card/setup/C# links live; browser proof separate.
+
+Radix card drafted on task branch only; backend1f39016fa application succeeded, settings job15f047fd remains in progress. Native/local HTTP3/2and Mongo5/4 verified; hosted, card publication and browser gates remain open. Preserve original source and future hosted cohort.
