@@ -2,7 +2,7 @@
 
 Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomplete.
 
-- **38 providers** have scoped hosted HTTP proof; **5** browser-verified, **33** browser gates open. HTTP and byte-publication checks do not certify browser interaction.
+- **39 providers** have scoped hosted HTTP proof; **5** browser-verified, **34** browser gates open. HTTP and byte-publication checks do not certify browser interaction.
 - Live website main **299c376** includes Arweave, Cardano, Starknet, Radix, Elrond, Sui and Hedera, with spaced setup examples and pinned C# links.
 - Published duration-fix assets match commit299c376: HTML155244bytes SHA256398fcc04d365105535114cdb565a13b66e758071f903481e62025e179307eef0; preparation JS9876bytes SHA256cac962d8a7d14ebf98e9395209d76fb29978041a935da2e600c5c940eca3ee13; query JS21871bytes SHA2567cb6210b9adda1e83630fc966926772f8338c43163c24d1abd88c626ad1ad649. HTTP/git-blob checks only, no browser proof.
 - Session frontend implementation **43af923**, published, passes **80/80** client tests. New JS URLs are versioned; login/demo/refresh/logout share serialized cookie ownership, bearer stays in memory, stable avatar/environment identity survives renewal, uncertain outcomes stop without replay.
@@ -26,3 +26,5 @@ Browser duration correction is published at7a02a23: query timer uses the admitte
 Preparation duration correction: a reproduced regression showed paired30s budget was omitted from its derived native setup query. The recipe now validates/carries the explicit global budget into that independent leaf read, before any saves. Controlled end-to-end preparation test passes and all90client tests pass. Published at299c376 and public HTML/preparation/query scripts match exact git blobs; no new TON cohort or live grant.
 
 TON card is staged only on the website task branch: spaced local command and guide/C# links pinned to reviewed fb29aa936. It explicitly states hosted rollout pending; no main publication until original normal-visitor acceptance/replicas pass. Both pinned files exist in that commit. Live main remains299c376; hosted count38/browser5/open33 unchanged.
+
+TON hosted acceptance complete: backend fb29aa936/Core2ac915f, settings e3ae497c SUCCESS. Original cohort proves native3/2, Mongo5/4, reuse0/2, privacy0/3 and replicas2/2; completion ACK prevents replay. Card now states only this proven HTTP scope, guide pinned34ae56281d14cce85a1099482953851a5f8f6182, C#fb29aa936. Publish and byte-verify next; browser gate remains open.
