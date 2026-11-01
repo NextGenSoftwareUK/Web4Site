@@ -409,6 +409,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --hedera-public LocalState/COSMIC/HostedHederaPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/4fb66c687/Docs/Devs/HEDERA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9d9b28872/Examples/CosmicCqlDemo/HederaPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
+      <h3>Public Sui objects · no wallet needed</h3>
+      <p>Use HolonManager and LINQ to select three public objects, then filter to two. Each native query selects one checkpoint; object versions and checkpoint numbers remain exact decimal strings.</p>
+      <p class="note">Native C# and local HTTP/Mongo demos pass. Hosted verification is pending; this task-branch card is not ready for publication. No Sui transaction is submitted. Checkpoint/digest validation does not independently prove consensus or establish a snapshot shared with Mongo.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
+  --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj &#96;
+  --no-build --no-restore &#96;
+  -- --sui-public LocalState/COSMIC/HostedSuiPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e0b60994/Docs/Devs/SUI_PUBLIC_OBJECT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e0b60994/Examples/CosmicCqlDemo/SuiPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
