@@ -409,6 +409,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --hedera-public LocalState/COSMIC/HostedHederaPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/4fb66c687/Docs/Devs/HEDERA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9d9b28872/Examples/CosmicCqlDemo/HederaPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
+      <h3>Public Cardano headers · no wallet needed</h3>
+      <p>Use HolonManager and LINQ to select three historical Mainnet headers, then filter to two. Hash selections retain their requested order; lovelace quantities and integer metadata stay exact.</p>
+      <p class="note">Native C#, local HTTP, Mongo federation and visitor privacy checks pass. Hosted enrollment is pending; this card remains on the task branch until live acceptance. Confirmations are reported by the Koios indexer, not independently verified finality. No wallet, funding or Cardano transaction is needed.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap"># First follow the setup guide to create your reusable catalogue and build.
+
+dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --cardano-public LocalState/COSMIC/CardanoDemo/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/ac29a07b2/Docs/Devs/CARDANO_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/ac29a07b2/Examples/CosmicCqlDemo/CardanoPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <h3>Public Starknet headers · no wallet needed</h3>
       <p>Use HolonManager and LINQ to select three historical Mainnet block headers, then filter to two. Native hashes and integer metadata retain their exact values.</p>
       <p class="note">Live HTTP checks pass: three headers or a two-header subset, paired with two private Mongo records. Repeat setup reuses both copies; visitor isolation and SQLite/Neo4j replicas are verified. Select StarknetOASIS in the CQL tab. Mongo copies contain name, description and native key. L1 acceptance is reported by the RPC, not independently verified. Browser verification remains open. No wallet, funding or chain transaction is needed.</p>

@@ -16,3 +16,5 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 [Earlier milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
 
 Starknet hosted acceptance is complete: backendcafd0f8c8/Core8a5ab45, app151477e9/settings03760bc9 SUCCESS. Native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3, replicas2/2. Original cohort completion ACK retained; no reruns. Card now states only verified HTTP scope; guide pinned164b4bb96, actual C#cafd0f8c8. HTML now published/byte-verified at80ba510; browser remains open.
+
+Cardano card staged on task branch only, with spaced local DLL command and first-checkout guide/commented C# links pinnedac29a07b2. Backend35controls/native-CLI3/2/API-localHTTP3/2+Mongo5/4/privacy/actual presets pass; selected release build underway. No Cardano host settings applied yet. Publish only after hosted native/federation/reuse/isolation/replicas pass.

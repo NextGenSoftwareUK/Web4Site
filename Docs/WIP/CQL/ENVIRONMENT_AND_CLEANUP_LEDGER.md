@@ -96,3 +96,5 @@ Session client terminal local tests80/80 in-memory, including12new session/conte
 - 2026-11-01: staged Starknet HTML card in existing website checkout; no new environment/download/build output. Existing native guide/C# public links pinnedcafd0f8c8. Keep unpublished pending hosted acceptance. Browser verification remains unavailable; static source change only, no browser claim.
 
 - Starknet hosted native3/2, paired5/4, reuse/isolation/replicas verified, original cohort ACK retained by backend. Publish reviewed card with guide164b4bb96/C#cafd0f8c8; no new install/environment/local service. Compare HTML response in memory, retain compact proof in backend TestResults/StarknetPublicSourceCandidateCurrent; browser evidence remains separate.
+
+- 2026-11-01: Cardano HTML card staged in existing checkout; no new environment/download/generated build output. Guide/C# links pinnedac29a07b2; no main publication until hosted acceptance. Native/privacy local evidence owned by backend; static source change only, browser verification separate.
