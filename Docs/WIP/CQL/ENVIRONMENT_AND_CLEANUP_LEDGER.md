@@ -52,3 +52,5 @@ Stellar publication complete: focused test1pass, main d88a0a4 pushed. Live HTML 
 
 1 November staged Aptos card: reuse Web4Site checkout/source only; spaced PowerShell CLI/guide/commented C# links. No new environment/download/process/port/raw output. Card explicitly pending and task-only; hosted count unchanged.
 1 November Algorand verified publication: reuse existing main/task checkout, Node24 fixture. Main fast-forwarded only through91035b5, excluding later Aptos card/test commits; current Algorand hosted proof applied. Focused test and exact committed/live HTML comparison, no new runtime/service/port/download; transient responses memory-only.
+
+Algorand publication verified1November: mainada6e92 exact live/git-object HTML SHA256cfff7aa51aafe061966682309ed258ca3e000d313b79c9dbdf678224375c95be, Aptos card absent. Earlier first observation served prior release during publication; second observation exact, no republish/restart. Responses memory-only/no new resources.

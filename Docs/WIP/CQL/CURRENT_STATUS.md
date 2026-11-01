@@ -9,7 +9,7 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 - Aptos remains task-only until hosted acceptance. Main publication includes only the verified Algorand card.
 - Azure/Oracle hosting remains explicitly deferred. Public metadata demos do not certify full ORM.
 - Browser transport unavailable; no OS control resumed and David need not reopen the page.
-- Next: publish this scoped card and compare exact committed/live HTML, then continue Aptos hosted rollout.
+- Website mainada6e92 live HTML matches exact committed bytes: SHA256cfff7aa51aafe061966682309ed258ca3e000d313b79c9dbdf678224375c95be. Aptos card absent from main/live. Next: Aptos hosted rollout.
 
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
 
