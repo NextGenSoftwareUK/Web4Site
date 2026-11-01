@@ -7,6 +7,8 @@
   const clone = value => JSON.parse(JSON.stringify(value));
 
   function recipe(source, example) {
+    // Match Azure Blob's declared native-name bound; other profiles keep 128.
+    const maximumKeyLength = source?.provider === 'AzureStorageOASIS' ? 512 : 128;
     const body = example?.request;
     const input = body?.source;
     const filter = input?.filters?.[0];
@@ -17,7 +19,7 @@
         [input.anyOf, input.anyChildren, input.anyDescendants].some(group => group?.length) ||
         filter.operator !== 'In' ||
         !Array.isArray(filter.value) || !filter.value.length || filter.value.length > 40 ||
-        filter.value.some(key => typeof key !== 'string' || !/^[!-~]{1,128}$/.test(key)) ||
+        filter.value.some(key => typeof key !== 'string' || key.length > maximumKeyLength || !/^[!-~]+$/.test(key)) ||
         new Set(filter.value).size !== filter.value.length) return null;
     const byId = filter.field === 'Id' && filter.scalar === 'Guid' && filter.metadataPath == null;
     if (byId) {

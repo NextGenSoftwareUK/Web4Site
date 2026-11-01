@@ -899,3 +899,32 @@ test('Hedera indexed account snapshots keep the source filter and never request 
   assert.equal(f.saves.length, 2);
   assert.equal(f.journal.length, 0);
 });
+
+
+test('Azure dataset blob names retain exact keys above 128 characters', async () => {
+  const keys = ['data/' + 'a'.repeat(137), 'data/manifest', 'data/_SUCCESS'];
+  const f = fixture(2, { provider: 'AzureStorageOASIS', metadataKey: 'AzureBlobKey', keys });
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.equal(f.saves[0].holon.metaData.AzureBlobKey, keys[0]);
+  assert.equal(f.saves[0].holon.isPublic, false);
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+});
+
+test('Azure key extension remains bounded and does not expand other profiles', () => {
+  const f = fixture(2, { provider: 'AzureStorageOASIS', metadataKey: 'AzureBlobKey' });
+  f.example.request.source.filters[0].value = ['x'.repeat(512)];
+  assert.ok(prep.recipe(f.source, f.example));
+  f.example.request.source.filters[0].value = ['x'.repeat(513)];
+  assert.equal(prep.recipe(f.source, f.example), null);
+  f.source.provider = 'GoogleCloudOASIS';
+  f.example.request.providers = ['MongoDBOASIS', 'GoogleCloudOASIS'];
+  f.example.request.source.filters[0].value = ['x'.repeat(137)];
+  assert.equal(prep.recipe(f.source, f.example), null);
+});

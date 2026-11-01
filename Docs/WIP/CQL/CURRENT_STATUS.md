@@ -14,3 +14,5 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 - Backend authority: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger remains beside this file; raw outputs live in backend TestResults.
 
 [Preserved milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
+
+Azure Blob helper milestone (1 November): explicit512-character AzureStorageOASIS keys now prepare/reuse private snapshots; other profiles retain128. All root client tests pass; raw report C:/Source/OASIS-cosmic/TestResults/AzurePublicSourceCurrent/frontend-tests.log. Source change staged on work/cosmic-cql, not published. Backend/source guide tracked in OASIS-cosmic Docs/WIP/COSMIC ORM/AZURE_PUBLIC_BLOB_STATUS.md.
