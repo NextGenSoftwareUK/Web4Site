@@ -43,3 +43,5 @@ Stellar card staged1November in existing HTML, no new runtime/generated environm
 1 November Stellar hosted publication: reuse existing Web4Site checkout, Node24 and generic client test. No install/download/new environment. HTML/current status updated after backend exact3eda0ea7 proof. Existing cql-demo-preparation.test.cjs focused Stellar case only; memory-only fixture, no writes or ports, output unmeasured/transient. Publish main after test and compare live HTML in memory; no browser proof inferred.
 
 Stellar publication complete: focused test1pass, main d88a0a4 pushed. Live HTML matches exact git object bytes, SHA256 be55fc9b52d099588c50cf400d78d6652d315fc698ced617dc6c988c7c285fcc. Checkout newline form differs from deployed git bytes; git-object comparison exact. Responses memory-only, no retained raw output/new resources.
+
+1 November Algorand candidate: reuse Node24 and existing generic preparation fixture, memory-only/no source writes, no new runtime/download/port. Add focused current-account snapshot case; hosted card/count remains unchanged until backend acceptance. Output transient/unmeasured.
