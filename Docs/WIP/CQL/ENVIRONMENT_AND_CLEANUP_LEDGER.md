@@ -106,3 +106,5 @@ Session client terminal local tests80/80 in-memory, including12new session/conte
 - Arweave card staged in existing website checkout/task branch; no new environment/download/build output. Spaced local command and guide/C# pinnedb158bda61; staged only, no main publication pending hosted acceptance. Native/local privacy proof belongs to backend; browser gate separate. Existing37hosted count unchanged.
 
 - Arweave hosted acceptance passes on original cohort at37a530a87/Core5fd361d; no uncertain writes/deploys replayed. Publish existing staged card with guided089a778c/C#b158bda61. Existing checkout/HTML only; no environment/runtime/download/build. Compare public bytes against git blob in memory, compact proof in backend TestResults/ArweavePublicSourceCandidateCurrent/site-publication.json. Browser gate separate.
+
+- Website61e85b7 public HTML200/155229bytes SHA2566fda659c10e90bb99d7636e04b62d3dc343b3a0c36cd85bb5b3f3c3e3c5c94f3 exactly matches committed git blob. Compared in memory; compact publication proof retained by backend, no new environment/runtime/download/service. Hosted HTTP38/browser5/open33; browser not inferred.
