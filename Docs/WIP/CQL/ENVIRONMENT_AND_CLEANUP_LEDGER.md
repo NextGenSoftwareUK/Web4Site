@@ -66,3 +66,5 @@ Aptos publication verified1November: main8e3db22 exact live/git-object HTML SHA2
 1 November staged Hedera card: existing checkout/source only, spaced runnable PowerShell/complete first-setup guide/C# links. Explicitly hosted pending, task-only. No new environment/download/process/port/raw artifact. Await hosted proof before main publication.
 
 Fresh-setup link publication verified1November: main97481d9 exact live/git-object HTML SHA256b988858745b7ddba1e50ce2d69dda3e68e5ceb54f72478a799c0e54e5c0fcb8b, Hedera card absent. Responses memory-only/no new resources.
+
+1 November Hedera verified publication: existing checkout/production JS only. Backend32nd hosted proof4fb66c687/Core89b5ffa/correction122310fc, original owner cohort reused safely. Update existing card/guide link after read scheduling fix; focused generic client test already passed/no JS behavior changes. No Sui card. Exact live/git-object comparison planned, memory-only/no new environment/service/port/download.
