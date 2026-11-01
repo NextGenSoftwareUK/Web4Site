@@ -112,8 +112,10 @@ function harness(fetcher, discover, setup = {}) {
   vm.createContext(context);
   vm.runInContext(fs.readFileSync(require.resolve('./cql-playground.js'), 'utf8'), context);
   let token = 'test-token';
-  const ui = context.CqlPlayground.init({ getToken: () => token, getBase: () => 'https://example.invalid',
-    request: setup.request ?? null, canPrepare: () => setup.canPrepare === true });
+  const ui = context.CqlPlayground.init({ getToken: () => setup.session ? setup.session.token : token,
+    getIdentity: setup.session ? () => setup.session.identity : undefined,
+    ensureAccessToken: setup.session ? () => setup.session.ensure() : undefined,
+    getBase: () => 'https://example.invalid', request: setup.request ?? null, canPrepare: () => setup.canPrepare === true });
   return { elements, ui, signOut() { token = null; ui.syncAuth(); } };
 }
 
@@ -142,10 +144,12 @@ test('local Oracle link works without signing in and never sends the hosted bear
 });
 
 test('a late response after sign-out cannot restore data from the previous identity', async () => {
-  let release;
-  const h = harness(() => new Promise(resolve => { release = resolve; }));
+  let release, entered;
+  const started = new Promise(resolve => { entered = resolve; });
+  const h = harness(() => new Promise(resolve => { release = resolve; entered(); }));
   await h.ui.ready;
   const running = h.elements.get('cql-run').listeners.click();
+  await started;
   h.signOut();
   release({ ok: true, status: 200, json: async () => ({ isError: false, result: {
     provider: 'MongoDBOASIS', rows: [{ name: 'private record' }] } }) });
@@ -173,13 +177,19 @@ test('stored markup is assigned to textContent and each query uses the current b
 });
 
 test('cancelling an in-flight query does not retry or claim server cancellation', async () => {
-  let calls = 0;
+  let calls = 0, entered;
+  const started = new Promise(resolve => { entered = resolve; });
   const h = harness((url, options) => {
     calls++;
-    return new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('aborted'))));
+    return new Promise((resolve, reject) => {
+      if (options.signal.aborted) reject(new Error('aborted'));
+      else options.signal.addEventListener('abort', () => reject(new Error('aborted')));
+      entered();
+    });
   });
   await h.ui.ready;
   const running = h.elements.get('cql-run').listeners.click();
+  await started;
   h.elements.get('cql-cancel').listeners.click();
   await running;
   assert.equal(calls, 1);
@@ -255,8 +265,10 @@ test('failed discovery disables queries and does not invent the original three p
 });
 
 test('late discovery after sign-out cannot restore the previous source catalogue', async () => {
-  let release;
-  const h = harness(async () => { throw new Error('No query.'); }, () => new Promise(resolve => { release = resolve; }));
+  let release, entered;
+  const started = new Promise(resolve => { entered = resolve; });
+  const h = harness(async () => { throw new Error('No query.'); }, () => new Promise(resolve => { release = resolve; entered(); }));
+  await started;
   h.signOut();
   release({ ok: true, status: 200, json: async () => ({ result: [publicSource()] }) });
   await h.ui.ready;
@@ -449,4 +461,40 @@ test('view-only environment cannot start record preparation', async () => {
   assert.equal(h.elements.get('cql-prepare').disabled, true);
   await h.elements.get('cql-prepare').listeners.click();
   assert.equal(calls, 0);
+});
+
+
+test('CQL preflight renewal uses the new bearer without discarding the same avatar result', async () => {
+  const session = { token: 'old', identity: 'same-avatar', ensure: async () => session.token };
+  let requests = 0;
+  const h = harness(async (_, options) => {
+    requests++; assert.equal(options.headers.Authorization, 'Bearer renewed');
+    return { ok: true, status: 200, json: async () => ({ isError: false, result: { rows: [] } }) };
+  }, null, { session });
+  await h.ui.ready;
+  session.ensure = async () => { session.token = 'renewed'; return session.token; };
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(requests, 1); assert.match(h.elements.get('cql-response').textContent, /"rows"/);
+});
+
+test('unverified CQL renewal prevents the original provider request', async () => {
+  const session = { token: 'old', identity: 'same-avatar', ensure: async () => session.token };
+  let requests = 0;
+  const h = harness(async () => { requests++; throw Error('Original query must not be sent.'); }, null, { session });
+  await h.ui.ready;
+  session.ensure = async () => { throw Error('controlled renewal failure'); };
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(requests, 0); assert.match(h.elements.get('cql-note').textContent, /renewal failure/);
+});
+
+test('token rotation during a query preserves the same identity response', async () => {
+  const session = { token: 'old', identity: 'same-avatar', ensure: async () => session.token };
+  let release;
+  const h = harness(() => new Promise(resolve => { release = resolve; }), null, { session });
+  await h.ui.ready;
+  const query = h.elements.get('cql-run').listeners.click();
+  await new Promise(resolve => setImmediate(resolve));
+  session.token = 'rotated';
+  release({ ok: true, status: 200, json: async () => ({ isError: false, result: { rows: [] } }) });
+  await query; assert.match(h.elements.get('cql-response').textContent, /"rows"/);
 });

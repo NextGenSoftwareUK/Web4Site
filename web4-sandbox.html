@@ -966,6 +966,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
   OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
 </footer>
 
+<script src="web4-session.js?v=session-renewal-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
 let jwt = null;
@@ -973,6 +974,7 @@ let timer = null;
 
 function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function base(){return $('env').value}
+const session = Web4Session.create({ getBase: base, onToken: token => { jwt = token; } });
 function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
 
 // Tabs
@@ -987,16 +989,7 @@ async function signIn(){
   if (!user || !pass.value){ setNote($('auth-note'), 'Enter your username and password.', 'err'); return; }
   $('auth-btn').disabled = true;
   try {
-    const response = await fetch(`${base()}/api/avatar/authenticate`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify({username:user, password:pass.value})
-    });
-    const data = await response.json().catch(() => null);
-    const authResult = data?.result, avatar = authResult?.result;
-    if (!response.ok || authResult?.isError || !avatar?.jwtToken)
-      throw new Error(authResult?.message || data?.message || `Sign-in failed with HTTP ${response.status}`);
-    jwt = avatar.jwtToken;
+    const avatar = await session.signIn({ username: user, password: pass.value });
     onSignedIn(avatar.username || user);
   } catch (e) {
     setNote($('auth-note'), 'Sign-in failed: ' + e.message, 'err');
@@ -1004,11 +997,14 @@ async function signIn(){
     pass.value = ''; $('auth-btn').disabled = false;
   }
 }
-function signOut(){
-  jwt = null; stopAuto(); $('auto').checked = false;
+async function signOut(){
+  let confirmed = true;
+  try { await session.signOut(); }
+  catch { confirmed = false; }
+  stopAuto(); $('auto').checked = false;
   window.cqlPlayground?.syncAuth();
   $('signout-btn').hidden = true; $('refresh-btn').disabled = true;
-  setNote($('auth-note'), 'Signed out.');
+  setNote($('auth-note'), confirmed ? 'Signed out.' : 'Signed out here. The server could not confirm sign-out.', confirmed ? undefined : 'err');
   setNote($('hd-note'), 'Sign in to load live HyperDrive state.');
 }
 $('auth-btn').addEventListener('click', signIn);
@@ -1034,11 +1030,7 @@ async function startDemo(){
   $('demo-btn').disabled = true;
   setNote($('auth-note'), 'Creating your demo avatar…');
   try {
-    const response = await fetch(`${base()}/api/sandbox/session`, {method:'POST', headers:{'Accept':'application/json'}});
-    const data = await response.json().catch(() => null);
-    const avatar = data?.result;
-    if (!response.ok || data?.isError || !avatar?.jwtToken) throw new Error(data?.message || `HTTP ${response.status}`);
-    jwt = avatar.jwtToken;
+    const avatar = await session.startDemo();
     onSignedIn(`${avatar.username} (demo avatar)`);
   } catch (e) {
     setNote($('auth-note'), 'Could not start a demo session: ' + e.message, 'err');
@@ -1047,20 +1039,23 @@ async function startDemo(){
 $('demo-btn').addEventListener('click', startDemo);
 
 async function call(method, path, body){
+  const context = await session.accessContext();
+  const { base: origin, token } = context;
   // One click is one logical request. Retain its identity on an uncertain outcome;
   // never automatically repeat a write or silently replace its operation ID.
   const key = body?.operationId || crypto.randomUUID();
   const headers = {'Accept':'application/json', 'Content-Type':'application/json',
-    'Authorization':'Bearer ' + jwt, 'Idempotency-Key':key};
+    'Authorization':'Bearer ' + token, 'Idempotency-Key':key};
   let response;
   try {
-    response = await fetch(`${base()}/api/${path}`, {method, headers, redirect:'error', cache:'no-store',
+    response = await fetch(`${origin}/api/${path}`, {method, headers, redirect:'error', cache:'no-store',
       body: body ? JSON.stringify(body) : undefined});
   } catch (error) {
     throw new Error(`${error.message}. Request key: ${key}. Outcome unknown; do not repeat a write.`);
   }
   const operation = response.headers.get('X-OASIS-Operation-Id');
   const data = await response.json().catch(() => null);
+  session.assertContext(context, key, operation || data?.operationId);
   // Data endpoints wrap OASISResult; sandbox endpoints return it directly.
   const r = data && data.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
   if (!response.ok || !r || r.isError) {
@@ -1392,8 +1387,11 @@ $('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(
 $('env').addEventListener('change', () => { if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); } });
 
 async function api(path){
-  const response = await fetch(`${base()}/api/hyperdrive/${path}`, {headers:{'Accept':'application/json','Authorization':'Bearer ' + jwt}});
+  const context = await session.accessContext();
+  const { base: origin, token } = context;
+  const response = await fetch(`${origin}/api/hyperdrive/${path}`, {headers:{'Accept':'application/json','Authorization':'Bearer ' + token}});
   const data = await response.json().catch(() => null);
+  session.assertContext(context);
   if (!response.ok || !data || data.isError)
     throw new Error(data?.message || `HTTP ${response.status}`);
   return data.result;
@@ -1455,9 +1453,9 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js"></script>
-<script src="cql-playground.js"></script>
+<script src="cql-playground.js?v=session-renewal-v1"></script>
 <script>
-window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), request: call, canPrepare: isSandbox });
+window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
 </script>
 </body>
 </html>

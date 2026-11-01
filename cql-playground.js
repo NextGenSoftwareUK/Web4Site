@@ -154,12 +154,12 @@
     return selected;
   }
 
-  function init({ getToken, getBase, request = null, canPrepare = () => false }) {
+  function init({ getToken, getBase, getIdentity = getToken, ensureAccessToken = async () => getToken(), request = null, canPrepare = () => false }) {
     const $ = id => document.getElementById(id);
     let controller = null;
     let generation = 0;
     let endpoint = '';
-    let sessionToken = null;
+    let sessionIdentity = null;
     let sessionBase = null;
     let sources = null;
     let discovery = null;
@@ -252,7 +252,7 @@
       try { body = parse($('cql-request').value); }
       catch (error) { note(error.message, true); return; }
 
-      const token = getToken();
+      const identity = getIdentity();
       const base = getBase();
       const current = ++generation;
       const requestKey = crypto.randomUUID();
@@ -266,6 +266,8 @@
       $('cql-response').textContent = '';
       note('Executing on WEB4…');
       try {
+        const token = await ensureAccessToken();
+        if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const response = await fetch(`${base}/api/${endpoint}`, {
           method: 'POST', signal: pending.signal,
           headers: { Accept: 'application/json', 'Content-Type': 'application/json',
@@ -277,7 +279,7 @@
           `Idempotency-Key: ${requestKey}\nOperation ID: ${operationId || 'not supplied / not exposed by this host'}`;
         const data = await response.json();
         // A response from a former identity/environment must never be displayed in a new session.
-        if (current !== generation || token !== getToken() || base !== getBase()) return;
+        if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const result = unwrap(data);
         $('cql-response').textContent = JSON.stringify(data, null, 2);
         if (!response.ok || !result || result.isError) {
@@ -296,18 +298,18 @@
     }
 
     async function syncAuth(force = false) {
-      const token = getToken(); const base = getBase();
-      if (!force && token === sessionToken && base === sessionBase && (sources !== null || discovery)) return;
+      const token = getToken(); const identity = getIdentity(); const base = getBase();
+      if (!force && identity === sessionIdentity && base === sessionBase && (sources !== null || discovery)) return;
       generation++;
       controller?.abort();
       controller = null;
       discovery?.abort(); discovery = null;
-      if (force || sessionToken !== token || sessionBase !== base) {
+      if (force || sessionIdentity !== identity || sessionBase !== base) {
         $('cql-results').replaceChildren();
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
       }
-      sessionToken = token; sessionBase = base; sources = null; endpoint = '';
+      sessionIdentity = identity; sessionBase = base; sources = null; endpoint = '';
       $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
       $('cql-sources').textContent = '';
@@ -318,12 +320,14 @@
       const timeout = setTimeout(() => pending.abort(), 15000);
       note('Loading hosted provider availability…'); controls();
       try {
+        const access = await ensureAccessToken();
+        if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const response = await fetch(`${base}/api/data/query-cql/providers?examplesVersion=2`, {
           signal: pending.signal, redirect: 'error', cache: 'no-store',
-          headers: { Accept: 'application/json', Authorization: 'Bearer ' + token }
+          headers: { Accept: 'application/json', Authorization: 'Bearer ' + access }
         });
         const data = await response.json();
-        if (current !== generation || token !== getToken() || base !== getBase()) return;
+        if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const result = unwrap(data);
         if (!response.ok || result?.isError)
           throw new Error(`Provider discovery failed: HTTP ${response.status} · ${result?.errorCode || 'CQL_CATALOGUE_UNAVAILABLE'}`);
@@ -350,11 +354,13 @@
 
     async function prepareRecords() {
       if (preparing || controller || discovery || !preparation || !request || !getToken() || !canPrepare()) return;
-      const token = getToken(); const base = getBase(); const current = ++generation;
-      const isCurrent = () => current === generation && token === getToken() && base === getBase();
+      const identity = getIdentity(); const base = getBase(); const current = ++generation;
+      const isCurrent = () => current === generation && identity === getIdentity() && base === getBase();
       preparing = true; controls();
       note('Preparing private Mongo snapshots from the configured example…');
       try {
+        await ensureAccessToken();
+        if (!isCurrent()) return;
         const result = await root.CqlDemoPreparation.prepare({ recipe: preparation,
           request: (path, body) => request('POST', path, body), storage: root.localStorage, base,
           isCurrent, randomUUID: () => crypto.randomUUID() });
