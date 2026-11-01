@@ -2,7 +2,7 @@
 
 Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomplete.
 
-- **35 providers** have scoped hosted HTTP proof; **5** browser-verified, **30** browser gates open. HTTP and byte-publication checks do not certify browser interaction.
+- **36 providers** have scoped hosted HTTP proof; **5** browser-verified, **31** browser gates open. HTTP and byte-publication checks do not certify browser interaction.
 - Live website main **9e18b7dedda7c4e6cfaa358fa8987774616deaac** includes Radix, Elrond, Sui and Hedera, with spaced setup examples and pinned C# links.
 - Published HTML:150878bytes; SHA2564a046882f2afb01373f2077329cb789fdb3ccd60b55f42c4543c9a695e0cf26a. Both versioned JS assets also match9e18b7d exactly.
 - Session frontend implementation **43af923**, published, passes **80/80** client tests. New JS URLs are versioned; login/demo/refresh/logout share serialized cookie ownership, bearer stays in memory, stable avatar/environment identity survives renewal, uncertain outcomes stop without replay.
@@ -15,4 +15,4 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 
 [Earlier milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
 
-Starknet card staged on task branch only, with spaced DLL command, first-checkout setup and commented C# links pinned to backendcafd0f8c8. Do not publish until hosted native/federation/reuse/isolation/replica acceptance passes; replace the pending note with only verified scope. Application job151477e9 is building; no hosted settings applied yet.
+Starknet hosted acceptance is complete: backendcafd0f8c8/Core8a5ab45, app151477e9/settings03760bc9 SUCCESS. Native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3, replicas2/2. Original cohort completion ACK retained; no reruns. Card now states only verified HTTP scope; guide pinned164b4bb96, actual C#cafd0f8c8. Publish and byte-verify HTML next; browser remains open.
