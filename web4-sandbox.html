@@ -409,6 +409,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --hedera-public LocalState/COSMIC/HostedHederaPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/4fb66c687/Docs/Devs/HEDERA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9d9b28872/Examples/CosmicCqlDemo/HederaPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
+      <h3>Public Arweave headers · no wallet needed</h3>
+      <p>Use HolonManager and LINQ to select three historical block IDs, then filter to two. Block IDs, logical selection order and large difficulty values stay exact.</p>
+      <p class="note">Native C#, local HTTP, Mongo federation and visitor privacy checks pass. Hosted enrollment is pending; this card stays on the task branch until live acceptance. The profile covers one explicit historical header format, not arbitrary permanent-storage searches. Gateway observations do not independently verify consensus. No wallet, funding or Arweave transaction is needed.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap"># First follow the setup guide to create your reusable catalogue and build.
+
+dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --arweave-public LocalState/COSMIC/ArweaveDemo/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/b158bda6134d14195cf99dc04695904395dac9b1/Docs/Devs/ARWEAVE_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/b158bda6134d14195cf99dc04695904395dac9b1/Examples/CosmicCqlDemo/ArweavePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <h3>Public Cardano headers · no wallet needed</h3>
       <p>Use HolonManager and LINQ to select three historical Mainnet headers, then filter to two. Hash selections retain their requested order; lovelace quantities and integer metadata stay exact.</p>
       <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses both snapshots; visitor isolation and SQLite/Neo4j replicas are verified. Select CardanoOASIS in the CQL tab. Confirmations are reported by Koios, not independently verified finality. Browser verification remains open. No wallet, funding or Cardano transaction is needed.</p>
