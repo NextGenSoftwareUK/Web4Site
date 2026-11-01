@@ -2,15 +2,13 @@
 
 Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
 
-- Scoped hosted HTTP proof: **30 providers**. Browser proof: **5**; **25 open**. HTTP/client-module checks remain separate from browser interaction.
-- Algorand passes native3/2, pairedMongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 at parent7a9ca308e/Corec17db5f; settings deploymentf3ee7f37 SUCCESS.
-- Algorand card includes spaced runnable PowerShell CLI, guide and commented C# links. Current accounts carry independent observed rounds; no historical/shared snapshot or signed-write claim.
-- Original successful cohorts/save ACKs retained. Earlier provider proofs remain bound to their original releases; no broad green acceptance rerun.
-- Aptos remains task-only until hosted acceptance. Main publication includes only the verified Algorand card.
-- Azure/Oracle hosting remains explicitly deferred. Public metadata demos do not certify full ORM.
+- Scoped hosted HTTP proof: **31 providers**. Browser proof: **5**; **26 open**. HTTP/client-module checks remain separate from browser interaction.
+- Aptos passes native3/2, pairedMongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 at parent1cfb893c8/Coree845c62; settings deployment1c100994 SUCCESS.
+- Aptos card has a spaced runnable PowerShell command, guide and commented C# links. One version per native query does not imply a cross-provider historical snapshot or independent state/consensus proof.
+- Original successful cohorts/save ACKs retained. Earlier provider proofs retain their own release binding; no broad green acceptance rerun.
+- Hedera/Hashgraph native/local HTTP/actual4preset planner and focused client test pass. Its configuration remains unapplied; no hosted card/count claim.
+- Azure/Oracle hosting remains explicitly deferred. Public source demos do not certify full ORM or signed writes.
 - Browser transport unavailable; no OS control resumed and David need not reopen the page.
-- Website mainada6e92 live HTML matches exact committed bytes: SHA256cfff7aa51aafe061966682309ed258ca3e000d313b79c9dbdf678224375c95be. Aptos card absent from main/live. Next: Aptos hosted rollout.
+- Next: publish this verified Aptos card and compare exact committed/live HTML; then continue Hedera hosted rollout.
 
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
-
-Task-only Aptos card remains staged with exact73cf8abb7 guide/C# links; focused client test passes, backend native/API/localHTTP/actual4preset planner ready. No Aptos hosted enrollment yet.

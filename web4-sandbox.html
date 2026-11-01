@@ -393,7 +393,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public Aptos accounts · no wallet needed</h3>
       <p>Query three configured accounts, then filter to two with HolonManager and LINQ. Each source query requests one ledger version for its full account selection; sequence numbers remain exact.</p>
-      <p class="note">Native C# and local HTTP/Mongo checks pass. Hosted enrollment is pending. This public API profile does not independently verify state proofs or consensus, and Mongo snapshots do not imply a cross-provider historical snapshot. No Aptos transaction is submitted.</p>
+      <p class="note">Live HTTP checks pass: three accounts or a two-account subset, paired with two private Mongo snapshots. Repeat setup reuses both snapshots; visitor isolation and SQLite/Neo4j replicas are verified. Each source query requests its own ledger version; no independent state/consensus proof or cross-provider historical snapshot is implied. Browser verification remains open. No Aptos transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
   --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj &#96;
   --no-build --no-restore &#96;

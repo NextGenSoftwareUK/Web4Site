@@ -56,3 +56,5 @@ Stellar publication complete: focused test1pass, main d88a0a4 pushed. Live HTML 
 Algorand publication verified1November: mainada6e92 exact live/git-object HTML SHA256cfff7aa51aafe061966682309ed258ca3e000d313b79c9dbdf678224375c95be, Aptos card absent. Earlier first observation served prior release during publication; second observation exact, no republish/restart. Responses memory-only/no new resources.
 
 1 November Hedera/Hashgraph candidate: reuse Node24 memory-only generic preparation fixture, no runtime/install/source writes/port. Focused numeric-account metadata/provenance/repeat reuse case; production JS unchanged, hosted card/count unchanged until backend acceptance. Output transient/unmeasured.
+
+1 November Aptos verified publication: reuse existing checkout/production JS. Backend31st hosted proof1cfb893c8/Coree845c62/settings1c100994; update existing card and docs only. Generic Aptos preparation test already passed, no JS behavior changed/retested. Main includes no Hedera card; new focused Hedera test is memory-only. Exact live/git-object HTML comparison planned, responses memory-only/no new runtime/service/port/download.
