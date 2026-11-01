@@ -72,3 +72,5 @@ Fresh-setup link publication verified1November: main97481d9 exact live/git-objec
 1 November Sui card draft: existing worktree/HTML only, task-only, hosted-pending label. No dependencies, download, service, environment, temp file or port; publication withheld until hosted acceptance. Guide/CLI links use reviewed7e0b60994. Owner COSMIC CQL; no raw evidence in docs.
 
 Sui hosted proof passed; publish existing staged card after updating status and verified guide48a9063ca. Reuse same checkout/production JS, no downloads/install/runtime/service/port. Exact served-vs-git HTML comparison memory-only; no raw evidence in docs. Native3/2/federated5/4/reuse/isolation/replica proof remains backend-owned, browser not claimed.
+
+Sui website main9679699d391b5b49117c3009ee2bfcc0add41464 served148135bytes exactly matching git object. SHA256b8d17101a869a1dffb8cd2c076b8c6577a24086bfcd052394100e7245d069a35. Response memory-only, no artifact/download/environment/process. Preserve compact proof here; no browser verification inferred.

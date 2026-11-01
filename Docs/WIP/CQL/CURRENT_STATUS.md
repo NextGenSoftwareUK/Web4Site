@@ -10,6 +10,6 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 - Sui hosted HTTP native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 pass at7e0b60994/Core0e540eb; app81794c84/settings1d5007cb SUCCESS. Card publication follows this proof; browser remains open.
 - Azure/Oracle hosting remains explicitly deferred. Public source demos do not certify full ORM/signed writes.
 - Browser transport unavailable; no OS control resumed and David need not reopen the page.
-- Hedera main07a36e7 HTML was byte-verified. Next: publish verified Sui card and compare committed/live bytes; no browser claim. TRON remains unadmitted (34controlled passes, real429failure).
+- Website main9679699 is published and byte-verified:148135bytes, SHA256b8d17101a869a1dffb8cd2c076b8c6577a24086bfcd052394100e7245d069a35. Sui card/setup/C# links are live; browser proof remains open. TRON stays unadmitted (34controlled passes, real429failure).
 
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
