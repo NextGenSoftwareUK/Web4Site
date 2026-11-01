@@ -828,3 +828,30 @@ test('Algorand current account snapshots keep the source filter and never reques
   assert.equal(f.saves.length, 2);
   assert.equal(f.journal.length, 0);
 });
+
+test('Aptos version-selected account snapshots keep the source filter and never request a signed chain write', async () => {
+  const keys = [1, 3, 4].map(value => '0x' + value.toString(16).padStart(64, '0'));
+  const f = fixture(2, { provider: 'AptosOASIS', metadataKey: 'AptosAccountAddress', keys });
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  const original = structuredClone(f.example);
+
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.deepEqual(plan.read.filters[0].value, keys.slice(0, 2));
+  assert.deepEqual(f.example, original);
+
+  for (const [index, save] of f.saves.entries()) {
+    assert.equal(save.providerType, 'MongoDBOASIS');
+    assert.equal(save.holon.id, ids[index]);
+    assert.equal(save.holon.metaData.AptosAccountAddress, keys[index]);
+    assert.equal(save.holon.metaData['oasis.native.provider'], 'AptosOASIS');
+    assert.equal(save.holon.isPublic, false);
+  }
+
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.equal(f.journal.length, 0);
+});

@@ -47,3 +47,5 @@ Stellar publication complete: focused test1pass, main d88a0a4 pushed. Live HTML 
 1 November Algorand candidate: reuse Node24 and existing generic preparation fixture, memory-only/no source writes, no new runtime/download/port. Add focused current-account snapshot case; hosted card/count remains unchanged until backend acceptance. Output transient/unmeasured.
 
 1 November staged Algorand card: existing Web4Site checkout only, spaced command/guide/C# links. No install/download/process/port/raw artifact. Await backend hosted proof before publishing main; live29 count unchanged.
+
+1 November Aptos candidate: reuse Node24 memory-only generic preparation fixture, no source writes/new runtime/service/port. Focused version-selected account case only; production JS unchanged. Hosted card/count remains unchanged until backend acceptance. Output transient/unmeasured.
