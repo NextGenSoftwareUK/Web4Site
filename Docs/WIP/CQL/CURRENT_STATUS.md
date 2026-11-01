@@ -9,6 +9,6 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 - Hedera/Hashgraph native/local HTTP/actual4preset planner and focused client test pass. Its configuration remains unapplied; no hosted card/count claim.
 - Azure/Oracle hosting remains explicitly deferred. Public source demos do not certify full ORM or signed writes.
 - Browser transport unavailable; no OS control resumed and David need not reopen the page.
-- Next: publish this verified Aptos card and compare exact committed/live HTML; then continue Hedera hosted rollout.
+- Website main8e3db22 exact committed/live HTML verified: SHA256b679d18f8c949778cf33fb824277c12eef9bbd2d3ae2e6a3f31620adbaeef127. Next: Hedera hosted rollout.
 
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
