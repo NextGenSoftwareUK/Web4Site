@@ -76,3 +76,5 @@ Sui hosted proof passed; publish existing staged card after updating status and 
 Sui website main9679699d391b5b49117c3009ee2bfcc0add41464 served148135bytes exactly matching git object. SHA256b8d17101a869a1dffb8cd2c076b8c6577a24086bfcd052394100e7245d069a35. Response memory-only, no artifact/download/environment/process. Preserve compact proof here; no browser verification inferred.
 
 1 November MultiversX/Elrond card draft: existing task checkout/HTML only; hosted-pending/task-only, no main publication before acceptance. Reuse production generic JS; no downloads/install/runtime/local service/port/raw artifact. Reviewed first-setup and C# links801795a64. Owner COSMIC CQL.
+
+Elrond hosted verification passed; publish staged card with guide676a164eb/C#801795a64. Reuse same checkout and unchanged generic client modules; no download/install/runtime/service/port. Exact served/git HTML check planned memory-only; no raw evidence in docs. Backend owns durable cohorts and evidence hashes; browser remains unverified.
