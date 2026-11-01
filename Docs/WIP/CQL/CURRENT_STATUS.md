@@ -10,3 +10,5 @@ Updated1November2026. Live mainc932346 HTML was verified byte-identical to its c
 - Browser CUA transport remains unavailable; do not restart Windows control stopped by Escape or ask David to reopen the page.
 
 Bitcoin native C#/CLI3/2 and20source controls pass in backend task branch. One new focused generic client preparation test passes (two private Mongo snapshots, exact hash metadata/provenance, repeated preparation zero writes). API/local HTTP3/2+Mongo5/4 and private isolation pass. Bitcoin card with CLI/guide/C# links is staged on task branch only; Hosted Bitcoin3/2+Mongo5/4, repeat0new, isolation and replicas2/2 now pass at19ebbfe2c/Core7317ba1/f71e482c. Browser remains open. Its card is now ready to publish; guide pinned to verified797f58279 and C# to19ebbfe2c.
+
+XRPL native C#/CLI3/2 and21source controls pass on backend eed706cfe. Its one new generic preparation contract passes: exact uppercase ledger-hash metadata/provenance, two private Mongo targets, repeat0writes. API/local HTTP/hosted gates are being implemented separately; no XRPL live count/card claim.
