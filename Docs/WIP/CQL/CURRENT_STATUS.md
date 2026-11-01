@@ -14,3 +14,5 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 - Backend authority: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md, SESSION_RENEWAL_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger remains beside this file.
 
 [Earlier milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
+
+Starknet card staged on task branch only, with spaced DLL command, first-checkout setup and commented C# links pinned to backendcafd0f8c8. Do not publish until hosted native/federation/reuse/isolation/replica acceptance passes; replace the pending note with only verified scope. Application job151477e9 is building; no hosted settings applied yet.
