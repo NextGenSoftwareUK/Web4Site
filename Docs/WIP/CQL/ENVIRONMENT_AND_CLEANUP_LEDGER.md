@@ -70,3 +70,5 @@ Fresh-setup link publication verified1November: main97481d9 exact live/git-objec
 1 November Hedera verified publication: existing checkout/production JS only. Backend32nd hosted proof4fb66c687/Core89b5ffa/correction122310fc, original owner cohort reused safely. Update existing card/guide link after read scheduling fix; focused generic client test already passed/no JS behavior changes. No Sui card. Exact live/git-object comparison planned, memory-only/no new environment/service/port/download.
 
 1 November Sui card draft: existing worktree/HTML only, task-only, hosted-pending label. No dependencies, download, service, environment, temp file or port; publication withheld until hosted acceptance. Guide/CLI links use reviewed7e0b60994. Owner COSMIC CQL; no raw evidence in docs.
+
+Sui hosted proof passed; publish existing staged card after updating status and verified guide48a9063ca. Reuse same checkout/production JS, no downloads/install/runtime/service/port. Exact served-vs-git HTML comparison memory-only; no raw evidence in docs. Native3/2/federated5/4/reuse/isolation/replica proof remains backend-owned, browser not claimed.
