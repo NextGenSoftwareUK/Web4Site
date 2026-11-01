@@ -14,3 +14,5 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
 
 Hedera card staged task-only: backend application e5e9ef07 building at9d9b28872/Core89b5ffa,3setting candidate prepared only. First-setup guide cbba242f7 and commented C# links spaced/readable. Main97481d9 only updates existing Algorand/Aptos setup guide links;31hosted count unchanged.
+
+Main97481d9 fresh-setup guide links verified live: exact committed HTML SHA256b988858745b7ddba1e50ce2d69dda3e68e5ceb54f72478a799c0e54e5c0fcb8b; no Hedera card. Backend exact Hedera app e5e9ef07 building; no hosted setting/cohort yet.
