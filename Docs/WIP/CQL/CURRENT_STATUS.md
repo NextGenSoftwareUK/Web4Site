@@ -12,3 +12,5 @@ Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence stat
 - Website main d88a0a4 published; exact committed HTML verified. SHA256 be55fc9b52d099588c50cf400d78d6652d315fc698ced617dc6c988c7c285fcc. Next: provider breadth; browser gates remain open.
 
 Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
+
+Algorand native/local HTTP and focused client test pass; backend application7bb36bf0 is building. Task-only card links to exact7a9ca308e C#/guide and explicitly says hosted pending. Main/live29 remains unchanged until backend hosted acceptance.

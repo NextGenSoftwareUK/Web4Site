@@ -382,6 +382,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --stellar-public LocalState/COSMIC/HostedStellarPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/STELLAR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/637a6d49f/Examples/CosmicCqlDemo/StellarPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
+      <h3>Public Algorand accounts · no wallet needed</h3>
+      <p>Query three configured public accounts, then filter to two with HolonManager and LINQ. MicroAlgo amounts stay exact; each row includes its own observed round.</p>
+      <p class="note">Native C# and local HTTP/Mongo checks pass. Hosted verification is pending. The profile reads current state and does not promise historical rewind or a shared multi-row snapshot. No Algorand transaction is submitted.</p>
+      <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
+  --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj &#96;
+  --no-build --no-restore &#96;
+  -- --algorand-public LocalState/COSMIC/HostedAlgorandPublicSourceCurrent/source.json</pre>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7a9ca308e/Docs/Devs/ALGORAND_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7a9ca308e/Examples/CosmicCqlDemo/AlgorandPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+
       <h3>Owned-record demos · local chain + MongoDB</h3>
       <p>Use the same CQL ID filter across native encrypted Web3Core contract records and MongoDB copies. Full selection returns five physical copies; the subset returns four, with both provider labels preserved.</p>
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
