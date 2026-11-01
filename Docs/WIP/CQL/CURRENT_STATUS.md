@@ -1,25 +1,16 @@
 # CQL website current status
 
-Updated 1 November 2026. Backend CURRENT_STATUS owns exact runtime/evidence state.
+Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomplete.
 
-- Scoped hosted HTTP proof: **35 providers**. Browser proof: **5**; **30 open**. HTTP/client-module evidence remains separate from browser interaction.
-- Hedera/Hashgraph passes native3/2, Mongo federation5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 at parent4fb66c687/Core89b5ffa, correction deployment122310fc SUCCESS.
-- Initial native504 before any snapshots retained separately. Original visitor cohort resumed successfully after max3-concurrent source scheduling fix; same five-second budget, no retry/fallback or duplicate writes.
-- Hedera card has spaced runnable PowerShell, first-setup JSON guide and commented C# links. Latest-indexed per-account timestamps imply no shared snapshot/freshness or consensus proof.
-- Existing Algorand/Aptos guides link to complete first-checkout configurations.
-- Sui hosted HTTP native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 pass at7e0b60994/Core0e540eb; app81794c84/settings1d5007cb SUCCESS. Card publication follows this proof; browser remains open.
-- Azure/Oracle hosting remains explicitly deferred. Public source demos do not certify full ORM/signed writes.
-- Browser transport unavailable; no OS control resumed and David need not reopen the page.
-- Website main9679699 is published and byte-verified:148135bytes, SHA256b8d17101a869a1dffb8cd2c076b8c6577a24086bfcd052394100e7245d069a35. Sui card/setup/C# links are live; browser proof remains open. TRON stays unadmitted (34controlled passes, real429failure).
+- **35 providers** have scoped hosted HTTP proof; **5** browser-verified, **30** browser gates open. HTTP and byte-publication checks do not certify browser interaction.
+- Live website main **0228db6adca82f3c457e30aa836b117d9690577d** includes Radix, Elrond, Sui and Hedera, with spaced setup examples and pinned C# links.
+- Published HTML:150955bytes; SHA25654588e7bd9c0368714d9b57b6f4f370c772d93b648665ada00d6a3dc8dbfca42.
+- Session frontend implementation **43af923**, task branch only, passes **80/80** client tests. New JS URLs are versioned; login/demo/refresh/logout share serialized cookie ownership, bearer stays in memory, stable avatar/environment identity survives renewal, uncertain outcomes stop without replay.
+- Backend4434e2c28 deployed successfully but live protocol rejected a refresh cookie missing Secure. Original test session and sealed response retained; no replacement avatar or provider saves.
+- Root correction **b0b308037** explicitly clears default proxy trust lists so Railway forwarded HTTPS is processed. **16/16** API/schema and **9/9** credential-tool tests pass. Exact job **e52770a9-42e7-401b-9d08-4ed4b7f1ee05** last observed QUEUED.
+- **Next:** observe that exact job, reconcile the original issued session through normal same-avatar rotation and revoke/clear. Publish this frontend only after live cookie protocol passes. Verify committed HTML, web4-session.js and cql-playground.js exact bytes.
+- Browser transport remains unavailable; no OS control resumed or request for David to reopen the page.
+- Azure/Oracle hosting explicitly deferred; TRON real429 remains unadmitted. Starknet native header reads qualified, native CQL not implemented.
+- Backend authority: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md, SESSION_RENEWAL_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Resource ledger remains beside this file.
 
-Backend: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md.
-
-- MultiversX/Elrond hosted HTTP native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3 and replicas2/2 pass at801795a64/Coref41b2a1; app19f65f59/settings18c4f04e SUCCESS. Website main95c53cc published/byte-verified149523bytes, SHA256988e89929f268a5a447f00a09e7602d0c59a01e6bd15ef44ed0c37be16343a63. Reviewed card/setup/C# links live; browser proof separate.
-
-Radix card drafted on task branch only; backend1f39016fa application succeeded, settings job15f047fd remains in progress. Native/local HTTP3/2and Mongo5/4 verified; hosted, card publication and browser gates remain open. Preserve original source and future hosted cohort.
-
-Radix hosted original cohort complete: native3/2, Mongo5/4, repeat0new/2existing, foreign-private0/public3 and matching SQLite/Neo replicas2/2. Parent74aaa9b4d/Core8b79301 correctionf4c02dbd SUCCESS. Original flow resumed without resaves after atomic settlement fix; same avatar renewed via normal refresh after scoped owned-fixture credential recovery. Automatic guest-session/browser renewal remains open and queued for root fix. Card published at main0228db6 with first-setup guide74ccc3752 and C#74aaa9b4d; source reads need no wallet.
-
-Website main0228db6adca82f3c457e30aa836b117d9690577d now serves the Radix card and pinned setup/C# links byte-identically (150955bytes, SHA25654588e7bd9c0368714d9b57b6f4f370c772d93b648665ada00d6a3dc8dbfca42). This proves publication, not browser interaction.
-
-Session renewal correction staged (not main):12session/context cases plus affected CQL/preparation tests give80/80. Login/demo/refresh/logout send cookie credentials through one serialized owner; bearer stays in memory, stable avatar/environment identity survives rotation, failed rotations stop without replay, old responses cannot restore data. Versioned new JS URLs prevent stale asset mixing. Backend4434e2c28 passes15API and8credential-tool checks; deploy/verify that server before publishing this frontend. Current live page remains0228db6. Browser interaction still unverified.
+[Earlier milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
