@@ -62,3 +62,5 @@ Algorand publication verified1November: mainada6e92 exact live/git-object HTML S
 Aptos publication verified1November: main8e3db22 exact live/git-object HTML SHA256b679d18f8c949778cf33fb824277c12eef9bbd2d3ae2e6a3f31620adbaeef127. No Hedera card published. Responses memory-only, no new resources.
 
 1 November fresh local setup link correction: point published Algorand/Aptos guides to backend cbba242f7 complete JSON examples; no new card/provider/JS behavior. Existing checkout only/no new resources. Publish scoped href fix before staging Hedera card; compare committed/live HTML separately.
+
+1 November staged Hedera card: existing checkout/source only, spaced runnable PowerShell/complete first-setup guide/C# links. Explicitly hosted pending, task-only. No new environment/download/process/port/raw artifact. Await hosted proof before main publication.
