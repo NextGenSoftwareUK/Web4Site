@@ -411,12 +411,12 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public Radix resources · no wallet needed</h3>
       <p>Use HolonManager and LINQ to select three Mainnet resource definitions, then filter to two. Each native query pins its selected resources to one Gateway ledger state. Supplies retain all native decimal digits.</p>
-      <p class="note">Native C# and local HTTP/Mongo checks pass. Hosted rollout is pending; live readiness is shown in the CQL provider list. Browser verification remains open. Public reads create no wallet or chain transaction and do not independently verify consensus.</p>
+      <p class="note">Live HTTP checks pass: three resources or a two-resource subset, paired with two private Mongo records. Repeat setup reuses both copies; visitor isolation and SQLite/Neo4j replicas are verified. Select RadixOASIS in the CQL tab. Mongo copies capture name, description and native key; each native query uses its own ledger state. Browser verification remains open. No wallet, funding, chain transaction or independent consensus proof is needed or implied.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
   --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj &#96;
   --no-build --no-restore &#96;
   -- --radix-public LocalState/COSMIC/HostedRadixPublicSourceCurrent/source.json</pre>
-      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1f39016fa/Docs/Devs/RADIX_PUBLIC_RESOURCE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1f39016fa/Examples/CosmicCqlDemo/RadixPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/74ccc3752/Docs/Devs/RADIX_PUBLIC_RESOURCE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/74aaa9b4d/Examples/CosmicCqlDemo/RadixPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
       <h3>Public MultiversX accounts · no wallet needed</h3>
       <p>Use HolonManager and LINQ to select three public accounts, then filter to two. Balances stay exact decimal strings; the profile validates Mainnet identity and token denomination independently of display precision.</p>
