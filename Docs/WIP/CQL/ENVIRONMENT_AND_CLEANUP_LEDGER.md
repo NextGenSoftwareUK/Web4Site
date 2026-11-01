@@ -19,3 +19,5 @@ Shared detailed inventory: [COSMIC ledger](C:/Source/OASIS-cosmic/Docs/WIP/COSMI
 31October Arbitrum preparation: same checkout/Node reused,51terminal-only controls. No new runtime/download/install/server/dataset/output; backend owned fixture and protected joint candidate are in shared COSMIC ledger.
 
 31October Arbitrum CLI catalogue links: existing HTML/docs/Node reused;51controls, no new runtime/download/server/output/dataset. Task-only staging with Polygon for next website batch; backend hosting unchanged. Shared COSMIC ledger owns native/protected state.
+
+1November2026: reuse existing Web4Site worktree/Node24.19 and generic preparation fixture for new Berachain profile. One focused client contract passes; no native backend process/account/database/download/install. Bounded log at C:/Source/OASIS-cosmic/TestResults/EvmBreadthReadinessCurrent/berachain-client-preparation.log, regenerable. Static HTML fixes known stale hosted-pending labels for17verifiedsources, preserves owned-node/emulator caveats and adds commented Berachain CLI link. No browser acceptance claimed.
