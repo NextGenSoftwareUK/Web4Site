@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-bittensor-catalogue">
+      <h2>Bittensor Finney headers + MongoDB</h2>
+      <p>Query three configured Finney block headers, then filter to two by native hash. Pair those public records with two private Mongo snapshots.</p>
+      <p class="note" id="cql-bittensor-acceptance">Local C# and HTTP checks pass. Hosted verification is pending; Bittensor is not yet enabled in the live CQL tab.</p>
+      <p class="note">Each header's content hash is checked locally. Canonical history and finality are reported by the RPC node; no independent consensus proof, AI inference or subnet analytics is implied.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Reuse the configured Finney endpoint, genesis pin, three block hashes and persistent projection owner. The walkthrough uses HolonManager and deferred LINQ without a wallet or native transaction.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --bittensor-public LocalState/COSMIC/HostedBittensorPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e8d2d75df48a5caa6b6a849201c34494928b8462/Docs/Devs/BITTENSOR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e8d2d75df48a5caa6b6a849201c34494928b8462/Examples/CosmicCqlDemo/BittensorPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured BittensorBlockHash equality, membership and paging are supported. Private browser copies retain identity, name, description, provenance and the query key, not full native state. Browser verification and production availability remain separate gates.</p>
+    </div>
     <div class="card" id="cql-eclipse-catalogue">
       <h2>Eclipse account metadata + MongoDB</h2>
       <p>Read three configured public Eclipse accounts, then filter to two by address. Pair native observations with two private Mongo snapshots.</p>
