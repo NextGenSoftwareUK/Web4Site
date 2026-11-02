@@ -488,6 +488,21 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-blockscout-catalogue">
+      <h2>Blockscout explorer addresses + MongoDB</h2>
+      <p>Query three configured Ethereum explorer addresses, then filter to two. Read the indexed contract name, reported native-coin balance and balance update block, with unknown values kept explicit.</p>
+      <p class="note" id="cql-blockscout-acceptance">Hosted functional HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select BlockscoutOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Balances retain exact native-unit precision. For these Ethereum addresses this is ETH, not DAI/USDC token holdings. Records can have different update blocks; an unknown balance is not zero or proof of an indexed account. These are explorer observations, not one shared finalized snapshot or independently verified consensus. Private tags and watchlist fields are excluded.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide and retain the same explorer, addresses and projection owner. The spaced walkthrough uses HolonManager and deferred LINQ and creates no transaction, wallet, source write or Mongo copy.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --blockscout-public LocalState/COSMIC/HostedBlockscoutPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9e84e1f5a10719943c547f65d7f166e6b06e9c06/Docs/Devs/BLOCKSCOUT_PUBLIC_ADDRESS_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/21666342fb90599ad74f3d3825acf253d7e5d9d0/Examples/CosmicCqlDemo/BlockscoutPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Exact configured address equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the address query key, not the full native payload. Earlier endpoint failures are retained in the proof report; functional checks do not establish an uptime guarantee.</p>
+    </div>
+
     <div class="card" id="cql-celestia-catalogue">
       <h2>Celestia mainnet headers + MongoDB</h2>
       <p>Query three configured extended headers, then filter to two by exact height. Each returned node-reported block ID must match its retained pin. Read the reported data hash, timestamp and extended-square width without installing a node.</p>
