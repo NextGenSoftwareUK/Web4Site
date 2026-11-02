@@ -488,6 +488,21 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-chainflip-catalogue">
+      <h2>Chainflip completed swaps + MongoDB</h2>
+      <p>Read three configured completed swap observations, then filter to two by exact swap ID. See source and destination assets, precise amount strings, and whether an external deposit or refund was reported.</p>
+      <p class="note" id="cql-chainflip-acceptance">Hosted functional HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select ChainflipOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Amounts retain their exact decimal precision. These are per-record indexer observations, not one shared snapshot or independent finality or destination-redemption proofs. A completed record can include a refund. Missing external deposits stay absent, not zero. No swap, quote, deposit address or wallet is created.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once and retain the same swap catalogue and projection owner. The spaced walkthrough uses HolonManager and deferred LINQ and creates no source writes or Mongo copies.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --chainflip-public LocalState/COSMIC/HostedChainflipPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c6b7f150bdd8beafb2c08b86ce4132ad0568159a/Docs/Devs/CHAINFLIP_PUBLIC_SWAP_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c81937d591e91e068a7d6873c89964eca427e757/Examples/CosmicCqlDemo/ChainflipPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Exact configured swap ID equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the swap query key, not the full native payload. Native presets use an explicit 30-second query budget.</p>
+    </div>
+
     <div class="card" id="cql-wormhole-catalogue">
       <h2>Wormhole cross-chain messages + MongoDB</h2>
       <p>Read three configured public messages, then filter to two by their exact emitter-chain, emitter-address and sequence identity. Every returned VAA body must match its retained fingerprint.</p>
