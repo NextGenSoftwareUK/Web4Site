@@ -491,7 +491,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-stacks-catalogue">
       <h2>Stacks principal state + MongoDB</h2>
       <p>Read three configured public principals, then filter to two. Each selection captures one explicit Stacks node tip and uses it for every selected principal, without creating a wallet or signing a transaction.</p>
-      <p class="note" id="cql-stacks-acceptance">Local C# and HTTP checks pass: native three/two records, Mongo pairing five/four and private-copy isolation. Hosted activation and live acceptance are pending. This task-branch draft must not be published as a live-ready demo yet.</p>
+      <p class="note" id="cql-stacks-acceptance">Hosted functional HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select BlockStackOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
       <p class="note">Spendable and locked micro-STX amounts and nonces retain their full integer precision. These are node-reported explicit-tip observations, not independent consensus or finality proofs. Separate selections can see different tips; zero state does not prove a principal exists. Gaia storage is outside this profile.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -499,8 +499,8 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     --stacks-public LocalState/COSMIC/HostedStacksPublicSourceCurrent/source.json</pre>
       </details>
-      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3768c2050ec7b0c60677ae3367bda450440b71ad/Docs/Devs/STACKS_PUBLIC_PRINCIPAL_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1f4076c29/Examples/CosmicCqlDemo/StacksPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
-      <p class="note">Exact configured principal equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the principal query key, not all native tip/balance metadata. Browser interaction verification remains separate.</p>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/23e70d10d6d638cb7a5d79d20de509acbb573d9c/Docs/Devs/STACKS_PUBLIC_PRINCIPAL_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3768c2050ec7b0c60677ae3367bda450440b71ad/Examples/CosmicCqlDemo/StacksPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Exact configured principal equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the principal query key, not all native tip/balance metadata. Existing private version1 copies preserve their initial observation when the live tip advances. Browser interaction verification remains separate.</p>
     </div>
 
     <div class="card" id="cql-matrix-catalogue">
