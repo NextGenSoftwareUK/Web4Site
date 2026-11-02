@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-eclipse-catalogue">
+      <h2>Eclipse account metadata + MongoDB</h2>
+      <p>Read three configured public Eclipse accounts, then filter to two by address. Pair native observations with two private Mongo snapshots.</p>
+      <p class="note" id="cql-eclipse-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select EclipseOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Each query shares one node-reported finalized slot; separate queries can observe different slots. Exact balance units use ETH with nine decimals. Account data is excluded; these observations do not independently prove consensus or Ethereum settlement.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Reuse the configured accounts, RPC endpoint, genesis pin and projection owner. The walkthrough uses HolonManager and deferred LINQ without creating a wallet or submitting transactions.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --eclipse-public LocalState/COSMIC/HostedEclipsePublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8395e0a66819e0de76a3f317d8385ea82bbc11cd/Docs/Devs/ECLIPSE_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/105329a3fc84e8505a6779d3291de806858c23c2/Examples/CosmicCqlDemo/EclipsePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured EclipseAccountAddress equality, membership and paging are supported. Private browser copies retain identity, name, description, provenance and the query key, not full native account state. Browser verification and production availability guarantees remain separate.</p>
+    </div>
     <div class="card" id="cql-akash-catalogue">
       <h2>Akash provider metadata + MongoDB</h2>
       <p>Read three sampled Akash providers, then filter to two by owner address. Pair the public records with two private Mongo snapshots.</p>
