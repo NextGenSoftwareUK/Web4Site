@@ -1214,3 +1214,21 @@ test('Wormhole tuple snapshots retain exact sequence keys and reuse initial priv
   assert.equal(f.saves.length, 2);
   assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
 });
+
+
+test('Chainflip historical swap IDs prepare only owned Mongo copies and preserve existing snapshots', async () => {
+  const keys = ['500000', '500001'];
+  const f = fixture(2, { provider: 'ChainflipOASIS', metadataKey: 'ChainflipSwapId', keys });
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  assert.deepEqual(plan.keys, keys);
+  assert.equal((await prep.prepare({ ...f.options, recipe: plan })).saved, 2);
+  assert.equal(f.saves[0].holon.metaData.ChainflipSwapId, '500000');
+  assert.equal(f.saves[1].holon.metaData.ChainflipSwapId, '500001');
+  assert.equal(f.saves[0].holon.metaData['oasis.native.provider'], 'ChainflipOASIS');
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
+});
