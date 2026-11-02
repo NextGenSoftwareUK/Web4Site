@@ -1232,3 +1232,21 @@ test('Chainflip historical swap IDs prepare only owned Mongo copies and preserve
   assert.equal(f.saves.length, 2);
   assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
 });
+
+
+test('Celestia header heights prepare only owned Mongo copies and reuse the original snapshots', async () => {
+  const keys = ['15521793', '15521794'];
+  const f = fixture(2, { provider: 'CelestiaOASIS', metadataKey: 'CelestiaHeight', keys });
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  assert.deepEqual(plan.keys, keys);
+  assert.equal((await prep.prepare({ ...f.options, recipe: plan })).saved, 2);
+  assert.equal(f.saves[0].holon.metaData.CelestiaHeight, keys[0]);
+  assert.equal(f.saves[1].holon.metaData.CelestiaHeight, keys[1]);
+  assert.equal(f.saves[0].holon.metaData['oasis.native.provider'], 'CelestiaOASIS');
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
+});
