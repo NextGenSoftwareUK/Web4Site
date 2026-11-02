@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-akash-catalogue">
+      <h2>Akash provider metadata + MongoDB</h2>
+      <p>Read three sampled Akash providers, then filter to two by owner address. Pair the public records with two private Mongo snapshots.</p>
+      <p class="note" id="cql-akash-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select AkashOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">This reads public indexer observations, not provisioned compute. Online flags are not uptime guarantees. Provider service URLs are descriptive data and are never contacted.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Keep the configured provider sample and projection owner stable. The spaced walkthrough uses HolonManager and deferred LINQ without creating a wallet or source write.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --akash-public LocalState/COSMIC/HostedAkashPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3e3c9ff203937183443c074b429aa547f150078c/Docs/Devs/AKASH_PUBLIC_PROVIDER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/105329a3fc84e8505a6779d3291de806858c23c2/Examples/CosmicCqlDemo/AkashPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured AkashProviderAddress equality, membership and paging are supported. Private browser copies retain identity, name, description, provenance and the query key; they do not copy the full native payload. This is a small configured sample, not a complete network listing or independent consensus proof.</p>
+    </div>
     <div class="card" id="cql-ens-catalogue">
       <h2>ENS names + MongoDB</h2>
       <p>Resolve three configured ENS names through the Universal Resolver, then filter to two. See the ETH address, resolver contract and finalized block reported for each query.</p>
