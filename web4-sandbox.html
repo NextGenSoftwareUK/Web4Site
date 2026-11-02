@@ -490,8 +490,8 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     </div>
     <div class="card" id="cql-bluesky-catalogue">
       <h2>BlueSky public profiles + MongoDB</h2>
-      <p>Query three captured public profiles, then filter to two by DID. Once enrollment completes, select <strong>BlueSkyOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
-      <p class="note" id="cql-bluesky-acceptance">Hosted rollout pending. Local native three/two profiles, Mongo pairing five/four and visitor isolation pass. Hosted and browser verification remain open.</p>
+      <p>Query three captured public profiles, then filter to two by DID. Select <strong>BlueSkyOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
+      <p class="note" id="cql-bluesky-acceptance">Hosted HTTP checks pass: native three/two profiles, Mongo pairing five/four, repeat preparation with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Browser interaction verification remains open.</p>
       <p class="note">These are cached public AppView observations, not verified DID ownership, signed repository records or a shared snapshot. Handles and display text can change. Private Mongo copies retain identity, name, description and provenance, not the full native metadata. No BlueSky login, app password or source write is needed.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -499,7 +499,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
   --bluesky-public LocalState/COSMIC/HostedBlueSkyPublicSourceCurrent/source.json</pre>
       </details>
-      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/be18aed35/Docs/Devs/BLUESKY_PUBLIC_PROFILE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/f36dd0d56ea4b93f06631947f5c267c55e131910/Examples/CosmicCqlDemo/BlueSkyPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/a10c6661c07b14352c9dc5b6b0c2c0ac1d4dd0eb/Docs/Devs/BLUESKY_PUBLIC_PROFILE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/f36dd0d56ea4b93f06631947f5c267c55e131910/Examples/CosmicCqlDemo/BlueSkyPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <p class="note">Exact configured DID equality and bounded membership are supported. Profile search, native writes and full ORM parity remain separate work.</p>
     </div>
     <div class="card" id="cql-chainlink-catalogue">
