@@ -491,7 +491,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-wormhole-catalogue">
       <h2>Wormhole cross-chain messages + MongoDB</h2>
       <p>Read three configured public messages, then filter to two by their exact emitter-chain, emitter-address and sequence identity. Every returned VAA body must match its retained fingerprint.</p>
-      <p class="note" id="cql-wormhole-acceptance">Local C# and HTTP checks pass: native three/two records, Mongo pairing five/four and visitor privacy. Hosted activation and live acceptance are pending. This task-branch draft is not yet a live-ready demo.</p>
+      <p class="note" id="cql-wormhole-acceptance">Hosted functional HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select WormholeOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
       <p class="note">Sequence and other native integers retain their exact precision. These are indexer-reported observations with structural VAA body checks, not authenticated guardian signatures, independent consensus, finality or destination-redemption proofs. No message is signed or dispatched across chains.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -499,7 +499,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     --wormhole-public LocalState/COSMIC/HostedWormholePublicSourceCurrent/source.json</pre>
       </details>
-      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d1f42addf0413ddcd381238ccdf17bbfa561a3e2/Docs/Devs/WORMHOLE_PUBLIC_OPERATION_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d1f42addf0413ddcd381238ccdf17bbfa561a3e2/Examples/CosmicCqlDemo/WormholePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/413e79ed4de0ad1375d4b4ecebd1d5f5be7169b0/Docs/Devs/WORMHOLE_PUBLIC_OPERATION_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d1f42addf0413ddcd381238ccdf17bbfa561a3e2/Examples/CosmicCqlDemo/WormholePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
       <p class="note">Exact configured operation equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the operation query key, not the full VAA metadata. Browser interaction verification remains separate.</p>
     </div>
 
