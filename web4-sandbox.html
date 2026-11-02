@@ -488,6 +488,19 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-clickhouse-public-catalogue">
+      <h2>ClickHouse public countries + MongoDB</h2>
+      <p>Query France, Germany and Italy from the public ClickHouse country table, then filter to two countries by name. Combine those results with two private Mongo snapshots in one federated query.</p>
+      <p class="note" id="cql-clickhouse-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. In the CQL tab, select ClickHouseOASIS and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Use the retained source configuration with the explicit public endpoint, three country names and a persistent projection owner. The walkthrough uses HolonManager and deferred LINQ; it requires no account or database installation.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --clickhouse-public LocalState/COSMIC/HostedClickHousePublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/22479f9cba9494ae4f37dae912d0e85d99d49c73/Docs/Devs/CLICKHOUSE_PUBLIC_COUNTRY_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/22479f9cba9494ae4f37dae912d0e85d99d49c73/Examples/CosmicCqlDemo/ClickHousePublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured ClickHouseCountryName equality, membership and paging are supported. Keys use printable ASCII without spaces. Summaries contain country names and polygon counts; raw geometry is excluded. Private browser copies retain identity, name, description, provenance and the query key. This read-only public profile does not demonstrate writes to an owned ClickHouse database or certify freshness and availability.</p>
+    </div>
     <div class="card" id="cql-zcash-catalogue">
       <h2>Zcash public blocks + MongoDB</h2>
       <p>Query three configured public Zcash block summaries, then filter to two by block hash. Pair the native results with two private Mongo snapshots.</p>
