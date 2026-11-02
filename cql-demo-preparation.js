@@ -7,8 +7,9 @@
   const clone = value => JSON.parse(JSON.stringify(value));
 
   function recipe(source, example) {
-    // Match Azure Blob's declared native-name bound; other profiles keep 128.
-    const maximumKeyLength = source?.provider === 'AzureStorageOASIS' ? 512 : 128;
+    // Match the source and server identity contract; other profiles keep 128.
+    const maximumKeyLength = source?.provider === 'AzureStorageOASIS' ? 512
+      : source?.provider === 'MatrixOASIS' ? 255 : 128;
     const body = example?.request;
     const input = body?.source;
     const filter = input?.filters?.[0];

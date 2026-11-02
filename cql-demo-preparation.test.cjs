@@ -1117,3 +1117,28 @@ test('Azure key extension remains bounded and does not expand other profiles', (
   f.example.request.source.filters[0].value = ['x'.repeat(137)];
   assert.equal(prep.recipe(f.source, f.example), null);
 });
+
+test('Matrix aliases retain the declared 255-character identity bound and reuse copies', async () => {
+  const keys = ['#' + 'a'.repeat(243) + ':matrix.org', '#synapse:matrix.org'];
+  assert.equal(keys[0].length, 255);
+  const f = fixture(2, { provider: 'MatrixOASIS', metadataKey: 'MatrixRoomAlias', keys });
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  assert.equal((await prep.prepare({ ...f.options, recipe: plan })).saved, 2);
+  assert.equal(f.saves[0].holon.metaData.MatrixRoomAlias, keys[0]);
+  assert.equal(f.saves[0].holon.isPublic, false);
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+});
+
+test('Matrix alias extension refuses 256 characters and leaves other profile bounds unchanged', () => {
+  const f = fixture(2, { provider: 'MatrixOASIS', metadataKey: 'MatrixRoomAlias' });
+  f.example.request.source.filters[0].value = ['#' + 'a'.repeat(244) + ':matrix.org'];
+  assert.equal(prep.recipe(f.source, f.example), null);
+  f.source.provider = 'NostrOASIS';
+  f.example.request.providers = ['MongoDBOASIS', 'NostrOASIS'];
+  f.example.request.source.filters[0].value = ['a'.repeat(129)];
+  assert.equal(prep.recipe(f.source, f.example), null);
+});
