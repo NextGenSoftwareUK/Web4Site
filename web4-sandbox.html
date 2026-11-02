@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-fantom-catalogue">
+      <h2>Fantom Opera public balances + MongoDB</h2>
+      <p>Query three public Fantom addresses, then filter to two. Select <strong>FantomOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset.</p>
+      <p class="note">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No wallet, account, gas or chain transaction is needed. Browser interaction verification remains open.</p>
+      <p class="note">Each native query reads balances at one latest canonical block hash and rechecks that block before returning. This is canonical-at-read, not permanent finality or a shared snapshot across providers. This is Fantom Opera chain250, not Sonic.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once, build, and retain the same public address catalogue between runs.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --fantom-public LocalState/COSMIC/FantomDemo/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/15fc93ccb5ee2bd94cdd985458abe1b68bd0e1bc/Docs/Devs/FANTOM_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e13244820ddcffc27b94326e70ccfef52fb044ab/Examples/CosmicCqlDemo/FantomPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Address equality and bounded membership are supported. Arbitrary chain searches, native writes and full ORM parity remain separate work.</p>
+    </div>
     <div class="card" id="cql-azure-blob-catalogue">
       <h2>Azure public Blob Storage + MongoDB</h2>
       <p>Query three real Azure object-property records, then filter to two by blob name. The public catalogue includes a census Parquet file and two completion markers. File sizes remain exact.</p>
