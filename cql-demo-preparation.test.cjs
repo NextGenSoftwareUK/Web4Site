@@ -1196,3 +1196,21 @@ test('reuse rejects changed provenance or noninitial revisions without further s
     assert.equal(f.saves.length, 2);
   }
 });
+
+
+test('Wormhole tuple snapshots retain exact sequence keys and reuse initial private copies', async () => {
+  const keys = ['2/' + 'a'.repeat(64) + '/18446744073709551615',
+    '2/' + 'a'.repeat(64) + '/18446744073709551614'];
+  const f = fixture(2, { provider: 'WormholeOASIS', metadataKey: 'WormholeOperationId', keys });
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  assert.deepEqual(plan.keys, keys);
+  assert.equal((await prep.prepare({ ...f.options, recipe: plan })).saved, 2);
+  assert.equal(f.saves[0].holon.metaData.WormholeOperationId, keys[0]);
+  assert.equal(f.saves[0].holon.metaData['oasis.native.provider'], 'WormholeOASIS');
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
+});
