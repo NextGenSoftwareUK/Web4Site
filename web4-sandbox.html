@@ -491,7 +491,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-chainlink-catalogue">
       <h2>ChainLink public feed observations + MongoDB</h2>
       <p>Query ETH/USD, BTC/USD and LINK/USD feed proxies, then filter to two. Select <strong>ChainLinkOASIS</strong> in the CQL tab and choose a native or Mongo paired preset. Raw signed answers, decimal scales, round IDs and update times remain exact strings.</p>
-      <p class="note" id="cql-chainlink-acceptance">Hosted rollout is being verified. Local native three/two and Mongo five/four checks pass; live acceptance remains pending.</p>
+      <p class="note" id="cql-chainlink-acceptance">Hosted HTTP checks pass: native three/two observations, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Browser interaction verification remains open.</p>
       <p class="note">Each query binds contract reads to one RPC-reported finalized Ethereum block. This is not independent consensus verification or a current-price guarantee. Private Mongo copies retain source identity, name and description, not the full feed payload. No wallet, funding or source transaction is needed.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -499,7 +499,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
   --chainlink-public LocalState/COSMIC/HostedChainLinkPublicSourceCurrent/source.json</pre>
       </details>
-      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/124b6ea653919849382fb16ae91619dd3aaf52e4/Docs/Devs/CHAINLINK_PUBLIC_FEED_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/09c66998cb2c204f290d7a85198006e6abd3202f/Examples/CosmicCqlDemo/ChainLinkPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3ec0dbac5bf3b491a4f8ef2d3b5d613af515f30a/Docs/Devs/CHAINLINK_PUBLIC_FEED_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/09c66998cb2c204f290d7a85198006e6abd3202f/Examples/CosmicCqlDemo/ChainLinkPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <p class="note">Exact configured feed-address equality and bounded membership are supported. Native writes, arbitrary feed discovery and full ORM parity remain separate work.</p>
     </div>
     <div class="card" id="cql-eosio-catalogue">
