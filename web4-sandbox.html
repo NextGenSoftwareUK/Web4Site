@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-zcash-catalogue">
+      <h2>Zcash public blocks + MongoDB</h2>
+      <p>Query three configured public Zcash block summaries, then filter to two by block hash. Pair the native results with two private Mongo snapshots.</p>
+      <p class="note" id="cql-zcash-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. In the CQL tab, select ZcashOASIS and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Genesis, network, height and configured hash are checked before results appear. The indexer reports these summaries; independent proof of work, consensus and finality are not verified. Freshness may be unknown.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Use the explicit public endpoint, genesis pin, three height/hash mappings and a persistent projection owner. The walkthrough uses HolonManager and deferred LINQ. It needs no wallet and sends no native transactions.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --zcash-public LocalState/COSMIC/HostedZcashPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9e98a4278c91a9d01caaabdfbed447d38120a6f2/Docs/Devs/ZCASH_PUBLIC_BLOCK_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9e98a4278c91a9d01caaabdfbed447d38120a6f2/Examples/CosmicCqlDemo/ZcashPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured ZcashBlockHash equality, membership and paging are supported. Private browser copies retain identity, name, description, provenance and the query key. Wallets, shielded data and native Zcash writes are outside this read-only demo.</p>
+    </div>
     <div class="card" id="cql-bittensor-catalogue">
       <h2>Bittensor Finney headers + MongoDB</h2>
       <p>Query three configured Finney block headers, then filter to two by native hash. Pair those public records with two private Mongo snapshots.</p>
