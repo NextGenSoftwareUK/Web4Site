@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-filecoin-catalogue">
+      <h2>Filecoin public balances + MongoDB</h2>
+      <p>Query three public Filecoin EVM addresses, then filter to two. Select <strong>FilecoinOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Balances remain exact attoFIL strings.</p>
+      <p class="note">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No Filecoin account, wallet, gas or source transaction is needed. Browser interaction verification remains open.</p>
+      <p class="note">The private Mongo demo records retain source identity, name and description. Balances and block metadata are read from Filecoin; this is not full native-state migration. Finality is reported by the RPC, not independently verified consensus.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once, build, and retain the same public address catalogue between runs.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --filecoin-public LocalState/COSMIC/FilecoinDemo/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/05469a4f612ada54dc6942a645dd397e5d5b517b/Docs/Devs/FILECOIN_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/05469a4f612ada54dc6942a645dd397e5d5b517b/Examples/CosmicCqlDemo/FilecoinPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Address equality and bounded membership are supported. Storage-deal queries, CID content retrieval, native writes and full ORM parity remain separate work.</p>
+    </div>
     <div class="card" id="cql-fantom-catalogue">
       <h2>Fantom Opera public balances + MongoDB</h2>
       <p>Query three public Fantom addresses, then filter to two. Select <strong>FantomOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset.</p>
