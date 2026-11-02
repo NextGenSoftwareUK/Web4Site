@@ -491,7 +491,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-bittensor-catalogue">
       <h2>Bittensor Finney headers + MongoDB</h2>
       <p>Query three configured Finney block headers, then filter to two by native hash. Pair those public records with two private Mongo snapshots.</p>
-      <p class="note" id="cql-bittensor-acceptance">Local C# and HTTP checks pass. Hosted verification is pending; Bittensor is not yet enabled in the live CQL tab.</p>
+      <p class="note" id="cql-bittensor-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select BittensorOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
       <p class="note">Each header's content hash is checked locally. Canonical history and finality are reported by the RPC node; no independent consensus proof, AI inference or subnet analytics is implied.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
