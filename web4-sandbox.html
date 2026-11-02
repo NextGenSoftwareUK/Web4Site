@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-nostr-catalogue">
+      <h2>Nostr signed public events + MongoDB</h2>
+      <p>Query three captured kind-1 event IDs, then filter to two. Once enrollment completes, select <strong>NostrOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
+      <p class="note" id="cql-nostr-acceptance">Hosted rollout pending. Local native three/two events, Mongo pairing five/four and visitor isolation pass. Hosted and browser verification remain open.</p>
+      <p class="note">Event hashes and BIP-340 signatures are verified before results are returned. This proves integrity for the stated public keys, not real-world identity, freshness, relay completeness or a shared snapshot. Private Mongo browser copies retain identity, name, description and provenance, not the full signed-event metadata. No Nostr login, signing key or relay publication is needed.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once and retain the same relay, event IDs and projection owner. A relay may prune or refuse events; missing selections fail explicitly.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --nostr-public LocalState/COSMIC/HostedNostrPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/6ee3ebfcd95f594844f518b95451fb9807f342a5/Docs/Devs/NOSTR_PUBLIC_EVENT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/6ee3ebfcd95f594844f518b95451fb9807f342a5/Examples/CosmicCqlDemo/NostrPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Exact configured event-ID equality and bounded membership are supported. Relay search, publication and full ORM parity remain separate work.</p>
+    </div>
     <div class="card" id="cql-bluesky-catalogue">
       <h2>BlueSky public profiles + MongoDB</h2>
       <p>Query three captured public profiles, then filter to two by DID. Select <strong>BlueSkyOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
