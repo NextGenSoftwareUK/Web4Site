@@ -1250,3 +1250,21 @@ test('Celestia header heights prepare only owned Mongo copies and reuse the orig
   assert.equal(f.saves.length, 2);
   assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
 });
+
+
+test('Blockscout address keys prepare owned private copies and reuse original snapshots', async () => {
+  const keys = ['0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', '0x6b175474e89094c44da98b954eedeac495271d0f'];
+  const f = fixture(2, { provider: 'BlockscoutOASIS', metadataKey: 'BlockscoutAddress', keys });
+  const plan = prep.recipe(f.source, f.example);
+  assert.ok(plan);
+  assert.deepEqual(plan.keys, keys);
+  assert.equal((await prep.prepare({ ...f.options, recipe: plan })).saved, 2);
+  assert.equal(f.saves[0].holon.metaData.BlockscoutAddress, keys[0]);
+  assert.equal(f.saves[1].holon.metaData.BlockscoutAddress, keys[1]);
+  assert.equal(f.saves[0].holon.metaData['oasis.native.provider'], 'BlockscoutOASIS');
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
+});
