@@ -488,6 +488,21 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-ens-catalogue">
+      <h2>ENS names + MongoDB</h2>
+      <p>Resolve three configured ENS names through the Universal Resolver, then filter to two. See the ETH address, resolver contract and finalized block reported for each query.</p>
+      <p class="note" id="cql-ens-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select ENSOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Each query uses one node-reported finalized block; separate queries may observe different blocks. Resolution does not prove wallet ownership or independently verify consensus. The initial profile supports only its explicit lowercase ASCII catalogue and direct ETH-address records; CCIP/offchain resolution and general Unicode names are separate work.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Keep the same configured names, mainnet RPC and projection owner. The spaced walkthrough uses HolonManager and deferred LINQ without creating a wallet, transaction or source write.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --ens-public LocalState/COSMIC/HostedEnsPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/0fcd053fe91100251ee1625748adfdde63eba950/Docs/Devs/ENS_PUBLIC_NAME_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/a20f35f9a85af3807f42e1273d7cc6e0fabb0934/Examples/CosmicCqlDemo/EnsPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured EnsName equality, bounded membership and paging are supported. Private Mongo browser copies retain identity, name, description, provenance and the name query key, not the full native payload. Functional acceptance is not a production availability guarantee.</p>
+    </div>
+
     <div class="card" id="cql-blockscout-catalogue">
       <h2>Blockscout explorer addresses + MongoDB</h2>
       <p>Query three configured Ethereum explorer addresses, then filter to two. Read the indexed contract name, reported native-coin balance and balance update block, with unknown values kept explicit.</p>
