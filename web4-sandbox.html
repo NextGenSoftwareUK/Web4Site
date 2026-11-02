@@ -488,6 +488,21 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-matrix-catalogue">
+      <h2>Matrix public room aliases + MongoDB</h2>
+      <p>Resolve three configured public room aliases, then filter to two. The Matrix CQL profile uses anonymous directory reads, without an account or room join.</p>
+      <p class="note" id="cql-matrix-acceptance">Local C# and HTTP checks pass: native three/two records, Mongo pairing five/four and private-copy isolation. Hosted activation and live checks are pending. This card is a task-branch draft and must not be published as a live-ready demo yet.</p>
+      <p class="note">Aliases can change their room mapping. These are server-reported directory observations, not message history, membership, encrypted content or a shared snapshot. Returned routing-server addresses are never fetched.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once and retain the same aliases and projection owner. The walkthrough uses HolonManager and deferred LINQ, and creates no source writes or Mongo copies.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --matrix-public LocalState/COSMIC/HostedMatrixPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7b45ee85628bd6d1ceeaf769d4c1bcc44ccb465b/Docs/Devs/MATRIX_PUBLIC_ROOM_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/88a394d55/Examples/CosmicCqlDemo/MatrixPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Exact configured alias equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the alias query key, not the full native routing metadata. Browser interaction verification remains separate.</p>
+    </div>
+
     <div class="card" id="cql-nostr-catalogue">
       <h2>Nostr signed public events + MongoDB</h2>
       <p>Query three captured kind-1 event IDs, then filter to two. Select <strong>NostrOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
