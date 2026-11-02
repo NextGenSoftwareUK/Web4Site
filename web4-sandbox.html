@@ -491,7 +491,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-eosio-catalogue">
       <h2>EOSIO / Vaulta native accounts + MongoDB</h2>
       <p>Query three public native accounts, then filter to two. Select <strong>EOSIOOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Account creation times, RAM quotas and per-response head markers are exposed without a wallet or funded account.</p>
-      <p class="note" id="cql-eosio-acceptance">Hosted rollout is being verified. Local native three/two and Mongo five/four checks pass; live acceptance remains pending.</p>
+      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. Browser interaction verification remains open.</p>
       <p class="note">Each account read reports its own head; these records do not establish a common finalized snapshot. Private Mongo demo copies retain source identity, name and description, not the full native payload. This is a native EOSIO/Vaulta profile, separate from Telos EVM and signed EOSIO storage.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
