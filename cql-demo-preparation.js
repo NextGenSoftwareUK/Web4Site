@@ -111,9 +111,11 @@
       const existing = loaded?.result?.rows;
       if (!Array.isArray(existing) || existing.length > 1) throw new Error('Invalid Mongo lookup. No further saves were sent.');
       if (existing.length) {
+        // A snapshot preserves its first observation when the live source advances.
+        // Version1 and matching ownership/provenance identify an unedited copy.
         const row = existing[0];
         if (row.id !== record.id || row.createdByAvatarId !== identity.ownerId || row.isPublic !== false ||
-            row.name !== source.name || (row.description ?? null) !== (source.description ?? null) ||
+            row.version !== 1 ||
             Object.entries(metadata).some(([key, value]) => row.metadata?.[key] !== value))
           throw new Error('An existing record differs from the demo. It has been left untouched.');
         result.existing++;
@@ -131,7 +133,7 @@
         holon: { id: record.id, name: source.name, description: source.description ?? null,
           isNewHolon: true, isPublic: false, isActive: true, metaData: metadata } });
       if (saved?.isSaved !== true || saved.result?.id !== record.id || saved.result.createdByAvatarId !== identity.ownerId ||
-          saved.result.isPublic !== false)
+          saved.result.isPublic !== false || saved.result.version !== 1)
         throw new Error('Save acknowledgement is incomplete. Retain and reconcile request key ' + operation + '.');
       storage.removeItem(journal);
       result.saved++;

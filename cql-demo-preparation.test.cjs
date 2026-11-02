@@ -38,7 +38,7 @@ function fixture(count = 2, profile = {}) {
       assert.equal(body.holon.isPublic, false);
       assert.equal(body.autoFailOverMode, 'OFF');
       if (db.has(body.holon.id)) throw new Error('create-only conflict');
-      const row = { ...body.holon, metadata: body.holon.metaData, createdByAvatarId: owner };
+      const row = { ...body.holon, version: 1, metadata: body.holon.metaData, createdByAvatarId: owner };
       db.set(row.id, row);
       return { isSaved: true, result: row };
     }
@@ -170,7 +170,7 @@ test('edited or foreign records are left untouched', async () => {
   for (const fault of ['edited', 'foreign', 'public']) {
     const f = fixture(); await prep.prepare(f.options);
     const row = f.db.get(ids[0]);
-    if (fault === 'edited') row.name = 'My edit';
+    if (fault === 'edited') { row.name = 'My edit'; row.version = 2; }
     if (fault === 'foreign') row.createdByAvatarId = randomUUID();
     if (fault === 'public') row.isPublic = true;
     await assert.rejects(prep.prepare(f.options), /left untouched/);
@@ -1165,4 +1165,34 @@ test('Matrix alias extension refuses 256 characters and leaves other profile bou
   f.example.request.providers = ['MongoDBOASIS', 'NostrOASIS'];
   f.example.request.source.filters[0].value = ['a'.repeat(129)];
   assert.equal(prep.recipe(f.source, f.example), null);
+});
+
+
+test('changing live observations reuse the original version1 snapshots without rewriting them', async () => {
+  const f = fixture(2, { provider: 'BlockStackOASIS', metadataKey: 'StacksPrincipal', keys: ['principal-a', 'principal-b'] });
+  await prep.prepare(f.options);
+  const original = structuredClone([...f.db.values()]);
+  const request = async (path, body) => {
+    const value = await f.request(path, body);
+    if (path === 'data/query-cql' && body.provider === f.source.provider)
+      for (const row of value.result.rows) { row.name += ' newer'; row.description = 'a newer block height'; }
+    return value;
+  };
+  const repeated = await prep.prepare({ ...f.options, request });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.deepEqual([...f.db.values()], original);
+});
+
+test('reuse rejects changed provenance or noninitial revisions without further saves', async () => {
+  for (const fault of ['revision', 'source', 'key']) {
+    const f = fixture(); await prep.prepare(f.options);
+    const row = f.db.get(ids[0]);
+    if (fault === 'revision') row.version = 2;
+    if (fault === 'source') row.metadata['COSMIC.Demo.SourceHolonId'] = randomUUID();
+    if (fault === 'key') row.metadata['oasis.native.key'] = 'different';
+    await assert.rejects(prep.prepare(f.options), /left untouched/);
+    assert.equal(f.saves.length, 2);
+  }
 });

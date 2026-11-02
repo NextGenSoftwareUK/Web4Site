@@ -394,7 +394,7 @@ test('private preparation uses the configured example rather than edited JSON an
       })) } };
     }
     if (path === 'data/query-cql') return { result: { rows: [] } };
-    writes.push(body); return { isSaved: true, result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false } };
+    writes.push(body); return { isSaved: true, result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false, version: 1 } };
   };
   const h = harness(async () => { throw new Error('Query run was not requested.'); },
     async () => ({ ok: true, status: 200, json: async () => ({ result: federationCatalogue() }) }),
@@ -429,7 +429,7 @@ test('ID preparation publishes the actor-specific query only after complete save
       if (path === 'data/query-cql') return { result: { rows: body.provider === source.provider
         ? body.filters[0].value.map(id => ({ id, name: 'Native ' + id, metadata: {} })) : [] } };
       writes++;
-      return { isSaved: !(incomplete && writes === 2), result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false } };
+      return { isSaved: !(incomplete && writes === 2), result: { id: body.holon.id, createdByAvatarId: owner, isPublic: false, version: 1 } };
     };
     const h = harness(async (url, options) => {
       assert.match(url, /\/api\/data\/query-cql\/federation$/);
