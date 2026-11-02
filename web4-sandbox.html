@@ -488,6 +488,21 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-celestia-catalogue">
+      <h2>Celestia mainnet headers + MongoDB</h2>
+      <p>Query three configured extended headers, then filter to two by exact height. Each returned node-reported block ID must match its retained pin. Read the reported data hash, timestamp and extended-square width without installing a node.</p>
+      <p class="note" id="cql-celestia-acceptance">Hosted functional HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. Select CelestiaOASIS in the CQL tab and choose a native or Mongo paired preset. Browser interaction verification remains open.</p>
+      <p class="note">Heights retain their exact integer precision. These are node-reported pinned headers, not independently verified consensus, validator signatures, blob inclusion or data-availability sampling. No blob, transaction, wallet or source write is created. The public development endpoint has no production availability guarantee.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once and retain the same heights, reported block IDs and projection owner. The spaced walkthrough uses HolonManager and deferred LINQ and creates no source writes or Mongo copies.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --celestia-public LocalState/COSMIC/HostedCelestiaPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/c3815d1df988694035e8619aa5c9e21af4010bb0/Docs/Devs/CELESTIA_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP scope guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9c0b5c591f6ecc13032d4c2fa51d9c2fc469750b/Examples/CosmicCqlDemo/CelestiaPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Exact configured height equality, bounded membership and paging are supported. Generic private Mongo browser copies retain identity, name, description, provenance and the height query key, not the full native header or validator payload. Native presets use an explicit 30-second query budget.</p>
+    </div>
+
     <div class="card" id="cql-chainflip-catalogue">
       <h2>Chainflip completed swaps + MongoDB</h2>
       <p>Read three configured completed swap observations, then filter to two by exact swap ID. See source and destination assets, precise amount strings, and whether an external deposit or refund was reported.</p>
