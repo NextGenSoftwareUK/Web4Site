@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-eosio-catalogue">
+      <h2>EOSIO / Vaulta native accounts + MongoDB</h2>
+      <p>Query three public native accounts, then filter to two. Select <strong>EOSIOOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Account creation times, RAM quotas and per-response head markers are exposed without a wallet or funded account.</p>
+      <p class="note" id="cql-eosio-acceptance">Hosted rollout is being verified. Local native three/two and Mongo five/four checks pass; live acceptance remains pending.</p>
+      <p class="note">Each account read reports its own head; these records do not establish a common finalized snapshot. Private Mongo demo copies retain source identity, name and description, not the full native payload. This is a native EOSIO/Vaulta profile, separate from Telos EVM and signed EOSIO storage.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the first-setup guide once and retain the same public account catalogue between runs.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --eosio-public LocalState/COSMIC/HostedEosioPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/da9ffcb037eb84cbfd2082ad167000c50bcd9d22/Docs/Devs/EOSIO_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/4d3e0b7cd148bed7ebdf0400ca371867873932c0/Examples/CosmicCqlDemo/EosioPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Exact account-name equality and bounded membership are supported. Native writes, arbitrary chain scans and full ORM parity remain separate work.</p>
+    </div>
     <div class="card" id="cql-telos-catalogue">
       <h2>Telos EVM public balances + MongoDB</h2>
       <p>Query three public Telos EVM addresses, then filter to two. Select <strong>TelosOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Native balance quantities remain exact strings.</p>
