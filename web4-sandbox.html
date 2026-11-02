@@ -488,6 +488,20 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-bluesky-catalogue">
+      <h2>BlueSky public profiles + MongoDB</h2>
+      <p>Query three captured public profiles, then filter to two by DID. Once enrollment completes, select <strong>BlueSkyOASIS</strong> in the CQL tab and choose a native or Mongo paired preset.</p>
+      <p class="note" id="cql-bluesky-acceptance">Hosted rollout pending. Local native three/two profiles, Mongo pairing five/four and visitor isolation pass. Hosted and browser verification remain open.</p>
+      <p class="note">These are cached public AppView observations, not verified DID ownership, signed repository records or a shared snapshot. Handles and display text can change. Private Mongo copies retain identity, name, description and provenance, not the full native metadata. No BlueSky login, app password or source write is needed.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Follow the setup guide once and retain the same public DID catalogue between runs.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+  --bluesky-public LocalState/COSMIC/HostedBlueSkyPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/be18aed35/Docs/Devs/BLUESKY_PUBLIC_PROFILE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">First setup, C# and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/f36dd0d56ea4b93f06631947f5c267c55e131910/Examples/CosmicCqlDemo/BlueSkyPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
+      <p class="note">Exact configured DID equality and bounded membership are supported. Profile search, native writes and full ORM parity remain separate work.</p>
+    </div>
     <div class="card" id="cql-chainlink-catalogue">
       <h2>ChainLink public feed observations + MongoDB</h2>
       <p>Query ETH/USD, BTC/USD and LINK/USD feed proxies, then filter to two. Select <strong>ChainLinkOASIS</strong> in the CQL tab and choose a native or Mongo paired preset. Raw signed answers, decimal scales, round IDs and update times remain exact strings.</p>
