@@ -846,6 +846,33 @@ test('EOSIO account copies keep the source filter and never request a signed cha
   assert.equal(f.journal.length, 0);
 });
 
+test('BlueSky profile copies keep the source filter and never request a signed chain write', async () => {
+  const keys = ['did:plc:z72i7hdynmk6r22z27h6tvur', 'did:plc:ewvi7nxzyoun6zhxrhs64oiz', 'did:plc:oky5czdrnfjpqslsw2a5iclo'];
+  const f = fixture(2, { provider: 'BlueSkyOASIS', metadataKey: 'BlueSkyActorDid', keys });
+  f.example.request.source.filters[0].value = keys;
+  const plan = prep.recipe(f.source, f.example);
+  const original = structuredClone(f.example);
+
+  const first = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(first.saved, 2);
+  assert.deepEqual(plan.read.filters[0].value, keys.slice(0, 2));
+  assert.deepEqual(f.example, original);
+
+  for (const [index, save] of f.saves.entries()) {
+    assert.equal(save.providerType, 'MongoDBOASIS');
+    assert.equal(save.holon.id, ids[index]);
+    assert.equal(save.holon.metaData.BlueSkyActorDid, keys[index]);
+    assert.equal(save.holon.metaData['oasis.native.provider'], 'BlueSkyOASIS');
+    assert.equal(save.holon.isPublic, false);
+  }
+
+  const repeated = await prep.prepare({ ...f.options, recipe: plan });
+  assert.equal(repeated.saved, 0);
+  assert.equal(repeated.existing, 2);
+  assert.equal(f.saves.length, 2);
+  assert.equal(f.journal.length, 0);
+});
+
 test('ChainLink feed copies keep the source filter and never request a signed chain write', async () => {
   const keys = ['0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419', '0xf4030086522a5beea4988f8ca5b36dbc97bee88c', '0x2c1d072e956affc0d435cb7ac38ef18d24d9127c'];
   const f = fixture(2, { provider: 'ChainLinkOASIS', metadataKey: 'ChainLinkFeedAddress', keys });
