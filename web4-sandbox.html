@@ -488,6 +488,19 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
+    <div class="card" id="cql-threefold-public-catalogue">
+      <h2>ThreeFold public grid nodes + MongoDB</h2>
+      <p>Query three configured public grid node summaries, then filter to two by node ID. Combine them with two private Mongo snapshots in one federated query.</p>
+      <p class="note" id="cql-threefold-acceptance">Hosted functional HTTP checks pass: three/two native records, five/four with Mongo, repeat setup without extra saves, visitor privacy and two matching replicas each in SQLite and Neo4j. In the CQL tab, select ThreeFoldOASIS and choose a public or Mongo paired preset. Browser interaction verification remains open.</p>
+      <details style="margin-top:20px">
+        <summary>Run the commented C# demo locally</summary>
+        <p>Use the retained configuration with the explicit mainnet Grid Proxy endpoint, three node IDs and a persistent projection owner. The walkthrough uses HolonManager and deferred LINQ. It needs no wallet or account and does not provision compute.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
+    --threefold-public LocalState/COSMIC/HostedThreeFoldPublicSourceCurrent/source.json</pre>
+      </details>
+      <p style="margin-top:24px"><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/41ff38a23cc28e042fefee299c7ad1a9588ac3a0/Docs/Devs/THREEFOLD_PUBLIC_NODE_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide &#8599;</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/41ff38a23cc28e042fefee299c7ad1a9588ac3a0/Examples/CosmicCqlDemo/ThreeFoldPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough &#8599;</a></p>
+      <p class="note">Configured ThreeFoldNodeId equality, membership and paging use bounded native point reads. Node, farm, grid version and location summaries are operator-reported; chain state, capacity and uptime are not independently verified. IPs, contacts and resource inventories are excluded. Private browser copies retain identity, name, description, provenance and the query key. This read-only profile does not demonstrate compute contracts or MinIO storage writes.</p>
+    </div>
     <div class="card" id="cql-clickhouse-public-catalogue">
       <h2>ClickHouse public countries + MongoDB</h2>
       <p>Query France, Germany and Italy from the public ClickHouse country table, then filter to two countries by name. Combine those results with two private Mongo snapshots in one federated query.</p>
