@@ -1094,8 +1094,9 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p class="note">This uses the official Firebase RTDB 4.11.2 emulator. The volatile service imports the exact retained export checkpoint; it does not demonstrate native disk or crash durability. Selection uses bounded native key queries. Hosted credentials/rules, general metadata/text queries, wider numeric/array/graph roundtrips and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>Start the retained Firebase RTDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original checkpoint and IDs, verifies export restoration, then starts the Windows Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirebaseCqlNative.ps1 -Federated -Serve</pre>
+        <p>From C:/Source/OASIS2 on the recovery laptop, run the command below. It restores this laptop's retained recovery checkpoint and starts the Windows Mongo-paired demo. The missing original laptop export remains a separate historical cohort.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirebaseCqlNative.ps1 -RecoveryLaptop -Federated -Serve</pre>
+        <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/647b53daf/Docs/Devs/FIREBASE_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Recovery setup and scope ↗</a></p>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5126/" target="_blank" rel="noopener noreferrer">OPEN FIREBASE RTDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
