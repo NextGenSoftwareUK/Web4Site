@@ -1234,6 +1234,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time; its Mongo environment is shared with other teaching demos.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes its temporary Mongo fixture, rechecks the four original ArcadeDB documents, and stops its owned services. Retained data, schema, protected native credential and receipts remain.</p>
     </div>
+    <div class="card" id="cql-opensearch-local-catalogue">
+      <h2>43 · OpenSearch + MongoDB · Windows local</h2>
+      <p>Run one CQL ID selection over three retained OpenSearch Holons and two MongoDB copies. The full query returns five physical rows; the two-record subset returns four, with each provider shown.</p>
+      <p class="note">This uses real OpenSearch 3.9.0 and MongoDB on your prepared Windows computer. Native reads, retained-data restart, manager federation, local HTTP and browser interaction are verified. OpenSearch is not enrolled on the hosted WEB4 API. Its loopback-only teaching source is separate from hosted credentials; wider search, writes, replication and full ORM parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Windows demo</summary>
+        <p>In the prepared recovery-laptop task checkout, run this command. It reuses the four original canonical Holons and admitted Mongo environment. See the guide for prerequisites and disk capacity notes; missing or changed sources stop the run.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicOpenSearchMongoDemo.ps1 -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5119/" target="_blank" rel="noopener noreferrer">OPEN LOCAL OPENSEARCH + MONGO QUERY</a></p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cb3c147052ea6fc7a1c24c33d7f19e2a60224278/Docs/Devs/OPENSEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cb3c147052ea6fc7a1c24c33d7f19e2a60224278/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time; its Mongo environment is shared with other teaching demos.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes its temporary Mongo fixture, checks the original native payloads and versions, then cleanly stops both owned services. Retained source data and receipts remain. Existing-index queries pass; new-index/storage capacity remains separate work.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
