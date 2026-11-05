@@ -370,6 +370,7 @@
       const identity = getIdentity(); const base = getBase(); const current = ++generation;
       const isCurrent = () => current === generation && identity === getIdentity() && base === getBase();
       preparing = true; controls();
+      $('cql-operation').textContent = '';
       note('Preparing private Mongo snapshots from the configured example…');
       try {
         await ensureAccessToken();

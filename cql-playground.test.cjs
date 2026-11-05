@@ -553,3 +553,20 @@ test('shipped query runner gives a 30-second preset 35 seconds and dispatches on
   assert.equal(dispatched, 1);
   assert.deepEqual(errors, []);
 });
+
+
+test('rejected preparation does not display the preceding query operation identity', async () => {
+  let calls = 0;
+  const h = harness(async () => { throw new Error('No query requested.'); },
+    async () => ({ ok: true, status: 200, json: async () => ({ result: federationCatalogue() }) }),
+    { storage: { length: 0, key() {}, getItem() {}, setItem() {}, removeItem() {} }, canPrepare: true, request: async () => {
+      calls++;
+      throw new Error('The daily call limit has been reached. Request key: preparation-key. Operation: preparation-operation.');
+    } });
+  await h.ui.ready;
+  h.elements.get('cql-operation').textContent = 'Idempotency-Key: previous-query-key\nOperation ID: previous-query-operation';
+  await h.elements.get('cql-prepare').listeners.click();
+  assert.equal(h.elements.get('cql-operation').textContent, '');
+  assert.equal(calls, 1);
+  assert.match(h.elements.get('cql-note').textContent, /preparation-key.*preparation-operation/);
+});
