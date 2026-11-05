@@ -1220,6 +1220,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time; its Mongo environment is shared with other teaching demos.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes its temporary Mongo fixture, rechecks the original Solr records, and stops its owned services. Retained data, schema and receipts remain. Initial readiness failures are preserved in the evidence record; this is not an availability guarantee.</p>
     </div>
+    <div class="card" id="cql-arcadedb-local-catalogue">
+      <h2>42 · ArcadeDB + MongoDB · Windows local</h2>
+      <p>Run one CQL ID selection over three retained ArcadeDB records and two MongoDB copies. The full query returns five physical rows; the two-record subset returns four, with each provider shown.</p>
+      <p class="note">This uses real ArcadeDB 26.11.1 and MongoDB on your prepared Windows computer. Native reads, retained-data restart, manager federation, local HTTP and browser interaction are verified. ArcadeDB is not enrolled on the hosted WEB4 API. Its native account stays on your computer; hosted credential qualification, wider graph queries, writes, replication and full ORM parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained Windows demo</summary>
+        <p>In the prepared recovery-laptop task checkout, run this command. It reuses the original ArcadeDB records and admitted Mongo environment. See the guide for prerequisites; missing sources stop the run.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicArcadeDBMongoDemo.ps1 -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5118/" target="_blank" rel="noopener noreferrer">OPEN LOCAL ARCADEDB + MONGO QUERY</a></p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d0be32db900a08eb2438f663c326fd1e1154e258/Docs/Devs/ARCADEDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d0be32db900a08eb2438f663c326fd1e1154e258/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time; its Mongo environment is shared with other teaching demos.</p>
+      <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes its temporary Mongo fixture, rechecks the four original ArcadeDB documents, and stops its owned services. Retained data, schema, protected native credential and receipts remain.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
