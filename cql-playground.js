@@ -369,6 +369,7 @@
       if (preparing || controller || discovery || !preparation || !request || !getToken() || !canPrepare()) return;
       const identity = getIdentity(); const base = getBase(); const current = ++generation;
       const isCurrent = () => current === generation && identity === getIdentity() && base === getBase();
+      let failedPath = null;
       preparing = true; controls();
       $('cql-operation').textContent = '';
       note('Preparing private Mongo snapshots from the configured example…');
@@ -376,7 +377,10 @@
         await ensureAccessToken();
         if (!isCurrent()) return;
         const result = await root.CqlDemoPreparation.prepare({ recipe: preparation,
-          request: (path, body) => request('POST', path, body), storage: root.localStorage, base,
+          request: async (path, body) => {
+            try { return await request('POST', path, body); }
+            catch (error) { failedPath = path; throw error; }
+          }, storage: root.localStorage, base,
           isCurrent, randomUUID: () => crypto.randomUUID() });
         if (isCurrent()) {
           if (result.pairedRequest) $('cql-request').value = JSON.stringify(result.pairedRequest, null, 2);
@@ -385,7 +389,9 @@
             'Run the federation query to inspect both providers.');
           $('cql-operation').textContent = result.keys.length ? 'Acknowledged save request keys: ' + result.keys.join(', ') : 'Existing records were left unchanged.';
         }
-      } catch (error) { if (isCurrent()) note(error.message, true); }
+      } catch (error) {
+        if (isCurrent()) note(failedPath ? `Failed request: POST /api/${failedPath}. ${error.message}` : error.message, true);
+      }
       finally { preparing = false; controls(); }
     }
 

@@ -568,5 +568,6 @@ test('rejected preparation does not display the preceding query operation identi
   await h.elements.get('cql-prepare').listeners.click();
   assert.equal(h.elements.get('cql-operation').textContent, '');
   assert.equal(calls, 1);
+  assert.match(h.elements.get('cql-note').textContent, /Failed request: POST \/api\/data\/query-cql\./);
   assert.match(h.elements.get('cql-note').textContent, /preparation-key.*preparation-operation/);
 });
