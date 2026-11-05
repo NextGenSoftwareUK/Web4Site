@@ -1277,6 +1277,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. The runner removes its exact temporary Mongo fixture, rechecks all original Elasticsearch records and their version1, and cleanly stops both owned services. Retained source data, identity and receipts remain. This local catalogue entry does not enroll Elasticsearch on the hosted API.</p>
     </div>
+    <div class="card" id="cql-surrealdb-windows-local-catalogue">
+      <h2>46 · SurrealDB + MongoDB · Windows local</h2>
+      <p>Run one CQL ID selection over three retained SurrealDB Holons and two private MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
+      <p class="note">This uses real SurrealDB 3.3.5 through its official .NET SDK and a database-scoped VIEWER account. Native restart, restricted reader, manager federation, HTTP and browser interaction are verified. This recovery source is separate from the original Linux source. Hosted enrollment, wider graph/history queries, replication and full ORM parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <details style="margin-top:20px">
+        <summary>Start the retained SurrealDB Windows demo</summary>
+        <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained authenticated source and admitted Mongo environment. Missing runtime, reader or unfinished source admission stops the run.</p>
+        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSurrealDbMongoDemo.ps1 -Serve</pre>
+      </details>
+      <p style="margin-top:24px"><a href="http://127.0.0.1:5140/" target="_blank" rel="noopener noreferrer">OPEN LOCAL SURREALDB + MONGO QUERY</a></p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Docs/Devs/SURREALDB_CQL_WINDOWS_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.SurrealDBOASIS.IntegrationTests/SurrealDbWindowsMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
+      <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
+      <p class="note">Finish with the local stop button and wait for verified cleanup. The runner removes its exact temporary Mongo fixture, rechecks the original SurrealDB native hash, and stops both owned services. Retained source data, identity and reader receipts remain. This local catalogue entry does not enroll SurrealDB on the hosted API.</p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
