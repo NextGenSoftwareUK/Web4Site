@@ -41,6 +41,31 @@ test('issuer clock offsets do not delay or prematurely expire renewal', async ()
   }
 });
 
+test('authentication network time consumes the issued lifetime', async () => {
+  const f = fixture();
+  f.handle(async () => {
+    const issued = f.fresh();
+    f.advance(840000);
+    return response(issued, true);
+  });
+  await f.session.startDemo();
+  f.handle(async () => response(f.fresh()));
+  await f.session.ensureAccessToken();
+  assert.equal(f.calls.length, 2);
+  assert.match(f.calls[1].url, /avatar\/refresh-token$/);
+});
+
+test('an authentication response arriving after its lifetime is rejected', async () => {
+  const f = fixture();
+  f.handle(async () => {
+    const issued = f.fresh();
+    f.advance(900000);
+    return response(issued, true);
+  });
+  await assert.rejects(f.session.startDemo(), /arrived after token expiry/);
+  assert.equal(f.session.token(), null);
+});
+
 test('login and explicit demo creation retain cookie credentials and stable owner identity', async () => {
   for (const demo of [false, true]) {
     const f = fixture();
