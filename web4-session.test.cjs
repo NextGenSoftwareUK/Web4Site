@@ -7,7 +7,7 @@ const other = '00000000-0000-0000-0000-000000000002';
 const origin = 'https://dev.api.web4.oasisomniverse.one';
 function avatar(id, now, seconds = 900) {
   return { id, username: 'controlled', jwtToken: 'header.' +
-    Buffer.from(JSON.stringify({ sub: id, exp: Math.floor(now / 1000) + seconds })).toString('base64url') + '.signature' };
+    Buffer.from(JSON.stringify({ sub: id, iat: Math.floor(now / 1000), exp: Math.floor(now / 1000) + seconds })).toString('base64url') + '.signature' };
 }
 function response(avatar, direct = false, status = 200) {
   const result = { isError: status !== 200, result: avatar };
@@ -24,6 +24,22 @@ function fixture() {
     handle: value => { handle = value; }, fresh: id => avatar(id ?? owner, time) };
 }
 async function tick() { await new Promise(resolve => setImmediate(resolve)); }
+
+test('issuer clock offsets do not delay or prematurely expire renewal', async () => {
+  for (const offset of [-300000, 81000]) {
+    const f = fixture();
+    const issuerTime = Date.parse('2026-11-01T12:00:00Z') + offset;
+    f.handle(async url => response(avatar(owner, issuerTime), url.endsWith('/sandbox/session')));
+    await f.session.startDemo();
+    f.advance(839000);
+    await f.session.ensureAccessToken();
+    assert.equal(f.calls.length, 1);
+    f.advance(1000);
+    f.handle(async () => response(avatar(owner, issuerTime + 840000)));
+    await f.session.ensureAccessToken();
+    assert.equal(f.calls.length, 2);
+  }
+});
 
 test('login and explicit demo creation retain cookie credentials and stable owner identity', async () => {
   for (const demo of [false, true]) {

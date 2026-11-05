@@ -8,9 +8,11 @@
     const encoded = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const bytes = Uint8Array.from(atob(encoded), value => value.charCodeAt(0));
     const claims = JSON.parse(new TextDecoder().decode(bytes));
-    if (claims.sub !== avatar.id || !Number.isSafeInteger(claims.exp) || claims.exp * 1000 <= now)
+    if (claims.sub !== avatar.id || !Number.isSafeInteger(claims.exp) ||
+      !Number.isSafeInteger(claims.iat) || claims.exp <= claims.iat)
       throw Error('Access token identity or expiry differs.');
-    return { token: avatar.jwtToken, expiresAt: claims.exp * 1000, avatarId: avatar.id };
+    return { token: avatar.jwtToken, expiresAt: now + (claims.exp - claims.iat) * 1000,
+      avatarId: avatar.id };
   }
 
   function create({ getBase, fetch: send = root.fetch.bind(root), now = () => Date.now(), onToken = () => {},
@@ -19,9 +21,10 @@
     const same = snapshot => current && snapshot.generation === current.generation &&
       snapshot.base === getBase() && snapshot.avatarId === current.avatarId;
     function clear() { generation++; current = null; renewalFailure = null; onToken(null); }
-    function install(avatar, base, expectedGeneration) {
+    function install(avatar, base, expectedGeneration, requestedAt) {
       if (base !== getBase() || expectedGeneration !== generation) throw Error('Session changed during authentication.');
-      const details = tokenDetails(avatar, now());
+      const details = tokenDetails(avatar, requestedAt);
+      if (details.expiresAt <= now()) throw Error('Authentication response arrived after token expiry.');
       current = { ...details, base, generation: ++generation };
       renewalFailure = null; onToken(current.token);
       return avatar;
@@ -34,6 +37,7 @@
       return observed;
     }
     async function authRequest(base, route, body, token) {
+      const requestedAt = now();
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
       try {
@@ -45,15 +49,16 @@
         const payload = await response.json();
         const result = route === 'sandbox/session' ? payload : payload?.result;
         if (!response.ok || !result || result.isError !== false) throw Error('Authentication request was not acknowledged.');
-        return result.result;
+        return { avatar: result.result, requestedAt };
       } finally { clearTimeout(timeout); }
     }
     async function renew(snapshot) {
       if (!same(snapshot)) throw Error('Session changed before renewal.');
       if (renewalFailure) throw renewalFailure;
       try {
-        const avatar = await authRequest(snapshot.base, 'avatar/refresh-token', {});
-        const details = tokenDetails(avatar, now());
+        const { avatar, requestedAt } = await authRequest(snapshot.base, 'avatar/refresh-token', {});
+        const details = tokenDetails(avatar, requestedAt);
+        if (details.expiresAt <= now()) throw Error('Renewal response arrived after token expiry.');
         if (!same(snapshot) || details.avatarId !== snapshot.avatarId) throw Error('Session identity changed during renewal.');
         current = { ...current, ...details };
         onToken(current.token);
@@ -94,8 +99,8 @@
       const base = getBase();
       return serialize(async () => {
         const before = generation;
-        const avatar = await authRequest(base, route, body);
-        return install(avatar, base, before);
+        const { avatar, requestedAt } = await authRequest(base, route, body);
+        return install(avatar, base, before, requestedAt);
       });
     }
     async function signOut() {
