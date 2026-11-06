@@ -141,11 +141,14 @@
       .filter(([id]) => id !== 'federation' || providers.every(provider => sources.some(row =>
         row.provider === provider && row.available && row.federationAvailable)))
       .map(([id, label]) => ({ id, label })) : [];
+    const labels = new Map();
+    for (const row of source.examples) labels.set(row.label, (labels.get(row.label) ?? 0) + 1);
     return ordinary.concat(source.examples.map(row => {
       const disabled = row.available === false || row.operation === 'Federation' &&
         (!source.federationAvailable || !row.request.providers.every(provider => sources.some(target =>
           target.provider === provider && target.available && target.federationAvailable)));
-      return { id: 'host:' + row.id, label: row.label + (disabled ? ' (unavailable)' : ''), disabled };
+      const label = labels.get(row.label) > 1 ? `${row.label} · ${row.id}` : row.label;
+      return { id: 'host:' + row.id, label: label + (disabled ? ' (unavailable)' : ''), disabled };
     }));
   }
 

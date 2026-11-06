@@ -327,6 +327,18 @@ function federationCatalogue() {
   }] });
 }
 
+test('hosted examples with the same label show distinct IDs without changing selection', () => {
+  const source = federationSource();
+  const full = { ...source.examples[0], id: 'mongo-public-records' };
+  const subset = { ...full, id: 'mongo-public-subset' };
+  source.examples = [full, subset];
+  const sources = [source, { provider: 'MongoDBOASIS', available: true, federationAvailable: true }];
+  assert.deepEqual(cql.profileChoices(source, sources), [full, subset].map(row => ({
+    id: 'host:' + row.id, label: `${row.label} · ${row.id}`, disabled: false
+  })));
+  assert.equal(cql.profilePreset(source, 'host:' + subset.id).path, 'data/query-cql/federation');
+});
+
 test('explicit hosted federation selects only the fixed WEB4 federation endpoint and owns its body', () => {
   const sources = federationCatalogue();
   const request = cql.profilePreset(sources[0], 'host:paired');

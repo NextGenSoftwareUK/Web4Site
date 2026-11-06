@@ -880,8 +880,9 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     </div>
     <div class="card" id="cql-localfile-catalogue">
       <h2>16 · Local files + MongoDB</h2>
-      <p>Use one CQL ID filter to read three retained file records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
-      <p class="note">This reads real local files through LocalFileOASIS. Records use plaintext canonical JSON. General metadata/text queries, child loading, conditional writes and a shared snapshot remain separate work. Your hosted sign-in is never forwarded.</p>
+      <p>In the <a href="#panel-cql">hosted CQL playground</a>, sign in and select <strong>LocalFileOASIS</strong>. The public presets return all three teaching records or a two-record subset.</p>
+      <p>For a paired example, choose the MongoDB preset ending in <strong>mongo-public-records</strong> or <strong>mongo-public-subset</strong>, then select <strong>Prepare my Mongo records</strong> and <strong>Run query</strong>. The full query returns five rows and the subset returns four. Each row shows its provider.</p>
+      <p class="note">The hosted source reads a fixed set of public JSON records from the server's filesystem. The MongoDB copies belong to the signed-in visitor.</p>
       <details style="margin-top:20px">
         <summary>Start the retained local-file demo</summary>
         <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original source files and Mongo runtime, then starts the paired browser demo.</p>
@@ -1914,7 +1915,7 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-playground.js?v=cql-preparation-identity-v3"></script>
+<script src="cql-playground.js?v=cql-preset-labels-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
 </script>
