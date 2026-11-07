@@ -1427,6 +1427,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>The source reader is restricted to the enrolled public records. Your snapshots stay private, and the verified flow checks their SQLite and Neo4j replicas separately. General messaging queries and full ORM parity remain separate work.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/dab9a04b3/Docs/WIP/COSMIC%20ORM/NATS_JETSTREAM_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/dab9a04b3/Scripts/TestHosts/NatsOwnedRestartQualification/Program.cs" target="_blank" rel="noopener noreferrer">Verified C# read example</a></p>
     </div>
+    <div class="card" id="cql-hyperlane-catalogue">
+      <h2>65 &middot; Hyperlane delivery observations + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three messages or a two-message subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>HyperlaneOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset to read the enrolled message observations.</p>
+      <p>Choose a paired <strong>Hyperlane + MongoDB</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes the public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Delivery state is reported by the Hyperlane explorer. It is not an independent proof of cross-chain finality. The demo performs reads and private snapshot saves; it does not submit wallet transactions.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cc95932bd/Docs/WIP/COSMIC%20ORM/HYPERLANE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cc95932bd/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/HyperlanePublicMessageMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
