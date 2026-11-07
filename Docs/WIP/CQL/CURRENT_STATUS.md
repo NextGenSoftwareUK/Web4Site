@@ -45,3 +45,11 @@ activate their target panel. Ordinary tab clicks keep their previous behavior.
 Five focused navigation controls and the114 existing client cases pass
 (119total). This fixes the playable Waku card link as well as existing
 provider-card/panel links. Browser interaction acceptance remains separate.
+
+7 November. DuckDB hosted HTTP accepted at backend8e7931835,
+Development3cc1ab108/Core9fac20cd, settings32b26f74. Native3/2,
+Mongo5/4, initial2private saves/repeat0new2existing, privacy0/3 and exact
+SQLite/Neo4j replicas2/2 passed. Original native database hash and no-WAL
+condition matched before/after. Card22 adds the hosted path and real C#
+read-only example, retaining its local5116 launcher. Coverage119local/
+78liveHTTP/28functional browser; hosted browser gate remains open.

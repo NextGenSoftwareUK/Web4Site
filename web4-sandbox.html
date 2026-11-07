@@ -961,11 +961,13 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
     <div class="card" id="cql-duckdb-catalogue">
       <h2>22 · DuckDB + MongoDB</h2>
-      <p>Run one CQL ID filter over three retained DuckDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. The retained deleted record stays excluded.</p>
-      <p class="note">This uses a real embedded DuckDB file, not MotherDuck or a hosted service. Records use plaintext canonical JSON. General metadata/text queries, shared snapshots, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <p>Select <strong>DuckDBOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset for three retained native records or a two-record subset. The deleted record stays excluded.</p>
+      <p>Choose a <strong>MongoDB + DuckDBOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows, with each provider shown. Repeat preparation reuses your two private snapshots.</p>
+      <p class="note">Hosted HTTP queries, snapshot privacy and SQLite/Neo4j replicas are verified. The original native file remains unchanged and is opened read-only on the Development volume. Browser interaction verification remains open. General metadata/text queries, shared snapshots, conditional writes and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8e7931835/Docs/WIP/COSMIC%20ORM/DUCKDB_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8e7931835/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.DuckDBOASIS.IntegrationTests/DuckDbRetainedReadOnlySourceTests.cs" target="_blank" rel="noopener noreferrer">Verified C# read-only query example</a></p>
       <details style="margin-top:20px">
-        <summary>Start the retained DuckDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reopens the original database file and reuses the cached native driver and Mongo runtime.</p>
+        <summary>Start the retained local DuckDB demo</summary>
+        <p>From your OASIS repository, run the command below. It reopens the original database file and reuses the cached native driver and Mongo runtime. Your hosted sign-in is never forwarded.</p>
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDuckDbCqlNative.ps1 -Federated -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5116/" target="_blank" rel="noopener noreferrer">OPEN DUCKDB + MONGO QUERY ↗</a></p>
