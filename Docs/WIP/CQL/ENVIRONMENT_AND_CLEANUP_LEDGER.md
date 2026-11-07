@@ -131,3 +131,6 @@ Session client terminal local tests80/80 in-memory, including12new session/conte
 ### 7 November: Graph Studio card draft
 
 Reused C:/Source/Web4Site worktree and installed Node (no dependency download/restore). Added pending Graph Studio card only on task branch, not main. Existing114 client tests passed; C:/Source/Web4Site/TestResults/graph-studio-client-tests.log is10999 bytes, disposable generated evidence after summary retained; recreate with node --test on the five *.test.cjs files. No persistent process or port. Existing shared runtimes and source retained. Hosted publication awaits exact image and HTTP acceptance.
+
+### 7 November. Graph Studio publication
+Reused the existing old-laptop checkout and installed Node. All114 existing client controls passed. Updated card62 after original hosted acceptance, with backend evidence pinned to e0af05f87. No new environment, package install, provider process or dataset. Browser attachment and Windows inventory helper recovery timed out, leaving functional browser verification open. Public HTML will be compared with the committed blob in memory.

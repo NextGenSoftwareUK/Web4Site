@@ -15,7 +15,10 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 [Preserved milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
 
 
-7 November: The Graph Studio card62 is a task-branch draft, explicitly pending
-hosted verification. Existing114 client tests pass. Public main remains fae9c5a;
-do not publish this draft until original hosted acceptance succeeds. Exact image
-job42346455177 and rollout state are recorded in the OASIS COSMIC CURRENT_STATUS.
+7 November. Graph Studio hosted HTTP acceptance passed at backend e0af05f87.
+Native selections return 3/2 rows and paired MongoDB selections return 5/4.
+First preparation saved two private snapshots and repeat preparation reused both.
+Visitor isolation and exact SQLite/Neo4j replicas passed. Card62 is ready for
+publication. All114 client controls pass. Functional browser verification
+remains open after the browser attachment and Windows helper timed out.
+The backend totals are119 scoped local,75 live HTTP and28 functional browser.
