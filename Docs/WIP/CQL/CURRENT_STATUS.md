@@ -13,3 +13,9 @@ Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomp
 - Backend authority: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/CURRENT_STATUS.md and PROVIDER_CQL_AND_SANDBOX_STATUS.md. Shared resource ledger: C:/Source/OASIS-cosmic/Docs/WIP/COSMIC ORM/ENVIRONMENT_AND_CLEANUP_LEDGER.md. Raw outputs stay in backend TestResults.
 
 [Preserved milestone history](Archive/STATUS_BEFORE_SESSION_RENEWAL_PUBLICATION_2026-11-01.md).
+
+
+7 November: The Graph Studio card62 is a task-branch draft, explicitly pending
+hosted verification. Existing114 client tests pass. Public main remains fae9c5a;
+do not publish this draft until original hosted acceptance succeeds. Exact image
+job42346455177 and rollout state are recorded in the OASIS COSMIC CURRENT_STATUS.

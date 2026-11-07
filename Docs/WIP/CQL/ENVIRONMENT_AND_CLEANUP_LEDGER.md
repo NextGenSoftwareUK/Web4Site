@@ -126,3 +126,8 @@ Session client terminal local tests80/80 in-memory, including12new session/conte
 - Planned publication of staged TON card after original hosted acceptance passes at fb29aa936/Core2ac915f/settings e3ae497c. Preserve same card/local command; update guide pin34ae56281d14cce85a1099482953851a5f8f6182 and verified HTTP note. Existing checkout/HTML only, no installs/runtime/browser/service/environment. Compare public bytes against exact committed git blob in memory, compact proof in backend TestResults/TonPublicSourceCandidateCurrent/site-publication.json. Never rerun completed hosted cohort.
 
 - Website6cfa7dc main TON card publication confirmed by in-memory HTTP/git-blob comparison: HTML156743bytes and versioned preparation/query JS9876/21871bytes, exact hashes in CURRENT_STATUS/backend site-publication.json. No new environments/downloads/browser/services. Hosted39/browser5/open34; original cohort frozen. Cumulative frontend handoff archived into existing history; current handoff reduced for recovery.
+
+
+### 7 November: Graph Studio card draft
+
+Reused C:/Source/Web4Site worktree and installed Node (no dependency download/restore). Added pending Graph Studio card only on task branch, not main. Existing114 client tests passed; C:/Source/Web4Site/TestResults/graph-studio-client-tests.log is10999 bytes, disposable generated evidence after summary retained; recreate with node --test on the five *.test.cjs files. No persistent process or port. Existing shared runtimes and source retained. Hosted publication awaits exact image and HTTP acceptance.

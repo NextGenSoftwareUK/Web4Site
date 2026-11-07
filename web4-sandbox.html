@@ -1399,6 +1399,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose a <strong>MongoDB + OrbitDBOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The full query returns five rows and the subset returns four. The provider column identifies the native source records and your private MongoDB copies.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/a3b383ae6/Docs/WIP/COSMIC%20ORM/ORBITDB_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/a3b383ae6/Providers/Other/TestProjects/NextGenSoftware.OASIS.API.Providers.OrbitDBOASIS.UnitTests/OrbitDbQuerySourceTests.cs" target="_blank" rel="noopener noreferrer">Local C# query example</a></p>
     </div>
+    <div class="card" id="cql-the-graph-studio-catalogue">
+      <h2>62 · The Graph Studio indexing status + MongoDB</h2>
+      <p class="note">Hosted verification pending. This card is a release draft.</p>
+      <p>After activation, select <strong>TheGraphOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a>. The public presets select three reviewed indexing-status records from Arbitrum, Base and Gnosis, or a two-record subset.</p>
+      <p>Choose a <strong>MongoDB + TheGraphOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The expected full query has five rows and the subset has four. The provider column distinguishes live source observations from your private MongoDB snapshots.</p>
+      <p>These rate-limited Studio endpoints demonstrate deployment CID and indexed-block observations. They do not provide arbitrary subgraph entity queries or production gateway access.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/615438536/Docs/WIP/COSMIC%20ORM/THE_GRAPH_STUDIO_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/615438536/Providers/Social/TestProjects/NextGenSoftware.OASIS.API.Providers.TheGraphOASIS.UnitTests/TheGraphStudioStatusQueryTests.cs" target="_blank" rel="noopener noreferrer">Local C# query example</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
