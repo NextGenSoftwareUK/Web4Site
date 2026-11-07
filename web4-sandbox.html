@@ -1327,6 +1327,12 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p class="note">The Decentraland query reads public scene pointers from Catalyst. Scene assets and authoring are outside this demo.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/06227cf162f78644f6cd506c69753dd72fbb8fd1/Docs/WIP/COSMIC%20ORM/DECENTRALAND_SCENE_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Demo evidence and scope</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/06227cf162f78644f6cd506c69753dd72fbb8fd1/Providers/Maps/TestProjects/NextGenSoftware.OASIS.API.Providers.DecentralandOASIS.UnitTests/DecentralandSceneCqlTests.cs" target="_blank" rel="noopener noreferrer">Local C# query example</a></p>
     </div>
+    <div class="card" id="cql-push-protocol-catalogue">
+      <h2>50 · Push Protocol channels + MongoDB</h2>
+      <p>In the <a href="#panel-cql">hosted CQL playground</a>, sign in and select <strong>PushProtocolOASIS</strong>. Run a public preset to see all three reviewed Ethereum channels or a two-channel subset. Each row includes the channel identity and verification status.</p>
+      <p>Choose a <strong>MongoDB + PushProtocolOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The full query returns five rows and the subset returns four. The provider column distinguishes public Push Protocol rows from your private MongoDB copies.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/69e458ccbbdd8aa7569a48095f7d27a70ca3ba8c/Docs/WIP/COSMIC%20ORM/PUSH_PROTOCOL_CHANNEL_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Demo evidence and scope</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/69e458ccbbdd8aa7569a48095f7d27a70ca3ba8c/Providers/Network/TestProjects/NextGenSoftware.OASIS.API.Providers.PushProtocolOASIS.UnitTests/PushProtocolPublicChannelCqlTests.cs" target="_blank" rel="noopener noreferrer">Local C# query example</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
