@@ -1293,9 +1293,11 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p class="note">Finish with the local stop button and wait for verified cleanup. The runner removes its exact temporary Mongo fixture, rechecks the original SurrealDB native hash, and stops both owned services. Retained source data, identity and reader receipts remain. This local catalogue entry does not enroll SurrealDB on the hosted API.</p>
     </div>
     <div class="card" id="cql-pouchdb-local-catalogue">
-      <h2>47 · PouchDB + MongoDB · Windows local</h2>
-      <p>Run one CQL ID selection over three retained PouchDB Holons and two private MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
-      <p class="note">This uses real PouchDB 9.0.0 with its persistent LevelDB backend and official HTTP server middleware. Native restart, manager federation, HTTP and browser interaction are verified. This synthetic teaching service is unauthenticated and loopback-only. Hosted enrollment, secure remote access, wider queries, replication and full ORM parity remain separate work. Your hosted sign-in is never forwarded.</p>
+      <h2>47 · PouchDB + MongoDB</h2>
+      <p>Select <strong>PouchDBOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a>. The public presets return three synthetic native records or a two-record subset. Choose a <strong>MongoDB + PouchDBOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then <strong>Run query</strong> for five or four rows, with each provider shown.</p>
+      <p class="note">Live HTTP verification passed. Repeat preparation reuses both private snapshots, visitor isolation passes, and SQLite/Neo4j each hold the two exact replicas. Hosted browser interaction verification remains open.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/64d298260/Docs/WIP/COSMIC%20ORM/POUCHDB_HOSTED_RUNTIME_PREPARATION.md" target="_blank" rel="noopener noreferrer">Hosted query scope and verification</a></p>
+      <p class="note">This uses real PouchDB 9.0.0 with its persistent LevelDB backend and official HTTP server middleware. Local native restart, manager federation, HTTP and browser interaction are verified. The hosted native service listens on loopback inside its WEB4 container. Wider queries, native replication, secure remote native access and full ORM parity remain separate work.</p>
       <details style="margin-top:20px">
         <summary>Start the retained PouchDB Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed runtime, source, revisions or unfinished fixture admission stops the run.</p>
@@ -1304,7 +1306,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p style="margin-top:24px"><a href="http://127.0.0.1:5141/" target="_blank" rel="noopener noreferrer">OPEN LOCAL POUCHDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Docs/Devs/POUCHDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.PouchDBOASIS.IntegrationTests/PouchDbMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
-      <p class="note">Finish with the local stop button and wait for verified cleanup. The runner removes its exact temporary Mongo fixture, rechecks original PouchDB payloads and revisions, closes the native store and stops both owned services. Retained source data and receipts remain. This local catalogue entry does not enroll PouchDB on the hosted API.</p>
+      <p class="note">Finish with the local stop button and wait for verified cleanup. The runner removes its exact temporary Mongo fixture, rechecks original PouchDB payloads and revisions, closes the native store and stops both owned services. Retained local source data and receipts remain. The hosted PouchDB source has its own qualified first generation on the Development volume.</p>
     </div>
     <div class="card" id="cql-minio-local-catalogue">
       <h2>48 · MinIO + MongoDB · Windows local</h2>

@@ -22,3 +22,10 @@ Visitor isolation and exact SQLite/Neo4j replicas passed. Card62 is ready for
 publication. All114 client controls pass. Functional browser verification
 remains open after the browser attachment and Windows helper timed out.
 The backend totals are119 scoped local,75 live HTTP and28 functional browser.
+
+7 November. PouchDB original hosted HTTP acceptance passed at backend64d298260.
+Native3/2, Mongo5/4, repeat0new/2existing, visitor-private0/public3 and exact
+SQLite/Neo4j replicas2/2 passed. Updated existing card47 with the hosted
+playground path and pinned guide, preserving its local launcher. Backend
+coverage119 scoped local/76 live HTTP/28 functional browser. Hosted PouchDB
+browser verification remains open.

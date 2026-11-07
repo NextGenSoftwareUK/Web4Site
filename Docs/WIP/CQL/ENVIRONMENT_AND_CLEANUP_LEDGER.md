@@ -134,3 +134,11 @@ Reused C:/Source/Web4Site worktree and installed Node (no dependency download/re
 
 ### 7 November. Graph Studio publication
 Reused the existing old-laptop checkout and installed Node. All114 existing client controls passed. Updated card62 after original hosted acceptance, with backend evidence pinned to e0af05f87. No new environment, package install, provider process or dataset. Browser attachment and Windows inventory helper recovery timed out, leaving functional browser verification open. Public HTML will be compared with the committed blob in memory.
+
+### 7 November. PouchDB hosted card publication
+
+Reused the existing old-laptop checkout and installed Node. Updated existing
+card47 after original hosted acceptance. Existing local launcher retained.
+No new runtime, environment, download, service or provider data. Run existing
+five client suites, then compare exact public HTML with its committed blob
+in memory. Compact publication proof belongs in the backend recovery directory.
