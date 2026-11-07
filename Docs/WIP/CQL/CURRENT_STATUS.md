@@ -29,3 +29,12 @@ SQLite/Neo4j replicas2/2 passed. Updated existing card47 with the hosted
 playground path and pinned guide, preserving its local launcher. Backend
 coverage119 scoped local/76 live HTTP/28 functional browser. Hosted PouchDB
 browser verification remains open.
+
+7 November. Waku Store v3 hosted HTTP acceptance passed at backendbc6ba3e91,
+Development7672cd5ea, deployment3cdeaf40. Native3/2, Mongo5/4,
+first2private snapshots/repeat0new2existing, privacy0/3 and exactSQLite/Neo4j
+replicas2/2 passed. Original retained native archive and all original ACKs
+are preserved. Card63 adds the playable path and pinned real C# example.
+Coverage119 scoped local/77 live HTTP/28 functional browser. Browser proof
+remains open: updated Windows app control stopped before any input because
+it could not determine the current browser URL reliably.

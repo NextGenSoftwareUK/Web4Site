@@ -1409,6 +1409,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>These rate-limited Studio endpoints demonstrate deployment CID and indexed-block observations. They do not provide arbitrary subgraph entity queries or production gateway access.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e0af05f87/Docs/WIP/COSMIC%20ORM/THE_GRAPH_STUDIO_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e0af05f87/Providers/Social/TestProjects/NextGenSoftware.OASIS.API.Providers.TheGraphOASIS.UnitTests/TheGraphStudioStatusQueryTests.cs" target="_blank" rel="noopener noreferrer">Local C# query example</a></p>
     </div>
+    <div class="card" id="cql-waku-store-catalogue">
+      <h2>63 · Waku Store v3 message summaries + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>WakuOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset. These are three synthetic messages retained by the real Waku Store v3 node on the Development volume.</p>
+      <p>Choose a <strong>MongoDB + WakuOASIS</strong> preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes native summaries from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>The reader verifies each reviewed message hash and topic. Summaries contain hashes, topics, payload size and exact nanosecond timestamps; message payload and metadata bytes stay out of the projection. Arbitrary messaging queries and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/bc6ba3e91/Docs/WIP/COSMIC%20ORM/WAKU_STORE_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/bc6ba3e91/Providers/Network/TestProjects/NextGenSoftware.OASIS.API.Providers.WakuOASIS.UnitTests/WakuStoreCqlTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
