@@ -1526,6 +1526,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
 </footer>
 
 <script src="web4-session.js?v=session-renewal-lifetime-v2"></script>
+<script src="web4-tabs.js?v=provider-card-links-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
 let jwt = null;
@@ -1537,10 +1538,7 @@ const session = Web4Session.create({ getBase: base, onToken: token => { jwt = to
 function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
 
 // Tabs
-document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
-  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + t.dataset.tab));
-}));
+Web4Tabs.mount(document, window);
 
 // Auth: same WEB4 flow as the WEB6 sandbox.
 async function signIn(){

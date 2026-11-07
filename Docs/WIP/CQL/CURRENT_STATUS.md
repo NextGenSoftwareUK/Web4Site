@@ -38,3 +38,10 @@ are preserved. Card63 adds the playable path and pinned real C# example.
 Coverage119 scoped local/77 live HTTP/28 functional browser. Browser proof
 remains open: updated Windows app control stopped before any input because
 it could not determine the current browser URL reliably.
+
+7 November. Fixed shared panel navigation: a direct provider-card fragment
+now activates its containing tab before scrolling, and in-page panel links
+activate their target panel. Ordinary tab clicks keep their previous behavior.
+Five focused navigation controls and the114 existing client cases pass
+(119total). This fixes the playable Waku card link as well as existing
+provider-card/panel links. Browser interaction acceptance remains separate.
