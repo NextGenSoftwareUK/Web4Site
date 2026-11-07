@@ -1435,6 +1435,46 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Delivery state is reported by the Hyperlane explorer. It is not an independent proof of cross-chain finality. The demo performs reads and private snapshot saves; it does not submit wallet transactions.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cc95932bd/Docs/WIP/COSMIC%20ORM/HYPERLANE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cc95932bd/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/HyperlanePublicMessageMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
     </div>
+    <div class="card" id="cql-layerzero-v2-catalogue">
+      <h2>66 &middot; LayerZero V2 message observations + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>LayerZeroV2OASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Read enrolled messages through LayerZero Scan, including its reported delivery observations. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution, independent cross-chain finality and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Docs/WIP/COSMIC%20ORM/LAYERZERO_V2_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/LayerZeroPublicMessageMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
+    <div class="card" id="cql-stargate-catalogue">
+      <h2>67 &middot; Stargate TokenMessaging observations + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>StargateOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Read enrolled Stargate TokenMessaging messages through the reviewed Scan source. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution, independent cross-chain finality and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Docs/WIP/COSMIC%20ORM/STARGATE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/StargatePublicMessageMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
+    <div class="card" id="cql-debridge-catalogue">
+      <h2>68 &middot; deBridge DLN order observations + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>deBridgeOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Read enrolled DLN orders and their indexed order observations. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution, independent cross-chain finality and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Docs/WIP/COSMIC%20ORM/DEBRIDGE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/DeBridgePublicOrderMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
+    <div class="card" id="cql-synapse-catalogue">
+      <h2>69 &middot; Synapse RFQ transaction observations + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>SynapseOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Read enrolled RFQ transaction observations through the reviewed Synapse source. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution, independent cross-chain finality and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Docs/WIP/COSMIC%20ORM/SYNAPSE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/SynapsePublicTransactionMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
+    <div class="card" id="cql-connext-catalogue">
+      <h2>70 &middot; Connext Ethereum origin events + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>ConnextOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public observations from your private MongoDB snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Read enrolled Ethereum origin events with their transaction and block identities. These are origin-event observations. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution, independent cross-chain finality and full ORM parity remain separate work.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Docs/WIP/COSMIC%20ORM/CONNEXT_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/25b4a8508/Providers/Blockchain/TestProjects/NextGenSoftware.OASIS.API.Providers.CrossChain.ProtocolTests/ConnextPublicOriginMetadataTests.cs" target="_blank" rel="noopener noreferrer">Verified C# query example</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
