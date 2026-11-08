@@ -1580,6 +1580,30 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Inspect each contract address, native token name and symbol, reported Polygon block and observed contract-code hash. Your snapshots retain their first observation as public blocks advance. LAND holdings, transfers and game assets have separate interfaces.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e263340738adc83bb882f64dab7dcc5132318654/Docs/WIP/COSMIC%20ORM/THE_SANDBOX_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e6263111241a01a5fd2d1649ec0ea2d3afeaf41a/Providers/Maps/NextGenSoftware.OASIS.API.Providers.TheSandboxOASIS/SandboxContractQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-polygon-id-catalogue">
+      <h2>84 &middot; Polygon ID public schemas + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three complete published credential schemas or a two-schema subset. Paired queries combine these documents with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>PolygonIDOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each schema key, full JSON document, pinned source revision and original content hash. Schema references are preserved in the document. Credential issuance and proof verification have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/POLYGON_ID_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/35808de0d67544c6cd8a0006c2678a20bd24961b/Providers/Identity/NextGenSoftware.OASIS.API.Providers.PolygonIDOASIS/PolygonIdSchemaQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-seeds-catalogue">
+      <h2>85 &middot; SEEDS public settings + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore the current high, medium and low unity thresholds on Telos, or a two-setting subset. Paired queries combine those observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>SEEDSOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each setting, description and exact integer value. These are current table observations; the reported chain header does not pin the table data to that block. Your snapshots retain their first observation as public settings change.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/SEEDS_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/61481c28bc0d54c8662b3d2d975dd78dbb63381b/Providers/Other/NextGenSoftware.OASIS.API.Providers.SEEDSOASIS/SeedsSettingsQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-openvino-catalogue">
+      <h2>86 &middot; OpenVINO model metadata + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three versions of one owned teaching model or a two-version subset. Paired queries combine their native metadata with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>IntelOpenVINOOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect the requested model version, complete advertised version list and native input/output tensor details. The same tiny add-one model is served at all three versions. CQL reads metadata; running inference and using trained models are separate operations.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/OPENVINO_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9c20d06ad6326d31e564c3c150b72a68e25da070/Providers/Other/NextGenSoftware.OASIS.API.Providers.IntelOpenVINOOASIS/OpenVinoVersionQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
