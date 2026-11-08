@@ -1523,6 +1523,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Read enrolled block observations from Ritual Chain 784. Infernet execution remains a separate scope. The verified flow also checks snapshot privacy and SQLite/Neo4j replicas. Wallet execution and full ORM parity remain separate work.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/addb3f1d2/Docs/WIP/COSMIC%20ORM/RITUAL_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/addb3f1d2/Providers/AI/NextGenSoftware.OASIS.API.Providers.RitualOASIS/RitualPublicBlockSource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-dapr-catalogue">
+      <h2>77 &middot; Dapr stored records + MongoDB</h2>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p>Select <strong>DaprOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public Dapr records from your private MongoDB snapshots.</p>
+      <p>Query the sandbox's enrolled Dapr state records. The verified flow preserves source values and checks snapshot privacy and SQLite/Neo4j replicas. Broader ORM operations remain on the roadmap.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/59b82ed4eec5b5b2aa8f90bbb70a4063121fce41/Docs/WIP/COSMIC%20ORM/DAPR_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Verified scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/74a7b60c0b6bf23c35c687811a9c9ab2e7d01cd2/Providers/Other/NextGenSoftware.OASIS.API.Providers.DaprOASIS/DaprQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
