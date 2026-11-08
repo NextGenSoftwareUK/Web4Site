@@ -1547,6 +1547,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Each observation identifies the attestation type, hub-resolved registry, exact root value and block hash. These are public contract observations; they do not verify a person, document or identity proof.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/892a215ec603cb0b4abd02481becab1bf760337f/Docs/WIP/COSMIC%20ORM/SELF_PROTOCOL_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/916c62210a1eb51fa23353bccfca3024750f452b/Providers/Identity/NextGenSoftware.OASIS.API.Providers.SelfProtocolOASIS/SelfProtocolRegistryQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-holonym-catalogue">
+      <h2>80 &middot; Human ID (Holonym) attestations + MongoDB</h2>
+      <p class="note">Explore three enrolled production attestations or a two-record subset. Paired queries combine the public records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>HolonymOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively. The provider column distinguishes public attestations from your private snapshots.</p>
+      <p>Inspect current Human ID records from the Sign Protocol index, including the schema, circuit string, exact values and reported revocation state. Independent identity and on-chain verification remain outside this query scope.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/862ebea848ba05eefff74a762f466f0374f3d966/Docs/WIP/COSMIC%20ORM/HOLONYM_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/638993968dfd9d43467d97f42d7931892df8c549/Providers/Identity/NextGenSoftware.OASIS.API.Providers.HolonymOASIS/HolonymAttestationQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
