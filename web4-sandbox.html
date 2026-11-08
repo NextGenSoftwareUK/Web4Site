@@ -1555,6 +1555,15 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Inspect current Human ID records from the Sign Protocol index, including the schema, circuit string, exact values and reported revocation state. Independent identity and on-chain verification remain outside this query scope.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/143d5808b057a850223b2efb9a97bbbf464d4e9b/Docs/WIP/COSMIC%20ORM/HOLONYM_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/638993968dfd9d43467d97f42d7931892df8c549/Providers/Identity/NextGenSoftware.OASIS.API.Providers.HolonymOASIS/HolonymAttestationQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+
+    <div class="card" id="cql-civic-catalogue">
+      <h2>81 &middot; Civic public networks + MongoDB</h2>
+      <p class="note">Explore three public gatekeeper-network entries or a two-network subset. Paired queries combine those records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>CivicOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively. The provider column distinguishes public configuration from your private snapshots.</p>
+      <p>Inspect each network name, network ID and the Polygon block reported for that observation. Public rows can advance to newer blocks; your prepared snapshots retain their first observation. Personal verification and pass issuance remain separate features.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9c65a5337/Docs/WIP/COSMIC%20ORM/CIVIC_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/88c378c1e08ee270365b760c9d3abc29b629a0f4/Providers/Network/NextGenSoftware.OASIS.API.Providers.CivicOASIS/CivicNetworkQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
