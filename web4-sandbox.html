@@ -1572,6 +1572,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Inspect each style name, source count, layer count and complete compact style JSON. The original response hash and byte count describe the fetched document; the compact JSON has its own hash. Your snapshots retain their first observation. Map rendering and tile downloads are separate features.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/39fc64ba7/Docs/WIP/COSMIC%20ORM/MAPLIBRE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/23532a6fc9146d5535152c182e61ec21d8889d6e/Providers/Maps/NextGenSoftware.OASIS.API.Providers.MapLibreOASIS/MapLibreStyleQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-the-sandbox-catalogue">
+      <h2>83 &middot; The Sandbox token contracts + MongoDB</h2>
+      <p class="note">Explore public LAND, SAND and ASSET contract metadata on Polygon, or a two-contract subset. Paired queries combine these observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>TheSandboxOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each contract address, native token name and symbol, reported Polygon block and observed contract-code hash. Your snapshots retain their first observation as public blocks advance. LAND holdings, transfers and game assets have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e263340738adc83bb882f64dab7dcc5132318654/Docs/WIP/COSMIC%20ORM/THE_SANDBOX_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e6263111241a01a5fd2d1649ec0ea2d3afeaf41a/Providers/Maps/NextGenSoftware.OASIS.API.Providers.TheSandboxOASIS/SandboxContractQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
