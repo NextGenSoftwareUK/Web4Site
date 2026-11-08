@@ -1531,6 +1531,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Query the sandbox's enrolled Dapr state records. The verified flow preserves source values and checks snapshot privacy and SQLite/Neo4j replicas. Broader ORM operations remain on the roadmap.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/59b82ed4eec5b5b2aa8f90bbb70a4063121fce41/Docs/WIP/COSMIC%20ORM/DAPR_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Verified scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/74a7b60c0b6bf23c35c687811a9c9ab2e7d01cd2/Providers/Other/NextGenSoftware.OASIS.API.Providers.DaprOASIS/DaprQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-subquery-catalogue">
+      <h2>78 &middot; SubQuery Arbitrum dictionary blocks + MongoDB</h2>
+      <p class="note">Query three enrolled block matches or a two-record subset. Paired queries combine these public records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>SubqueryOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public dictionary matches from your private snapshots. Full and subset queries return five and four rows respectively.</p>
+      <p>Explore historical Transfer-topic activity at Arbitrum block heights 400000000, 400000002 and 400000003. ERC20 and ERC721 share this event signature. The records describe dictionary-reported block matches; token type, full logs and consensus verification remain outside this query scope.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/f1295f01fcc38a11ad4a09baa11003d802928b23/Docs/WIP/COSMIC%20ORM/SUBQUERY_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9fd968a7b40d2decb389f7a2a5c7f75874b11153/Providers/Network/NextGenSoftware.OASIS.API.Providers.SubqueryOASIS/SubqueryDictionaryBlockQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
