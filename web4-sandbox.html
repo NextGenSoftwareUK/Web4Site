@@ -1564,6 +1564,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Inspect each network name, network ID and the Polygon block reported for that observation. Public rows can advance to newer blocks; your prepared snapshots retain their first observation. Personal verification and pass issuance remain separate features.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/843620f4978e1a8854db7b1809bb06508def43e3/Docs/WIP/COSMIC%20ORM/CIVIC_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/88c378c1e08ee270365b760c9d3abc29b629a0f4/Providers/Network/NextGenSoftware.OASIS.API.Providers.CivicOASIS/CivicNetworkQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-maplibre-catalogue">
+      <h2>82 &middot; MapLibre public styles + MongoDB</h2>
+      <p class="note">Explore three complete public map style documents or a two-style subset. Paired queries combine those records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>MapLibreOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each style name, source count, layer count and complete compact style JSON. The original response hash and byte count describe the fetched document; the compact JSON has its own hash. Your snapshots retain their first observation. Map rendering and tile downloads are separate features.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/39fc64ba7/Docs/WIP/COSMIC%20ORM/MAPLIBRE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/23532a6fc9146d5535152c182e61ec21d8889d6e/Providers/Maps/NextGenSoftware.OASIS.API.Providers.MapLibreOASIS/MapLibreStyleQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
