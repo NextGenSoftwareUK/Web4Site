@@ -1539,6 +1539,14 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Explore historical Transfer-topic activity at Arbitrum block heights 400000000, 400000002 and 400000003. ERC20 and ERC721 share this event signature. The records describe dictionary-reported block matches; token type, full logs and consensus verification remain outside this query scope.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/082f7d367f2ba0c8675637f246eb5095ae5d0112/Docs/WIP/COSMIC%20ORM/SUBQUERY_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9fd968a7b40d2decb389f7a2a5c7f75874b11153/Providers/Network/NextGenSoftware.OASIS.API.Providers.SubqueryOASIS/SubqueryDictionaryBlockQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
+    <div class="card" id="cql-self-protocol-catalogue">
+      <h2>79 &middot; Self Protocol registry roots + MongoDB</h2>
+      <p class="note">Explore three public registry-root observations at one reviewed Celo block, or a two-record subset. Paired queries combine these public records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>SelfProtocolOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively. The provider column distinguishes the public registry records from your private snapshots.</p>
+      <p>Each observation identifies the attestation type, hub-resolved registry, exact root value and block hash. These are public contract observations; they do not verify a person, document or identity proof.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/fe5afa67372a16aefe048b0a227b6d3043f42871/Docs/WIP/COSMIC%20ORM/SELF_PROTOCOL_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/916c62210a1eb51fa23353bccfca3024750f452b/Providers/Identity/NextGenSoftware.OASIS.API.Providers.SelfProtocolOASIS/SelfProtocolRegistryQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
   </section>
   <section class="panel" id="panel-failover">
     <div class="card">
