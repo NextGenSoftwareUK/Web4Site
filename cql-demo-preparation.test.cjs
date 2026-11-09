@@ -819,6 +819,20 @@ test('Telos address snapshots keep the source filter and never request a signed 
   assert.equal(f.journal.length, 0);
 });
 
+test('SOLID preparation keeps record IDs as metadata strings and reuses private Mongo copies', async () => {
+  const f = fixture(2, { provider: 'SOLIDOASIS', metadataKey: 'SolidRecordId', keys: ids });
+  const first = await prep.prepare(f.options);
+  assert.equal(first.saved, 2);
+  const native = f.calls.find(call => call.path === 'data/query-cql' && call.body.provider === 'SOLIDOASIS');
+  assert.deepEqual(native.body.filters[0], { metadataPath: ['SolidRecordId'], scalar: 'String', operator: 'In', value: ids });
+  assert.deepEqual(f.saves.map(save => [save.providerType, save.holon.isPublic, save.holon.metaData.SolidRecordId]),
+    ids.map(id => ['MongoDBOASIS', false, id]));
+  const repeat = await prep.prepare(f.options);
+  assert.equal(repeat.saved, 0);
+  assert.equal(repeat.existing, 2);
+  assert.equal(f.saves.length, 2);
+});
+
 test('EOSIO account copies keep the source filter and never request a signed chain write', async () => {
   const keys = ['eosio', 'eosio.token', 'eosio.msig'];
   const f = fixture(2, { provider: 'EOSIOOASIS', metadataKey: 'EOSIOAccountName', keys });
