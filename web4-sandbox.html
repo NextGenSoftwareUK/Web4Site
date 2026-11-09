@@ -159,6 +159,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
       <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata, Azure Blob properties and Solana account metadata. The provider list shows what is ready on this host.</p>
+      <p class="note">Jump to a walkthrough: <a href="#cql-eosio-catalogue">EOSIO / Vaulta</a> · <a href="#cql-solid-catalogue">SOLID</a> · <a href="#cql-ton-catalogue">TON</a> · <a href="#cql-hedera-catalogue">Hedera</a>.</p>
       <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
@@ -223,7 +224,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <p>Three selected IPFS records plus two MongoDB records: five physical copies.</p>
       </details>
       <details style="margin-top:20px">
-        <summary>SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
+        <summary id="cql-solid-catalogue">SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider SOLID -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected Pod records plus two MongoDB records: five physical copies.</p>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/SolidPointWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# resource-selection example ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLID_CQL_HOST_CONFIGURATION.md" target="_blank" rel="noopener noreferrer">HTTP example and host guide ↗</a></p>
@@ -400,7 +401,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --aptos-public LocalState/COSMIC/HostedAptosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cbba242f7/Docs/Devs/APTOS_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/73cf8abb7/Examples/CosmicCqlDemo/AptosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
-      <h3>Public Hedera mirror accounts · no wallet needed</h3>
+      <h3 id="cql-hedera-catalogue">Public Hedera mirror accounts · no wallet needed</h3>
       <p>Query three configured accounts, then filter to two with HolonManager and LINQ. Tinybar balances stay exact and each row preserves the mirror's balance timestamp.</p>
       <p class="note">Live HTTP checks pass: three accounts or a two-account subset, paired with two private Mongo snapshots. Repeat setup reuses both snapshots; visitor isolation and SQLite/Neo4j replicas are verified. Select HashgraphOASIS in the CQL tab. Reads overlap up to three per native query while preserving timestamps; no freshness, shared-snapshot or consensus-proof promise. Browser verification remains open. No SDK payment or Hedera transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
