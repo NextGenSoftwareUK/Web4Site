@@ -819,6 +819,18 @@ test('Telos address snapshots keep the source filter and never request a signed 
   assert.equal(f.journal.length, 0);
 });
 
+test('TON preparation preserves case-sensitive root hashes and its server budget', async () => {
+  const hashes = ["AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=","aAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="];
+  const f = fixture(2, { provider: 'TONOASIS', metadataKey: 'TonBlockRootHash', keys: hashes });
+  f.example.request.maximumDurationMilliseconds = 30000;
+  const recipe = prep.recipe(f.source, f.example);
+  assert.equal((await prep.prepare({ ...f.options, recipe })).saved, 2);
+  const native = f.calls.find(call => call.path === 'data/query-cql' && call.body.provider === 'TONOASIS');
+  assert.equal(native.body.maximumDurationMilliseconds, 30000);
+  assert.deepEqual(native.body.filters[0].value, hashes);
+  assert.deepEqual(f.saves.map(save => save.holon.metaData.TonBlockRootHash), hashes);
+});
+
 test('SOLID preparation keeps record IDs as metadata strings and reuses private Mongo copies', async () => {
   const f = fixture(2, { provider: 'SOLIDOASIS', metadataKey: 'SolidRecordId', keys: ids });
   const first = await prep.prepare(f.options);
