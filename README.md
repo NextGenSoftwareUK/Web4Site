@@ -2,7 +2,7 @@
 
 **One Avatar. One Karma Score. One Wallet. Everything Connected.**
 
-OASIS WEB4 is the universal unification layer of the OASIS Omniverse — a technology that sits above all existing Web2 and Web3 protocols and abstracts them into a single, coherent identity, data, karma and asset system across 40+ providers.
+OASIS WEB4 is the universal unification layer of the OASIS Omniverse — a technology that sits above all existing Web2 and Web3 protocols and abstracts them into a single, coherent identity, data, karma and asset system  . The OASIS inventory includes 234 provider projects.
 
 ## What is WEB4?
 
@@ -13,7 +13,7 @@ WEB4 solves the fragmentation problem of the modern internet. Today, you have do
 | Separate identity per platform | One OASIS universal avatar |
 | Separate wallet per chain | One wallet, every chain |
 | Karma/points per app | One karma score, every app |
-| Data locked per provider | One data layer, 40+ providers |
+| Data locked per provider | One data layer across provider integrations |
 | NFTs per blockchain | NFTs portable across all chains |
 
 ## Provider Support (40+)
