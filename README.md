@@ -16,7 +16,7 @@ WEB4 solves the fragmentation problem of the modern internet. Today, you have do
 | Data locked per provider | One data layer across providers |
 | NFTs per blockchain | NFTs portable across all chains |
 
-## Provider Support (40+)
+## Provider inventory
 
 WEB4 includes adapters for: MongoDB, SQL Server, PostgreSQL, Holochain, Ethereum, Solana, Polygon, Arbitrum, IPFS, Filecoin, Arweave, ThreeFold, ActivityPub, Nostr, AT Protocol, and many more — all behind a single unified OASIS API.
 
