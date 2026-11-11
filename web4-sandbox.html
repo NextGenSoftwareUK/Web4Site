@@ -379,7 +379,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public Stellar ledger headers · no wallet needed</h3>
       <p>Query three configured ledgers, then filter to two with HolonManager and LINQ. Complete native XDR and hashes are checked before metadata is returned; this is not independent SCP consensus verification.</p>
-      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. Browser acceptance remains pending. No Stellar transaction is submitted.</p>
+      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. The live browser check passed for the public and paired Stellar presets. No Stellar transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --stellar-public LocalState/COSMIC/HostedStellarPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/STELLAR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/637a6d49f/Examples/CosmicCqlDemo/StellarPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
