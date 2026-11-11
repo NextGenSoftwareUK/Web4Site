@@ -1713,7 +1713,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
   OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
 </footer>
 
-<script src="web4-session.js?v=session-renewal-lifetime-v2"></script>
+<script src="web4-session.js?v=session-renewal-status-v3"></script>
 <script src="web4-tabs.js?v=provider-card-links-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -1722,7 +1722,11 @@ let timer = null;
 
 function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function base(){return $('env').value}
-const session = Web4Session.create({ getBase: base, onToken: token => { jwt = token; } });
+const session = Web4Session.create({
+  getBase: base,
+  onToken: token => { jwt = token; },
+  onRenewalFailure: error => setNote($('auth-note'), error.message, 'err')
+});
 function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
 
 // Tabs
