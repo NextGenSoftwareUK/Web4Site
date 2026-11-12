@@ -1526,7 +1526,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
     <div class="card" id="cql-dapr-catalogue">
       <h2>77 &middot; Dapr stored records + MongoDB</h2>
-      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. The public browser presets returned three or two rows. The original owner's private paired browser presets still need verification.</p>
       <p>Select <strong>DaprOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
       <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public Dapr records from your private MongoDB snapshots.</p>
       <p>Query the sandbox's enrolled Dapr state records. The verified flow preserves source values and checks snapshot privacy and SQLite/Neo4j replicas. Broader ORM operations remain on the roadmap.</p>
