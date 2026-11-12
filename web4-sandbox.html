@@ -412,7 +412,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public TON headers · no wallet needed</h3>
       <p>Use HolonManager and LINQ to query three configured Mainnet headers, then select two by root hash. Logical times and large counters retain their exact values.</p>
-      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. Browser verification remains open; no wallet, funding or chain transaction is needed.</p>
+      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. The public browser presets passed. The original owner's private paired browser presets remain open. No wallet, funding or chain transaction is needed.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap"># Follow the setup guide once to create your reusable catalogue and build.
 
 dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
@@ -721,7 +721,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-eosio-catalogue">
       <h2>EOSIO / Vaulta native accounts + MongoDB</h2>
       <p>Query three public native accounts, then filter to two. Select <strong>EOSIOOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Account creation times, RAM quotas and per-response head markers are exposed without a wallet or funded account.</p>
-      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. Browser interaction verification remains open.</p>
+      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. The public browser presets passed. The original owner's private paired browser presets remain open.</p>
       <p class="note">Each account read reports its own head; these records do not establish a common finalized snapshot. Private Mongo demo copies retain source identity, name and description, not the full native payload. This is a native EOSIO/Vaulta profile, separate from Telos EVM and signed EOSIO storage.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
