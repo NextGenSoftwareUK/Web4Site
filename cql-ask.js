@@ -12,7 +12,7 @@
     'CosmosBlockChainOASIS, PolkadotOASIS, and TONOASIS support SELECT * with equality or IN on metadata.CosmosValidatorAddress, metadata.PolkadotBlockHash, or metadata.TonBlockRootHash respectively. Use keys supplied by the user, with LIMIT and OFFSET. Omit COUNT and ORDER BY.',
     'TRONOASIS supports SELECT * with equality or IN on metadata.TronBlockHeight using quoted positive block heights supplied by the user. Omit COUNT and ORDER BY.',
     'HashgraphOASIS supports SELECT * with optional equality or IN on metadata.HederaAccountId, LIMIT and OFFSET. Use only account IDs supplied by the user. Omit COUNT and ORDER BY.',
-    'Use TIMEOUT followed by milliseconds (1–30000) for row queries when requested. COUNT uses the server timeout.',
+    'Use TIMEOUT followed by milliseconds (1–30000) only for SELECT * row queries when requested. Selected columns and all scalar queries use the server timeout. Selected columns require one MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS source.',
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, ParentHolonId, Name, Description, Version, IsActive, and metadata paths with up to four segments such as metadata.location.city. Metadata supports IS PRESENT and IS NULL.',
     'A top-level AND clause may use EXISTS CHILD (filters) for direct children or EXISTS DESCENDANT (filters) for descendants within eight levels. Relationship fields use the same rules.',

@@ -48,6 +48,7 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.equal(options.headers['Idempotency-Key'], 'test-operation');
   const request = JSON.parse(options.body);
   assert.deepEqual(request.tools, []);
+  assert.match(request.messages[0].content, /Selected columns and all scalar queries use the server timeout/);
   assert.equal(request.injectAvatarContext, false);
   assert.equal(request.messages[1].content, 'Count active MongoDB holons');
   assert.equal(app.node('ask-draft').textContent, text);
