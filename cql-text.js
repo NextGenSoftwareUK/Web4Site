@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS'];
   const fields = { id: ['Id', 'Guid'], name: ['Name', 'String'],
     description: ['Description', 'String'], version: ['Version', 'Integer'],
     isactive: ['IsActive', 'Boolean'] };
@@ -95,7 +95,7 @@
     const selected = [];
     do {
       const provider = providers.find(value => value.toUpperCase() === peek());
-      if (!provider || selected.includes(provider)) throw new Error('Choose distinct MongoDBOASIS, SQLLiteDBOASIS, Neo4jOASIS, HoloOASIS, or SolanaOASIS providers.');
+      if (!provider || selected.includes(provider)) throw new Error('Choose distinct MongoDBOASIS, SQLLiteDBOASIS, Neo4jOASIS, HoloOASIS, SolanaOASIS, or EthereumOASIS providers.');
       selected.push(provider);
       index++;
     } while (accept(','));
@@ -103,7 +103,8 @@
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
     const solana = selected.includes('SolanaOASIS');
-    const body = { provider, filters: [], orderBy: holo || solana ? 'None' : 'Name', skip: 0 };
+    const ethereum = selected.includes('EthereumOASIS');
+    const body = { provider, filters: [], orderBy: holo || solana || ethereum ? 'None' : 'Name', skip: 0 };
     if (!count) Object.assign(body, { take: 10, includeMetadata: true });
     function predicates(target, allowChildren) {
       do {
@@ -166,6 +167,13 @@
           [item.value].flat().some(value => !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) ||
           [item.value].flat().length > 8))) {
       throw new Error('SolanaOASIS supports row queries with SolanaAccountAddress equality or IN (up to eight addresses), LIMIT, and OFFSET.');
+    }
+    if (ethereum && (count || body.orderBy !== 'None' || relationships.length ||
+        [...body.filters, ...(body.anyOf ?? [])].some(item =>
+          item.metadataPath?.length !== 1 || item.metadataPath[0] !== 'EthereumAccountAddress' ||
+          !['Equal', 'In'].includes(item.operator) ||
+          [item.value].flat().some(value => !/^0x[0-9a-fA-F]{40}$/.test(value))))) {
+      throw new Error('EthereumOASIS supports row queries with EthereumAccountAddress equality or IN, LIMIT, and OFFSET.');
     }
     if (count) body.operation = 'LongCount';
     if (selected.length > 1) {

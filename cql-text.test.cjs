@@ -111,3 +111,11 @@ test('compiles Solana public account lookups as unordered native queries', () =>
   assert.throws(() => compile("SELECT * FROM SolanaOASIS WHERE Name = 'Example'"), /SolanaOASIS supports/);
   assert.throws(() => compile("SELECT * FROM SolanaOASIS WHERE metadata.SolanaAccountAddress = 'bad'"), /SolanaOASIS supports/);
 });
+
+test('compiles Ethereum public account lookups without ordering', () => {
+  const address = '0x' + 'a'.repeat(40);
+  const query = compile(`SELECT * FROM EthereumOASIS WHERE metadata.EthereumAccountAddress = '${address}' LIMIT 2`);
+  assert.equal(query.body.orderBy, 'None');
+  assert.deepEqual(query.body.filters, [{ metadataPath: ['EthereumAccountAddress'], scalar: 'String', operator: 'Equal', value: address }]);
+  assert.throws(() => compile("SELECT * FROM EthereumOASIS WHERE metadata.EthereumAccountAddress = 'bad'"), /EthereumOASIS supports/);
+});
