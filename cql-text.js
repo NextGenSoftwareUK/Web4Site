@@ -260,6 +260,10 @@
         grouped.resultOrder = [{ alias, descending }];
       }
       if (accept('LIMIT')) grouped.resultTake = integer(tokens[index++], 1, 100);
+      if (accept('OFFSET')) {
+        if (!grouped.resultOrder) throw new Error('Use ORDER BY before paging grouped results.');
+        grouped.resultSkip = integer(tokens[index++], 0, 100);
+      }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected grouped query clause.');
       const filterCount = body.filters.length + (body.anyOf?.length ?? 0);
