@@ -100,7 +100,7 @@
         if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const text = (result.result ?? result).content?.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
-        root.CqlText.compile(text);
+        playground.compileAvailableText(text);
         draft = { text, identity };
         $('ask-draft').textContent = text;
         preview.disabled = false;

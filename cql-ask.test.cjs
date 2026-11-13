@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const { compile } = require('./cql-text.js');
 
-function setup(reply, example = null) {
+function setup(reply, example = null, compileAvailableText = compile) {
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
@@ -21,7 +21,7 @@ function setup(reply, example = null) {
       getElementById: node,
       querySelector: () => ({ click() { tabOpened = true; } })
     },
-    CqlText: { compile }, AbortSignal,
+    AbortSignal,
     crypto: { randomUUID: () => 'test-operation' },
     fetch: async (url, options) => {
       requests.push({ url, options });
@@ -30,7 +30,7 @@ function setup(reply, example = null) {
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { loadText(text) { opened.push(text); }, selectedPublicExample: () => example },
+    playground: { compileAvailableText, loadText(text) { opened.push(text); }, selectedPublicExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
@@ -163,4 +163,17 @@ test('Ask your data hands a grouped count draft to the Playground only after rev
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
   assert.equal(app.requests.length, 1);
+});
+
+test('withholds a syntactically valid draft when its provider is unavailable', async () => {
+  const text = 'SELECT * FROM HashgraphOASIS';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }), null, draft => {
+    assert.equal(compile(draft).body.provider, 'HashgraphOASIS');
+    throw new Error('A requested provider is unavailable for this query on the selected WEB4 host.');
+  });
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent, /provider is unavailable/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.equal(app.node('ask-draft').textContent, '');
+  assert.deepEqual(app.opened, []);
 });

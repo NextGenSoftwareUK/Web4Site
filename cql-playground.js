@@ -439,14 +439,19 @@
       } catch (error) { note(error.message, true); }
     });
 
-    function loadText(text) {
+    function compileAvailableText(text) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
       const query = root.CqlText.compile(text);
       const selected = query.body.providers ?? [query.body.provider];
       if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
         (selected.length === 1 || row.federationAvailable))))
         throw new Error('A requested provider is unavailable for this query on the selected WEB4 host.');
-      $('cql-provider').value = selected[0];
+      return query;
+    }
+
+    function loadText(text) {
+      const query = compileAvailableText(text);
+      $('cql-provider').value = query.body.providers?.[0] ?? query.body.provider;
       chooseProvider();
       preparation = null;
       endpoint = query.path;
@@ -455,7 +460,7 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, loadText, selectedPublicExample };
+    return { syncAuth, ready, compileAvailableText, loadText, selectedPublicExample };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
