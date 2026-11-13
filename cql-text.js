@@ -256,6 +256,16 @@
         columns: resultColumns,
         maximumGroups: 100
       };
+      if (accept('HAVING')) {
+        if (peek() !== groupedCount.toUpperCase()) throw new Error('HAVING must name the COUNT(*) alias.');
+        index++;
+        const comparison = tokens[index++];
+        const value = tokens[index++];
+        if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison) ||
+            !/^(0|[1-9][0-9]{0,18})$/.test(value ?? '') || BigInt(value) > 9223372036854775807n)
+          throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
+        grouped.resultFilters = [{ alias: groupedCount, operator: comparisons[comparison], value }];
+      }
       if (accept('ORDER')) {
         expect('BY');
         const alias = [key.alias, groupedCount].find(value => value.toUpperCase() === peek());
