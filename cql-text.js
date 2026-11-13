@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS'];
   const fields = { id: ['Id', 'Guid'], name: ['Name', 'String'],
     description: ['Description', 'String'], version: ['Version', 'Integer'],
     isactive: ['IsActive', 'Boolean'] };
@@ -95,13 +95,14 @@
     const selected = [];
     do {
       const provider = providers.find(value => value.toUpperCase() === peek());
-      if (!provider || selected.includes(provider)) throw new Error('Choose distinct MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS providers.');
+      if (!provider || selected.includes(provider)) throw new Error('Choose distinct MongoDBOASIS, SQLLiteDBOASIS, Neo4jOASIS, or HoloOASIS providers.');
       selected.push(provider);
       index++;
     } while (accept(','));
     if (count && selected.length > 1) throw new Error('COUNT requires a single provider.');
     const [provider] = selected;
-    const body = { provider, filters: [], orderBy: 'Name', skip: 0 };
+    const holo = selected.includes('HoloOASIS');
+    const body = { provider, filters: [], orderBy: holo ? 'None' : 'Name', skip: 0 };
     if (!count) Object.assign(body, { take: 10, includeMetadata: true });
     function predicates(target, allowChildren) {
       do {
@@ -152,6 +153,11 @@
     const filterCount = [body, ...relationships].reduce(
       (total, scope) => total + scope.filters.length + (scope.anyOf?.length ?? 0), 0);
     if (filterCount > 12) throw new Error('Use at most twelve filters across the query.');
+    if (holo && (count || body.orderBy !== 'None' || relationships.length ||
+        [...body.filters, ...(body.anyOf ?? [])].some(item =>
+          item.field !== 'Id' || !['Equal', 'In'].includes(item.operator)))) {
+      throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
+    }
     if (count) body.operation = 'LongCount';
     if (selected.length > 1) {
       const { provider: _, skip, take, ...source } = body;

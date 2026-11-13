@@ -90,3 +90,15 @@ test('compiles bounded nested metadata presence and null predicates without a va
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE metadata.a.b.c.d.e = 'x'"), /four metadata/);
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name IS NULL"));
 });
+
+test('compiles HoloOASIS text and federation as unordered bounded identity reads', () => {
+  const id = 'b5d3f5a8-2539-4f94-9b12-aed841902ccb';
+  const { body } = compile(`SELECT * FROM HoloOASIS WHERE Id IN ('${id}') LIMIT 2`);
+  assert.equal(body.orderBy, 'None');
+  assert.equal(body.take, 2);
+  assert.deepEqual(body.filters, [{ field: 'Id', scalar: 'Guid', operator: 'In', value: [id] }]);
+  assert.equal(compile('SELECT * FROM MongoDBOASIS, HoloOASIS LIMIT 2').body.source.orderBy, 'None');
+  for (const text of ['SELECT COUNT(*) FROM HoloOASIS', 'SELECT * FROM HoloOASIS ORDER BY Id',
+    "SELECT * FROM HoloOASIS WHERE Name = 'Example'"])
+    assert.throws(() => compile(text), /HoloOASIS supports row queries/);
+});
