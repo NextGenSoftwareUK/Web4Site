@@ -412,9 +412,11 @@
     function loadText(text) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
       const query = root.CqlText.compile(text);
-      const source = sources?.find(row => row.provider === query.body.provider);
-      if (!source?.available) throw new Error('This provider is unavailable on the selected WEB4 host.');
-      $('cql-provider').value = query.body.provider;
+      const selected = query.body.providers ?? [query.body.provider];
+      if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
+        (selected.length === 1 || row.federationAvailable))))
+        throw new Error('A requested provider is unavailable for this query on the selected WEB4 host.');
+      $('cql-provider').value = selected[0];
       chooseProvider();
       preparation = null;
       endpoint = query.path;

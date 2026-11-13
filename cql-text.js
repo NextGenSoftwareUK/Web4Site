@@ -77,9 +77,15 @@
     expect('*');
     if (count) expect(')');
     expect('FROM');
-    const provider = providers.find(value => value.toUpperCase() === peek());
-    if (!provider) throw new Error('Choose MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.');
-    index++;
+    const selected = [];
+    do {
+      const provider = providers.find(value => value.toUpperCase() === peek());
+      if (!provider || selected.includes(provider)) throw new Error('Choose distinct MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS providers.');
+      selected.push(provider);
+      index++;
+    } while (accept(','));
+    if (count && selected.length > 1) throw new Error('COUNT requires a single provider.');
+    const [provider] = selected;
     const body = { provider, filters: [], orderBy: 'Name', skip: 0 };
     if (!count) Object.assign(body, { take: 10, includeMetadata: true });
     if (accept('WHERE')) {
@@ -107,6 +113,15 @@
     accept(';');
     if (index !== tokens.length) throw new Error('Unexpected clause near token ' + (index + 1) + '.');
     if (count) body.operation = 'LongCount';
+    if (selected.length > 1) {
+      const { provider: _, skip, take, ...source } = body;
+      return { path: 'data/query-cql/federation', body: {
+        scope: 'Named', providers: selected, source: { ...source, skip: 0, take: 100 },
+        identityMode: 'PreserveCopies', skip, take, maximumInputRows: 300, maximumRowsPerProvider: 100,
+        maximumInputBytes: 4194304, maximumOutputBytes: 1048576, maximumWork: 100000,
+        maximumProviderAttempts: selected.length, maximumDurationMilliseconds: 5000
+      } };
+    }
     return { path: count ? 'data/query-cql/scalar' : 'data/query-cql', body };
   }
 

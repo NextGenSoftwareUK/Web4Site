@@ -4,6 +4,7 @@
   const instructions = [
     'Translate the question into one read-only CQL statement. Output only the statement, or UNSUPPORTED.',
     'Use SELECT * or SELECT COUNT(*) FROM MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.',
+    'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, Name, Description, Version, IsActive, and metadata.category.',
     'Use single-quoted strings, integers, or TRUE/FALSE as appropriate. Use comparisons, IN, or CONTAINS.',
     'Combine filters with AND and at most one parenthesized OR group. Row queries may use ORDER BY Name, Version, or Id, LIMIT 1–100 and OFFSET.',
@@ -44,9 +45,11 @@
             { role: 'user', content: question }], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
         });
-        if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const result = await response.json();
         if (!current()) return;
+        if (result.code === 'MEASUREMENT_REQUIRED')
+          throw new Error('WEB6 could not confirm usage for this request. The draft is unavailable while WEB6 reconciles it.');
+        if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const text = (result.result ?? result).content?.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
         root.CqlText.compile(text);
