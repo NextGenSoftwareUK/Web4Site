@@ -267,3 +267,12 @@ test('preserves TRON block heights and rejects noncanonical or overflowing keys'
     assert.throws(() => compile("SELECT * FROM TRONOASIS WHERE metadata.TronBlockHeight = '" + height + "'"), /TronBlockHeight/);
   }
 });
+
+test('compiles selected columns into the native projection endpoint', () => {
+  const { path, body } = compile('SELECT Id, Name, Version FROM Neo4jOASIS ORDER BY Id LIMIT 3');
+  assert.equal(path, 'data/query-cql/projection');
+  assert.deepEqual(body.columns, ['Id', 'Name', 'Version'].map(field => ({ field, alias: field })));
+  assert.equal(body.take, 3);
+  assert.equal(Object.hasOwn(body, 'includeMetadata'), false);
+  assert.throws(() => compile('SELECT Id FROM Neo4jOASIS, MongoDBOASIS'), /Selected columns require one/);
+});

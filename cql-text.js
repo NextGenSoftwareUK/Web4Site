@@ -135,7 +135,17 @@
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount';
     if (hasSelection) expect('VERSION');
-    else expect('*');
+    else if (operation) expect('*');
+    const columns = [];
+    if (!operation && !accept('*')) {
+      do {
+        const name = tokens[index++]?.toLowerCase();
+        if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
+        const [field] = fields[name];
+        if (columns.some(column => column.field === field)) throw new Error('Select each field once.');
+        columns.push({ field, alias: field });
+      } while (accept(','));
+    }
     if (operation) expect(')');
     expect('FROM');
     const selected = [];
@@ -145,6 +155,8 @@
       selected.push(provider);
       index++;
     } while (accept(','));
+    if (columns.length && (selected.length !== 1 || !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(selected[0])))
+      throw new Error('Selected columns require one of MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.');
     if (operation && selected.length > 1) throw new Error('Scalar queries require a single provider.');
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
@@ -194,6 +206,7 @@
     if (!operation && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
     if (!operation && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
     if (accept('TIMEOUT')) {
+      if (columns.length) throw new Error('Selected columns use the server timeout.');
       if (operation) throw new Error('TIMEOUT applies to row queries. Scalar queries use the server timeout.');
       body.maximumDurationMilliseconds = integer(tokens[index++], 1, 30000);
     }
@@ -221,6 +234,10 @@
         throw new Error(accountProvider + ' supports row queries with ' + key +
           ' equality or IN (up to ' + maximumKeys + ' keys), LIMIT, and OFFSET.');
       }
+    }
+    if (columns.length) {
+      delete body.includeMetadata;
+      return { path: 'data/query-cql/projection', body: { ...body, columns } };
     }
     if (operation) body.operation = operation;
     if (hasSelection) body.selection = { field: 'Version' };
