@@ -294,3 +294,12 @@ test('compiles explicitly typed Boolean metadata without coercing strings', () =
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE metadata.active AS BOOLEAN = 'true'"), /Boolean literal/);
   assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata.active AS BOOLEAN > TRUE'), /Ordered comparisons/);
 });
+
+test('preserves exact decimal metadata literals without binary rounding', () => {
+  const { body } = compile('SELECT * FROM MongoDBOASIS WHERE metadata.amount AS DECIMAL >= 1.0000000000000000000000000001');
+  assert.deepEqual(body.filters, [{ metadataPath: ['amount'], scalar: 'Decimal',
+    operator: 'GreaterThanOrEqual', value: '1.0000000000000000000000000001' }]);
+  for (const literal of ['01.2', '-0.0', '79228162514264337593543950336', '0.00000000000000000000000000001']) {
+    assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata.amount AS DECIMAL = ' + literal), /exact decimal/);
+  }
+});

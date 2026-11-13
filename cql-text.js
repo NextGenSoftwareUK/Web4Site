@@ -35,7 +35,7 @@
 
   function compile(text) {
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
-    const lexer = /\s+|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    const lexer = /\s+|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
@@ -81,6 +81,7 @@
         scalar = 'String';
         if (accept('AS')) {
           if (accept('BOOLEAN')) scalar = 'Boolean';
+          else if (accept('DECIMAL')) scalar = 'Decimal';
           else {
             expect('UINT64');
             scalar = 'UInt64';
@@ -95,6 +96,15 @@
       function literal() {
         const token = tokens[index++];
         if (scalar === 'Integer') return integer(token, -2147483648, 2147483647);
+        if (scalar === 'Decimal') {
+          const match = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,28}))?$/.exec(token ?? '');
+          if (!match || token.length > 31) throw new Error('Expected an exact decimal literal.');
+          const [, sign, whole, fraction = ''] = match;
+          const coefficient = BigInt(whole + fraction);
+          if (coefficient > 79228162514264337593543950335n || (sign && coefficient === 0n))
+            throw new Error('Expected an exact decimal literal.');
+          return token;
+        }
         if (scalar === 'UInt64') {
           if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
             throw new Error('Expected an unsigned 64-bit integer.');
@@ -125,8 +135,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
-      if (!['Integer', 'UInt64'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64.');
+      if (!['Integer', 'UInt64', 'Decimal'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64 or AS DECIMAL.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
