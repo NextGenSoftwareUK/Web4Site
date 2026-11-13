@@ -268,12 +268,17 @@
       }
       if (accept('ORDER')) {
         expect('BY');
-        const alias = [key.alias, groupedCount].find(value => value.toUpperCase() === peek());
-        if (!alias) throw new Error('Order grouped results by a selected column alias.');
-        index++;
-        const descending = accept('DESC');
-        if (!descending) accept('ASC');
-        grouped.resultOrder = [{ alias, descending }];
+        grouped.resultOrder = [];
+        do {
+          const alias = [key.alias, groupedCount].find(value => value.toUpperCase() === peek());
+          if (!alias) throw new Error('Order grouped results by a selected column alias.');
+          if (grouped.resultOrder.some(item => item.alias === alias))
+            throw new Error('Use each grouped ordering alias only once.');
+          index++;
+          const descending = accept('DESC');
+          if (!descending) accept('ASC');
+          grouped.resultOrder.push({ alias, descending });
+        } while (accept(','));
       }
       if (accept('LIMIT')) grouped.resultTake = integer(tokens[index++], 1, 100);
       if (accept('OFFSET')) {

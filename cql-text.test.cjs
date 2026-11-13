@@ -351,3 +351,14 @@ test('grouped HAVING preserves large count thresholds and pages after filtering'
   assert.throws(() => compile(query + 'Total >= 9223372036854775808'), /64-bit/);
   assert.throws(() => compile(query + 'Version = 1'), /alias/);
 });
+
+test('grouped paging accepts a second ordering alias as a tie-breaker', () => {
+  const query = 'SELECT Version AS Revision, COUNT(*) AS Total FROM Neo4jOASIS GROUP BY Version ';
+  const { body } = compile(query + 'ORDER BY total DESC, revision ASC LIMIT 3 OFFSET 2');
+  assert.deepEqual(body.resultOrder, [
+    { alias: 'Total', descending: true }, { alias: 'Revision', descending: false }
+  ]);
+  assert.equal(body.resultTake, 3);
+  assert.equal(body.resultSkip, 2);
+  assert.throws(() => compile(query + 'ORDER BY Total, total'), /only once/);
+});
