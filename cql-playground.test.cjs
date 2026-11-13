@@ -642,3 +642,14 @@ test('empty relationship-filtered average displays the aggregate message', async
   assert.equal(h.elements.get('cql-results').children.length, 0);
   assert.ok(h.elements.get('cql-response').textContent.includes('CQL_EMPTY_SEQUENCE'));
 });
+
+test('the displayed relationship example compiles to a bounded projection', () => {
+  const html = require('node:fs').readFileSync(__dirname + '/web4-sandbox.html', 'utf8');
+  const sample = html.split('<code id="cql-relationship-example">')[1].split('</code>')[0].replaceAll('&gt;', '>');
+  const { path, body } = require('./cql-text.js').compile(sample);
+  assert.equal(path, 'data/query-cql/projection');
+  assert.deepEqual(body.columns.map(column => column.field), ['Id', 'Name', 'Version']);
+  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
+  assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
+  assert.equal(body.take, 5);
+});
