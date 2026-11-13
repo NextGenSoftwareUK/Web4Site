@@ -102,3 +102,12 @@ test('compiles HoloOASIS text and federation as unordered bounded identity reads
     "SELECT * FROM HoloOASIS WHERE Name = 'Example'"])
     assert.throws(() => compile(text), /HoloOASIS supports row queries/);
 });
+
+test('compiles Solana public account lookups as unordered native queries', () => {
+  const address = '11111111111111111111111111111111';
+  const query = compile(`SELECT * FROM SolanaOASIS WHERE metadata.SolanaAccountAddress IN ('${address}') LIMIT 2`);
+  assert.equal(query.body.orderBy, 'None');
+  assert.deepEqual(query.body.filters, [{ metadataPath: ['SolanaAccountAddress'], scalar: 'String', operator: 'In', value: [address] }]);
+  assert.throws(() => compile("SELECT * FROM SolanaOASIS WHERE Name = 'Example'"), /SolanaOASIS supports/);
+  assert.throws(() => compile("SELECT * FROM SolanaOASIS WHERE metadata.SolanaAccountAddress = 'bad'"), /SolanaOASIS supports/);
+});

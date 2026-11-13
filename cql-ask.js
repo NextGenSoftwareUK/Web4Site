@@ -5,6 +5,7 @@
     'Translate the question into one read-only CQL statement. Output only the statement, or UNSUPPORTED.',
     'Use SELECT * or SELECT COUNT(*) FROM MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.',
     'HoloOASIS supports SELECT * with optional Id equality or IN, LIMIT and OFFSET. Use IDs supplied by the user. Do not invent IDs or use other filters, COUNT, or ORDER BY with HoloOASIS.',
+    'SolanaOASIS supports SELECT * with optional metadata.SolanaAccountAddress equality or IN, LIMIT and OFFSET. Use addresses supplied by the user. Do not invent addresses or use other filters, COUNT, or ORDER BY with SolanaOASIS.',
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, Name, Description, Version, IsActive, and metadata paths with up to four segments such as metadata.location.city. Metadata supports IS PRESENT and IS NULL.',
     'A top-level AND clause may use EXISTS CHILD (filters) for direct children or EXISTS DESCENDANT (filters) for descendants within eight levels. Relationship fields use the same rules.',
