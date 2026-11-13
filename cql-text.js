@@ -93,7 +93,11 @@
             throw new Error('Expected a quoted GUID for Id.');
           return value;
         }
-        if (scalar !== 'Boolean' && token?.startsWith("'")) return token.slice(1, -1).replace(/''/g, "'");
+        if (scalar === 'String' && token?.startsWith("'")) {
+          const value = token.slice(1, -1).replace(/''/g, "'");
+          if (value.length > 512) throw new Error('String literals may contain up to 512 characters.');
+          return value;
+        }
         throw new Error('Expected a ' + scalar + ' literal.');
       }
       if (accept('IN')) {
@@ -107,6 +111,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
+      if (scalar !== 'Integer' && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require the numeric Version field.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };

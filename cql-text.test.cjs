@@ -230,3 +230,12 @@ test('rejects malformed Id literals before a drafted query can be opened', () =>
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Id IN ('" + id + "', 'customer-123')"),
     /Expected a quoted GUID for Id/);
 });
+
+test('rejects filters WEB4 cannot compile before opening a draft', () => {
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name > 'A'"), /Ordered comparisons/);
+  assert.throws(() => compile("SELECT * FROM SQLLiteDBOASIS WHERE IsActive < TRUE"), /Ordered comparisons/);
+  const prefix = "SELECT * FROM Neo4jOASIS WHERE Name = '";
+  assert.equal(compile(prefix + 'a'.repeat(512) + "'").body.filters[0].value.length, 512);
+  assert.throws(() => compile(prefix + 'a'.repeat(513) + "'"), /up to 512 characters/);
+  assert.equal(compile('SELECT * FROM Neo4jOASIS WHERE Version >= 2').body.filters[0].operator, 'GreaterThanOrEqual');
+});
