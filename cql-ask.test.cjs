@@ -56,6 +56,7 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
   assert.equal(app.node('cql-text').value, text);
+  assert.equal(app.node('cql-text-editor').open, true);
   assert.equal(app.tabOpened(), true);
 });
 

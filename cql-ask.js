@@ -76,6 +76,7 @@
           throw new Error('The sandbox session changed. Draft a new query.');
         playground.loadText(draft.text);
         $('cql-text').value = draft.text;
+        $('cql-text-editor').open = true;
         document.querySelector('[data-tab="cql"]').click();
       } catch (error) { status.textContent = error.message; }
     });
