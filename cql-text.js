@@ -208,6 +208,7 @@
     const [filter] = request?.filters ?? [];
     if (request?.provider !== provider || request.filters?.length !== 1 || filter?.operator !== 'In' ||
         !Array.isArray(filter.value) || !filter.value.length || request.orderBy !== 'None' ||
+        request.descending || request.includeMetadata !== true ||
         request.anyOf?.length || request.anyChildren?.length || request.anyDescendants?.length || request.graph)
       return null;
     const field = provider === 'HoloOASIS' && filter.field === 'Id' && filter.scalar === 'Guid' ? 'Id'

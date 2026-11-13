@@ -175,15 +175,17 @@ test('renders a reviewed native public preset as editable SQL-like CQL', () => {
   const provider = 'SolanaOASIS';
   const filter = { metadataPath: ['SolanaAccountAddress'], scalar: 'String', operator: 'In',
     value: ['11111111111111111111111111111111'] };
-  const request = { provider, orderBy: 'None', take: 2, filters: [filter] };
+  const request = { provider, orderBy: 'None', includeMetadata: true, take: 2, filters: [filter] };
   assert.deepEqual(compile(publicExample(provider, request)).body.filters, [filter]);
   assert.equal(publicExample(provider, { ...request, anyOf: [filter] }), null);
+  assert.equal(publicExample(provider, { ...request, includeMetadata: false }), null);
+  assert.equal(publicExample(provider, { ...request, descending: true }), null);
   assert.equal(publicExample(provider, { ...request, provider: 'MongoDBOASIS' }), null);
 });
 
 test('preserves a public example deadline and supports explicit bounded query timeouts', () => {
   const { publicExample } = require('./cql-text.js');
-  const request = { provider: 'HoloOASIS', orderBy: 'None', take: 3, maximumDurationMilliseconds: 30000,
+  const request = { provider: 'HoloOASIS', orderBy: 'None', includeMetadata: true, take: 3, maximumDurationMilliseconds: 30000,
     filters: [{ field: 'Id', scalar: 'Guid', operator: 'In', value: ['b5d3f5a8-2539-4f94-9b12-aed841902ccb'] }] };
   assert.equal(compile(publicExample(request.provider, request)).body.maximumDurationMilliseconds, 30000);
   const federation = compile('SELECT * FROM MongoDBOASIS, Neo4jOASIS LIMIT 2 TIMEOUT 12000').body;
