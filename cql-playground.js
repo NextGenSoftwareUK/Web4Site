@@ -299,6 +299,10 @@
         if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const result = unwrap(data);
         $('cql-response').textContent = JSON.stringify(data, null, 2);
+        if (endpoint === 'data/query-cql/scalar' && result?.errorCode === 'CQL_EMPTY_SEQUENCE') {
+          note('No records matched. This aggregate needs at least one value.');
+          return;
+        }
         if (!response.ok || !result || result.isError) {
           throw new Error(`HTTP ${response.status}${result?.errorCode ? ' · ' + result.errorCode : ''}: ` +
             (result?.message || data?.message || 'The API rejected this query.'));
