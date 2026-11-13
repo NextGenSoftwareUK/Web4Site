@@ -416,7 +416,9 @@
     const ready = syncAuth();
     function selectedPublicExample() {
       const source = sources?.find(row => row.provider === $('cql-provider').value);
-      const example = source?.examples?.find(row => ['public-records', 'public-posts'].includes(row.id) &&
+      const example = source?.examples?.find(row =>
+        'host:' + row.id === $('cql-preset').value &&
+        ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
         row.available !== false && row.operation !== 'Federation');
       if (!source?.available || !root.CqlText.publicExample(source.provider, example?.request)) return null;
       return { provider: source.provider, request: example.request };

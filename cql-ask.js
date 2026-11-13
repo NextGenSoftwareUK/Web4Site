@@ -46,7 +46,7 @@
     $('ask-use-example').addEventListener('click', () => {
       try {
         const example = isSandbox() && playground.selectedPublicExample();
-        if (!example) throw new Error('Choose a provider with a public example in the CQL Playground first.');
+        if (!example) throw new Error('Choose a public rows example in the CQL Playground first.');
         const { provider, request } = example;
         const filter = request.filters[0];
         const field = filter.field ?? 'metadata.' + filter.metadataPath[0];
