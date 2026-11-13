@@ -41,10 +41,21 @@
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
       if (name === 'metadata') {
-        expect('.');
-        const key = tokens[index++];
-        if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key ?? '')) throw new Error('Expected a metadata key.');
-        selector = { metadataPath: [key] };
+        const metadataPath = [];
+        do {
+          expect('.');
+          const key = tokens[index++];
+          if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key ?? '') || key.length > 64)
+            throw new Error('Expected a metadata path segment of up to 64 characters.');
+          metadataPath.push(key);
+          if (metadataPath.length > 4) throw new Error('Use at most four metadata path segments.');
+        } while (peek() === '.');
+        selector = { metadataPath };
+        if (accept('IS')) {
+          if (accept('NULL')) return { ...selector, operator: 'IsNull' };
+          expect('PRESENT');
+          return { ...selector, operator: 'Exists' };
+        }
         scalar = 'String';
       } else {
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown filter field.');

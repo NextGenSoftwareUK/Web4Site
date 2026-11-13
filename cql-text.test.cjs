@@ -80,3 +80,13 @@ test('compiles a direct child existence predicate independently of the root filt
   assert.deepEqual(alternatives.body.anyChildren[0].anyOf.map(filter => filter.value), ['Coffee', 'Tea']);
   assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (EXISTS CHILD (Version = 1))'));
 });
+
+test('compiles bounded nested metadata presence and null predicates without a value', () => {
+  const { body } = compile("SELECT * FROM MongoDBOASIS WHERE metadata.location.city IS PRESENT AND metadata.location.zip IS NULL");
+  assert.deepEqual(body.filters, [
+    { metadataPath: ['location', 'city'], operator: 'Exists' },
+    { metadataPath: ['location', 'zip'], operator: 'IsNull' }
+  ]);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE metadata.a.b.c.d.e = 'x'"), /four metadata/);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name IS NULL"));
+});
