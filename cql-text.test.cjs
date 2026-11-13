@@ -209,3 +209,17 @@ test('compiles native numeric aggregates over Version', () => {
   assert.throws(() => compile('SELECT SUM(Name) FROM MongoDBOASIS'));
   assert.throws(() => compile('SELECT AVG(Version) FROM MongoDBOASIS, Neo4jOASIS'));
 });
+
+test('round-trips reviewed Hedera presets and enforces canonical account IDs', () => {
+  const { publicExample } = require('./cql-text.js');
+  const provider = 'HashgraphOASIS';
+  const filter = { metadataPath: ['HederaAccountId'], scalar: 'String', operator: 'In',
+    value: ['0.0.2', '0.0.18446744073709551615'] };
+  const request = { provider, filters: [filter], orderBy: 'None', includeMetadata: true, take: 2 };
+  assert.deepEqual(compile(publicExample(provider, request)).body.filters, [filter]);
+  for (const value of ['0.0.0', '0.00.2', '0.0.18446744073709551616']) {
+    assert.throws(() => compile(`SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId = '${value}'`),
+      /HashgraphOASIS supports/);
+  }
+  assert.throws(() => compile('SELECT COUNT(*) FROM HashgraphOASIS'), /HashgraphOASIS supports/);
+});
