@@ -124,3 +124,18 @@ test('reports the WEB6 HTTP status when the gateway returns a non-JSON response'
   assert.equal(app.node('ask-preview').disabled, true);
   assert.deepEqual(app.opened, []);
 });
+
+test('opens a reviewed WEB6 selected-column draft on the native projection route', async () => {
+  const text = 'SELECT Id, Name, Version FROM SQLLiteDBOASIS WHERE IsActive = TRUE LIMIT 5';
+  const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
+  app.node('ask-question').value = 'Show the ID, name and version of five active SQLite holons';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-draft').textContent, text);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  const [draft] = app.opened;
+  const request = compile(draft);
+  assert.equal(request.path, 'data/query-cql/projection');
+  assert.equal(request.body.provider, 'SQLLiteDBOASIS');
+  assert.deepEqual(request.body.columns.map(column => column.field), ['Id', 'Name', 'Version']);
+});
