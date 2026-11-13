@@ -77,6 +77,10 @@
           return { ...selector, operator: 'Exists' };
         }
         scalar = 'String';
+        if (accept('AS')) {
+          expect('UINT64');
+          scalar = 'UInt64';
+        }
       } else {
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown filter field.');
         const [field, type] = fields[name];
@@ -86,6 +90,11 @@
       function literal() {
         const token = tokens[index++];
         if (scalar === 'Integer') return integer(token, -2147483648, 2147483647);
+        if (scalar === 'UInt64') {
+          if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
+            throw new Error('Expected an unsigned 64-bit integer.');
+          return token;
+        }
         if (scalar === 'Boolean' && /^(true|false)$/i.test(token)) return token.toLowerCase() === 'true';
         if (scalar === 'Guid') {
           const value = token?.slice(1, -1);
@@ -111,8 +120,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
-      if (scalar !== 'Integer' && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require the numeric Version field.');
+      if (!['Integer', 'UInt64'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
@@ -201,7 +210,7 @@
     for (const accountProvider of accountProviders) {
       const { key, accepts, maximumKeys = 8 } = accountProfiles[accountProvider];
       const invalidFilter = [...body.filters, ...(body.anyOf ?? [])].some(filter => {
-        if (filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
+        if (filter.scalar !== 'String' || filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
             !['Equal', 'In'].includes(filter.operator)) return true;
         const values = Array.isArray(filter.value) ? filter.value : [filter.value];
         return values.length > maximumKeys || values.some(value => !accepts(value));

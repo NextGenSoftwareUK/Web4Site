@@ -239,3 +239,13 @@ test('rejects filters WEB4 cannot compile before opening a draft', () => {
   assert.throws(() => compile(prefix + 'a'.repeat(513) + "'"), /up to 512 characters/);
   assert.equal(compile('SELECT * FROM Neo4jOASIS WHERE Version >= 2').body.filters[0].operator, 'GreaterThanOrEqual');
 });
+
+test('keeps typed UInt64 metadata literals exact in WEB4 requests', () => {
+  const { body } = compile('SELECT * FROM MongoDBOASIS WHERE metadata.Sequence AS UINT64 >= 9007199254740993 AND metadata.Sequence AS UINT64 IN (0, 18446744073709551615)');
+  assert.deepEqual(body.filters.map(({ scalar, value }) => [scalar, value]),
+    [['UInt64', '9007199254740993'], ['UInt64', ['0', '18446744073709551615']]]);
+  assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE metadata.Sequence AS UINT64 = 18446744073709551616'),
+    /unsigned 64-bit/);
+  assert.throws(() => compile('SELECT * FROM SQLLiteDBOASIS WHERE metadata.Sequence AS UINT64 = -1'),
+    /unsigned 64-bit/);
+});
