@@ -131,3 +131,15 @@ test('compiles each EVM account lookup with its own native metadata key', () => 
     assert.throws(() => compile(`SELECT * FROM ${provider} WHERE metadata.EthereumAccountAddress = '${address}'`), new RegExp(provider + ' supports'));
   }
 });
+
+test('compiles NEAR and EOS public lookups with their respective native account keys', () => {
+  for (const [provider, key, value] of [
+    ['NEAROASIS', 'NearAccountId', 'near.testnet'],
+    ['EOSIOOASIS', 'EOSIOAccountName', 'eosio.token']
+  ]) {
+    const { body } = compile(`SELECT * FROM ${provider} WHERE metadata.${key} = '${value}' LIMIT 2`);
+    assert.equal(body.orderBy, 'None');
+    assert.deepEqual(body.filters, [{ metadataPath: [key], scalar: 'String', operator: 'Equal', value }]);
+    assert.throws(() => compile(`SELECT * FROM ${provider} WHERE metadata.${key} = 'BAD'`), new RegExp(provider + ' supports'));
+  }
+});

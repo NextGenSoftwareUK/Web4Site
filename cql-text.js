@@ -2,9 +2,18 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS'];
-  const evmAccountKeys = { EthereumOASIS: 'EthereumAccountAddress',
-    PolygonOASIS: 'PolygonAccountAddress', ArbitrumOASIS: 'ArbitrumAccountAddress' };
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS'];
+  const evmAddress = /^0x[0-9a-fA-F]{40}$/;
+  const accountProfiles = {
+    SolanaOASIS: { key: 'SolanaAccountAddress', accepts: value => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value) },
+    EthereumOASIS: { key: 'EthereumAccountAddress', accepts: value => evmAddress.test(value) },
+    PolygonOASIS: { key: 'PolygonAccountAddress', accepts: value => evmAddress.test(value) },
+    ArbitrumOASIS: { key: 'ArbitrumAccountAddress', accepts: value => evmAddress.test(value) },
+    NEAROASIS: { key: 'NearAccountId', accepts: value => value.length >= 2 && value.length <= 64 &&
+      /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(value) },
+    EOSIOOASIS: { key: 'EOSIOAccountName', accepts: value =>
+      /^[a-z1-5.]{1,12}(?:[a-j1-5.])?$/.test(value) && !value.endsWith('.') }
+  };
   const fields = { id: ['Id', 'Guid'], name: ['Name', 'String'],
     description: ['Description', 'String'], version: ['Version', 'Integer'],
     isactive: ['IsActive', 'Boolean'] };
@@ -104,9 +113,8 @@
     if (count && selected.length > 1) throw new Error('COUNT requires a single provider.');
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
-    const solana = selected.includes('SolanaOASIS');
-    const evmProviders = selected.filter(provider => Object.hasOwn(evmAccountKeys, provider));
-    const body = { provider, filters: [], orderBy: holo || solana || evmProviders.length ? 'None' : 'Name', skip: 0 };
+    const accountProviders = selected.filter(provider => Object.hasOwn(accountProfiles, provider));
+    const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!count) Object.assign(body, { take: 10, includeMetadata: true });
     function predicates(target, allowChildren) {
       do {
@@ -162,22 +170,17 @@
           item.field !== 'Id' || !['Equal', 'In'].includes(item.operator)))) {
       throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
     }
-    if (solana && (count || body.orderBy !== 'None' || relationships.length ||
-        [...body.filters, ...(body.anyOf ?? [])].some(item =>
-          item.metadataPath?.length !== 1 || item.metadataPath[0] !== 'SolanaAccountAddress' ||
-          !['Equal', 'In'].includes(item.operator) ||
-          [item.value].flat().some(value => !/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value)) ||
-          [item.value].flat().length > 8))) {
-      throw new Error('SolanaOASIS supports row queries with SolanaAccountAddress equality or IN (up to eight addresses), LIMIT, and OFFSET.');
-    }
-    for (const evmProvider of evmProviders) {
-      const accountKey = evmAccountKeys[evmProvider];
-      if (count || body.orderBy !== 'None' || relationships.length ||
-        [...body.filters, ...(body.anyOf ?? [])].some(item =>
-          item.metadataPath?.length !== 1 || item.metadataPath[0] !== accountKey ||
-          !['Equal', 'In'].includes(item.operator) ||
-          [item.value].flat().some(value => !/^0x[0-9a-fA-F]{40}$/.test(value)))) {
-        throw new Error(evmProvider + ' supports row queries with ' + accountKey + ' equality or IN, LIMIT, and OFFSET.');
+    for (const accountProvider of accountProviders) {
+      const { key, accepts } = accountProfiles[accountProvider];
+      const invalidFilter = [...body.filters, ...(body.anyOf ?? [])].some(filter => {
+        if (filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
+            !['Equal', 'In'].includes(filter.operator)) return true;
+        const values = Array.isArray(filter.value) ? filter.value : [filter.value];
+        return values.length > 8 || values.some(value => !accepts(value));
+      });
+      if (count || body.orderBy !== 'None' || relationships.length || invalidFilter) {
+        throw new Error(accountProvider + ' supports row queries with ' + key +
+          ' equality or IN (up to eight accounts), LIMIT, and OFFSET.');
       }
     }
     if (count) body.operation = 'LongCount';
