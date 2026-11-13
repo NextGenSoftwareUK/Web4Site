@@ -140,3 +140,15 @@ test('opens a reviewed WEB6 selected-column draft on the native projection route
   assert.equal(request.body.provider, 'SQLLiteDBOASIS');
   assert.deepEqual(request.body.columns.map(column => column.field), ['Id', 'Name', 'Version']);
 });
+
+test('the WEB6 relationship example compiles to independent child and descendant predicates', async () => {
+  const app = setup(() => ({ ok: true, json: async () => ({ content: 'UNSUPPORTED' }) }));
+  await app.node('ask-generate').click();
+  const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
+  const example = prompt.split(String.fromCharCode(10)).find(line => line.includes('EXISTS CHILD')).split('Example: ')[1].slice(0, -1);
+  const { path, body } = compile(example);
+  assert.equal(path, 'data/query-cql');
+  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
+  assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
+  assert.equal(body.anyDescendants[0].maximumDepth, 8);
+});
