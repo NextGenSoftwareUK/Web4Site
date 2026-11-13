@@ -410,14 +410,19 @@
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
     const ready = syncAuth();
+    function selectedPublicExample() {
+      const source = sources?.find(row => row.provider === $('cql-provider').value);
+      const example = source?.examples?.find(row => ['public-records', 'public-posts'].includes(row.id) &&
+        row.available !== false && row.operation !== 'Federation');
+      if (!source?.available || !root.CqlText.publicExample(source.provider, example?.request)) return null;
+      return { provider: source.provider, request: example.request };
+    }
+
     $('cql-load-text-example').addEventListener('click', () => {
       try {
-        const source = sources?.find(row => row.provider === $('cql-provider').value);
-        const example = source?.examples?.find(row => ['public-records', 'public-posts'].includes(row.id) &&
-          row.available !== false && row.operation !== 'Federation');
-        const text = source?.available && root.CqlText.publicExample(source.provider, example?.request);
-        if (!text) throw new Error('This provider has no SQL-like public example on this host.');
-        $('cql-text').value = text;
+        const example = selectedPublicExample();
+        if (!example) throw new Error('This provider has no SQL-like public example on this host.');
+        $('cql-text').value = root.CqlText.publicExample(example.provider, example.request);
         note('Review the SQL-like example, then preview its request.');
       } catch (error) { note(error.message, true); }
     });
@@ -438,7 +443,7 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, loadText };
+    return { syncAuth, ready, loadText, selectedPublicExample };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,

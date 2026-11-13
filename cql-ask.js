@@ -28,6 +28,19 @@
       try { playground.loadText($('cql-text').value); }
       catch (error) { $('cql-note').textContent = error.message; }
     });
+    $('ask-use-example').addEventListener('click', () => {
+      try {
+        const example = isSandbox() && playground.selectedPublicExample();
+        if (!example) throw new Error('Choose a provider with a public example in the CQL Playground first.');
+        const { provider, request } = example;
+        const filter = request.filters[0];
+        const field = filter.field ?? 'metadata.' + filter.metadataPath[0];
+        const question = `Show up to ${request.take} public records from ${provider} with ${field} matching any of these keys: ${filter.value.join(', ')}.`;
+        if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
+        $('ask-question').value = question;
+        status.textContent = 'Review the question, then select Draft query.';
+      } catch (error) { status.textContent = error.message; }
+    });
     generate.addEventListener('click', async () => {
       const question = $('ask-question').value.trim();
       if (!question || question.length > 1000 || !isSandbox()) {

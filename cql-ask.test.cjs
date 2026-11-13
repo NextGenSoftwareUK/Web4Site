@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const { compile } = require('./cql-text.js');
 
-function setup(reply) {
+function setup(reply, example = null) {
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
@@ -30,7 +30,7 @@ function setup(reply) {
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { loadText(text) { opened.push(text); } },
+    playground: { loadText(text) { opened.push(text); }, selectedPublicExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
@@ -81,4 +81,16 @@ test('shows a daily token allowance rejection without enabling a draft', async (
   assert.match(app.node('ask-status').textContent, /remaining daily AI token allowance/);
   assert.equal(app.node('ask-preview').disabled, true);
   assert.deepEqual(app.opened, []);
+});
+
+test('fills a question from the selected public example without contacting WEB6', () => {
+  const app = setup(() => { throw new Error('Unexpected request'); }, {
+    provider: 'SolanaOASIS', request: { take: 3, filters: [
+      { metadataPath: ['SolanaAccountAddress'], value: ['11111111111111111111111111111111'] }
+    ] }
+  });
+  app.node('ask-use-example').click();
+  assert.match(app.node('ask-question').value, /SolanaOASIS.*metadata.SolanaAccountAddress.*11111111111111111111111111111111/);
+  assert.deepEqual(app.requests, []);
+  assert.equal(app.node('ask-preview').disabled, true);
 });
