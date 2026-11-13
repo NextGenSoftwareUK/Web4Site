@@ -223,3 +223,10 @@ test('round-trips reviewed Hedera presets and enforces canonical account IDs', (
   }
   assert.throws(() => compile('SELECT COUNT(*) FROM HashgraphOASIS'), /HashgraphOASIS supports/);
 });
+
+test('rejects malformed Id literals before a drafted query can be opened', () => {
+  const id = 'B5D3F5A8-2539-4F94-9B12-AED841902CCB';
+  assert.equal(compile("SELECT * FROM HoloOASIS WHERE Id = '" + id + "'").body.filters[0].value, id);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Id IN ('" + id + "', 'customer-123')"),
+    /Expected a quoted GUID for Id/);
+});

@@ -87,6 +87,12 @@
         const token = tokens[index++];
         if (scalar === 'Integer') return integer(token, -2147483648, 2147483647);
         if (scalar === 'Boolean' && /^(true|false)$/i.test(token)) return token.toLowerCase() === 'true';
+        if (scalar === 'Guid') {
+          const value = token?.slice(1, -1);
+          if (!token?.startsWith("'") || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value))
+            throw new Error('Expected a quoted GUID for Id.');
+          return value;
+        }
         if (scalar !== 'Boolean' && token?.startsWith("'")) return token.slice(1, -1).replace(/''/g, "'");
         throw new Error('Expected a ' + scalar + ' literal.');
       }
