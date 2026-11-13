@@ -41,6 +41,18 @@ test('rejects unsupported statements, stacked statements and requests outside de
   ]) assert.throws(() => compile(text), Error, text);
 });
 
+test('compiles bounded descendant search alongside a direct child filter', () => {
+  const { body } = compile(
+    "SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (IsActive = TRUE) " +
+    "AND EXISTS DESCENDANT (Name = 'Coffee' OR Name = 'Tea') LIMIT 5"
+  );
+  assert.equal(body.anyChildren.length, 1);
+  assert.equal(body.anyDescendants.length, 1);
+  const [descendant] = body.anyDescendants;
+  assert.deepEqual([descendant.maximumDepth, descendant.maximumNodes], [8, 1000]);
+  assert.deepEqual(descendant.anyOf.map(filter => filter.value), ['Coffee', 'Tea']);
+});
+
 test('compiles a direct child existence predicate independently of the root filters', () => {
   const { body } = compile(
     "SELECT * FROM Neo4jOASIS WHERE IsActive = TRUE AND " +

@@ -6,7 +6,7 @@
     'Use SELECT * or SELECT COUNT(*) FROM MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.',
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, Name, Description, Version, IsActive, and metadata.category.',
-    'A top-level AND clause may require a matching direct child using EXISTS CHILD (filters). Child fields use the same rules.',
+    'A top-level AND clause may use EXISTS CHILD (filters) for direct children or EXISTS DESCENDANT (filters) for descendants within eight levels. Relationship fields use the same rules.',
     'Use single-quoted strings, integers, or TRUE/FALSE as appropriate. Use comparisons, IN, or CONTAINS.',
     'Combine filters with AND and at most one parenthesized OR group. Row queries may use ORDER BY Name, Version, or Id, LIMIT 1–100 and OFFSET.',
     'Example: SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (metadata.category = \'coffee\' OR metadata.category = \'tea\') ORDER BY Name LIMIT 5'

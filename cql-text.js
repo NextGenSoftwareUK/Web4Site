@@ -97,12 +97,18 @@
           while (accept('OR')) target.anyOf.push(filter());
           expect(')');
         } else if (allowChildren && accept('EXISTS')) {
-          expect('CHILD');
+          const descendant = accept('DESCENDANT');
+          if (!descendant) expect('CHILD');
           expect('(');
-          const child = { filters: [] };
-          predicates(child, false);
+          const relationship = { filters: [] };
+          predicates(relationship, false);
           expect(')');
-          (target.anyChildren ??= []).push(child);
+          if (descendant) {
+            Object.assign(relationship, { maximumDepth: 8, maximumNodes: 1000 });
+            (target.anyDescendants ??= []).push(relationship);
+          } else {
+            (target.anyChildren ??= []).push(relationship);
+          }
         } else {
           const predicate = filter();
           if (!allowChildren && !target.filters.length && !target.anyOf && accept('OR')) {
