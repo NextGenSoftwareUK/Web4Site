@@ -72,3 +72,12 @@ test('rejects a destructive model response and expires a valid draft on session 
   assert.match(app.node('ask-status').textContent, /session changed/);
   assert.deepEqual(app.opened, []);
 });
+
+test('shows a daily token allowance rejection without enabling a draft', async () => {
+  const app = setup(() => ({ ok: false, status: 429,
+    json: async () => ({ code: 'DAILY_TOKEN_LIMIT_EXCEEDED' }) }));
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent, /remaining daily AI token allowance/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.deepEqual(app.opened, []);
+});

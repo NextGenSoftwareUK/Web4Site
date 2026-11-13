@@ -53,6 +53,8 @@
         if (result.code === 'MEASUREMENT_REQUIRED')
           throw new Error('WEB6 could not confirm usage for this request. Reconciliation reference: ' +
             (result.operationId ?? response.headers.get('X-OASIS-Operation-Id') ?? requestKey));
+        if (result.code === 'DAILY_TOKEN_LIMIT_EXCEEDED')
+          throw new Error('Your remaining daily AI token allowance is too low for this draft. You can still write and run CQL in the Playground.');
         if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const text = (result.result ?? result).content?.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
