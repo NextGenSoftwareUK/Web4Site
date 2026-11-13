@@ -653,3 +653,18 @@ test('the displayed relationship example compiles to a bounded projection', () =
   assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
   assert.equal(body.take, 5);
 });
+
+test('a false ANY result is displayed as a Boolean outcome', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    assert.equal(JSON.parse(options.body).operation, 'Any');
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-scalar-v1', provider: 'Neo4jOASIS', operation: 'Any', valueType: 'Boolean', value: false
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT ANY(*) FROM Neo4jOASIS WHERE EXISTS CHILD (Version >= 2)');
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /Neo4jOASIS .* Any: false/);
+  assert.equal(h.elements.get('cql-results').children.length, 0);
+});
