@@ -94,6 +94,7 @@ function harness(fetcher, discover, setup = {}) {
   }
   const context = {
     TextEncoder, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto,
+    CqlText: require('./cql-text.js'),
     CqlDemoPreparation: require('./cql-demo-preparation.js'), localStorage: setup.storage,
     fetch: async (...args) => {
       const response = args[0].endsWith('/api/data/query-cql/providers?examplesVersion=2')
@@ -581,4 +582,26 @@ test('rejected preparation does not display the preceding query operation identi
   assert.equal(h.elements.get('cql-operation').textContent, '');
   assert.equal(calls, 1);
   assert.match(h.elements.get('cql-note').textContent, /preparation-key.*preparation-operation/);
+});
+
+test('loads the selected public subset into the SQL editor', async () => {
+  const provider = 'HoloOASIS';
+  const ids = ['b5d3f5a8-2539-4f94-9b12-aed841902ccb', 'ec251d38-c660-48dc-a558-dd3b5cae0bd2'];
+  const example = (id, value) => ({ id, label: id, operation: 'Rows', available: true, request: {
+    provider, orderBy: 'None', includeMetadata: true, take: 3,
+    filters: [{ field: 'Id', scalar: 'Guid', operator: 'In', value }]
+  } });
+  const h = harness(async () => { throw new Error('Loading a preset should not execute it'); },
+    async () => ({ ok: true, status: 200, json: async () => ({ result: [{
+      provider, available: true, queryOnly: true, federationAvailable: true,
+      examples: [example('public-records', ids), example('public-subset', ids.slice(1))]
+    }] }) }));
+  await h.ui.ready;
+  const select = h.elements.get('cql-preset');
+  select.value = 'host:public-subset';
+  select.listeners.change();
+  h.elements.get('cql-load-text-example').listeners.click();
+  const { body } = require('./cql-text.js').compile(h.elements.get('cql-text').value);
+  assert.deepEqual(body.filters[0].value, ids.slice(1));
+  assert.deepEqual(Array.from(h.ui.selectedPublicExample().request.filters[0].value), ids.slice(1));
 });
