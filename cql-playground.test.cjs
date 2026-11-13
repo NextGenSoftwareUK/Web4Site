@@ -623,3 +623,22 @@ test('selected columns render in request order as plain text', async () => {
   assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['Name', 'Version']);
   assert.deepEqual(rows.children[0].children.map(cell => cell.textContent), ['<b>Literal</b>', '0']);
 });
+
+test('empty relationship-filtered average displays the aggregate message', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    const request = JSON.parse(options.body);
+    assert.equal(request.operation, 'Average');
+    assert.equal(request.anyChildren[0].filters[0].field, 'Version');
+    assert.equal(request.anyDescendants[0].filters[0].field, 'IsActive');
+    return { ok: false, status: 503, json: async () => ({
+      isError: true, errorCode: 'CQL_EMPTY_SEQUENCE'
+    }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT AVG(Version) FROM Neo4jOASIS WHERE EXISTS CHILD (Version >= 2) AND EXISTS DESCENDANT (IsActive = TRUE)');
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(h.elements.get('cql-note').textContent, 'No records matched. This aggregate needs at least one value.');
+  assert.equal(h.elements.get('cql-results').children.length, 0);
+  assert.ok(h.elements.get('cql-response').textContent.includes('CQL_EMPTY_SEQUENCE'));
+});
