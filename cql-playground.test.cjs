@@ -605,3 +605,21 @@ test('loads the selected public subset into the SQL editor', async () => {
   assert.deepEqual(body.filters[0].value, ids.slice(1));
   assert.deepEqual(Array.from(h.ui.selectedPublicExample().request.filters[0].value), ids.slice(1));
 });
+
+test('selected columns render in request order as plain text', async () => {
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/projection$/);
+    assert.deepEqual(JSON.parse(options.body).columns.map(c => c.alias), ['Name', 'Version']);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-projection-v1', provider: 'MongoDBOASIS',
+      columns: [{ alias: 'Name' }, { alias: 'Version' }], rows: [['<b>Literal</b>', 0]]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT Name, Version FROM MongoDBOASIS LIMIT 1');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [head, rows] = table.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['Name', 'Version']);
+  assert.deepEqual(rows.children[0].children.map(cell => cell.textContent), ['<b>Literal</b>', '0']);
+});
