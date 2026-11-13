@@ -37,8 +37,16 @@ test('rejects unsupported statements, stacked statements and requests outside de
     'SELECT COUNT(*) FROM MongoDBOASIS, Neo4jOASIS',
     'SELECT * FROM MongoDBOASIS, MongoDBOASIS',
     'SELECT * FROM MongoDBOASIS LIMIT 101',
-    'SELECT * FROM MongoDBOASIS OFFSET 10001'
+    'SELECT * FROM MongoDBOASIS OFFSET 1001'
   ]) assert.throws(() => compile(text), Error, text);
+});
+
+test('enforces the WEB4 filter budget across root and relationship predicates', () => {
+  const prefix = 'SELECT * FROM MongoDBOASIS WHERE ';
+  const filters = Array(11).fill('IsActive = TRUE').join(' AND ');
+  assert.doesNotThrow(() => compile(prefix + filters + ' AND EXISTS CHILD (IsActive = TRUE) OFFSET 1000'));
+  assert.throws(() => compile(prefix + filters + " AND EXISTS CHILD (Name = 'a' OR Name = 'b')"), /twelve filters/);
+  assert.throws(() => compile(prefix + Array(5).fill('EXISTS CHILD (IsActive = TRUE)').join(' AND ')), /four relationship/);
 });
 
 test('compiles bounded descendant search alongside a direct child filter', () => {

@@ -130,9 +130,14 @@
       else accept('ASC');
     }
     if (!count && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
-    if (!count && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 10000);
+    if (!count && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
     accept(';');
     if (index !== tokens.length) throw new Error('Unexpected clause near token ' + (index + 1) + '.');
+    const relationships = [...(body.anyChildren ?? []), ...(body.anyDescendants ?? [])];
+    if (relationships.length > 4) throw new Error('Use at most four relationship predicates.');
+    const filterCount = [body, ...relationships].reduce(
+      (total, scope) => total + scope.filters.length + (scope.anyOf?.length ?? 0), 0);
+    if (filterCount > 12) throw new Error('Use at most twelve filters across the query.');
     if (count) body.operation = 'LongCount';
     if (selected.length > 1) {
       const { provider: _, skip, take, ...source } = body;
