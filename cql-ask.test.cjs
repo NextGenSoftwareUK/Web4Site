@@ -85,12 +85,13 @@ test('shows a daily token allowance rejection without enabling a draft', async (
 
 test('fills a question from the selected public example without contacting WEB6', () => {
   const app = setup(() => { throw new Error('Unexpected request'); }, {
-    provider: 'SolanaOASIS', request: { take: 3, filters: [
+    provider: 'SolanaOASIS', request: { take: 3, maximumDurationMilliseconds: 30000, filters: [
       { metadataPath: ['SolanaAccountAddress'], value: ['11111111111111111111111111111111'] }
     ] }
   });
   app.node('ask-use-example').click();
   assert.match(app.node('ask-question').value, /SolanaOASIS.*metadata.SolanaAccountAddress.*11111111111111111111111111111111/);
+  assert.match(app.node('ask-question').value, /query timeout of 30000 milliseconds/);
   assert.deepEqual(app.requests, []);
   assert.equal(app.node('ask-preview').disabled, true);
 });
