@@ -40,3 +40,15 @@ test('rejects unsupported statements, stacked statements and requests outside de
     'SELECT * FROM MongoDBOASIS OFFSET 10001'
   ]) assert.throws(() => compile(text), Error, text);
 });
+
+test('compiles a direct child existence predicate independently of the root filters', () => {
+  const { body } = compile(
+    "SELECT * FROM Neo4jOASIS WHERE IsActive = TRUE AND " +
+    "EXISTS CHILD (Version >= 2 AND (Name = 'Coffee' OR Name = 'Tea')) LIMIT 5"
+  );
+  assert.equal(body.filters[0].field, 'IsActive');
+  assert.equal(body.anyChildren.length, 1);
+  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
+  assert.deepEqual(body.anyChildren[0].anyOf.map(filter => filter.value), ['Coffee', 'Tea']);
+  assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (EXISTS CHILD (Version = 1))'));
+});

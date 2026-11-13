@@ -89,18 +89,26 @@
     const [provider] = selected;
     const body = { provider, filters: [], orderBy: 'Name', skip: 0 };
     if (!count) Object.assign(body, { take: 10, includeMetadata: true });
-    if (accept('WHERE')) {
+    function predicates(target, allowChildren) {
       do {
         if (accept('(')) {
-          if (body.anyOf) throw new Error('Use one parenthesized OR group.');
-          body.anyOf = [filter()];
-          while (accept('OR')) body.anyOf.push(filter());
+          if (target.anyOf) throw new Error('Use one parenthesized OR group per scope.');
+          target.anyOf = [filter()];
+          while (accept('OR')) target.anyOf.push(filter());
           expect(')');
+        } else if (allowChildren && accept('EXISTS')) {
+          expect('CHILD');
+          expect('(');
+          const child = { filters: [] };
+          predicates(child, false);
+          expect(')');
+          (target.anyChildren ??= []).push(child);
         } else {
-          body.filters.push(filter());
+          target.filters.push(filter());
         }
       } while (accept('AND'));
     }
+    if (accept('WHERE')) predicates(body, true);
     if (!count && accept('ORDER')) {
       expect('BY');
       const field = fields[tokens[index++]?.toLowerCase()]?.[0];
