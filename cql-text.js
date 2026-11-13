@@ -155,8 +155,12 @@
         const name = tokens[index++]?.toLowerCase();
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
         const [field] = fields[name];
-        if (columns.some(column => column.field === field)) throw new Error('Select each field once.');
-        columns.push({ field, alias: field });
+        const alias = accept('AS') ? tokens[index++] : field;
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
+          throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
+        if (columns.some(column => column.alias.toLowerCase() === alias.toLowerCase()))
+          throw new Error('Use a distinct alias for each selected column.');
+        columns.push({ field, alias });
       } while (accept(','));
     }
     if (operation) expect(')');

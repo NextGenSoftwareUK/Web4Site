@@ -277,6 +277,17 @@ test('compiles selected columns into the native projection endpoint', () => {
   assert.throws(() => compile('SELECT Id FROM Neo4jOASIS, MongoDBOASIS'), /Selected columns require one/);
 });
 
+test('preserves SQL column aliases in typed projections', () => {
+  const query = compile('SELECT Name AS DisplayName, Name AS Title, Id FROM MongoDBOASIS');
+  assert.deepEqual(query.body.columns, [
+    { field: 'Name', alias: 'DisplayName' },
+    { field: 'Name', alias: 'Title' },
+    { field: 'Id', alias: 'Id' }
+  ]);
+  assert.throws(() => compile('SELECT Name AS id, Id FROM MongoDBOASIS'), /distinct alias/);
+  assert.throws(() => compile('SELECT Name AS _private FROM MongoDBOASIS'), /Expected a column alias/);
+});
+
 test('compiles a Boolean existence query without counting or selecting rows', () => {
   const { path, body } = compile('SELECT ANY(*) FROM MongoDBOASIS WHERE EXISTS CHILD (Version >= 2)');
   assert.equal(path, 'data/query-cql/scalar');
