@@ -1,0 +1,75 @@
+(function (root) {
+  'use strict';
+
+  const instructions = [
+    'Translate the question into one read-only CQL statement. Output only the statement, or UNSUPPORTED.',
+    'Use SELECT * or SELECT COUNT(*) FROM MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.',
+    'WHERE accepts Id, Name, Description, Version, IsActive, and metadata.category.',
+    'Use single-quoted strings, integers, or TRUE/FALSE as appropriate. Use comparisons, IN, or CONTAINS.',
+    'Combine filters with AND and at most one parenthesized OR group. Row queries may use ORDER BY Name, Version, or Id, LIMIT 1–100 and OFFSET.',
+    'Example: SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (metadata.category = \'coffee\' OR metadata.category = \'tea\') ORDER BY Name LIMIT 5'
+  ].join('\n');
+
+  function init({ playground, isSandbox, getIdentity, ensureAccessToken }) {
+    const $ = id => document.getElementById(id);
+    const status = $('ask-status');
+    const generate = $('ask-generate');
+    const preview = $('ask-preview');
+    let draft;
+    $('cql-compile').addEventListener('click', () => {
+      try { playground.loadText($('cql-text').value); }
+      catch (error) { $('cql-note').textContent = error.message; }
+    });
+    generate.addEventListener('click', async () => {
+      const question = $('ask-question').value.trim();
+      if (!question || question.length > 1000 || !isSandbox()) {
+        status.textContent = 'Select WEB4 Development and enter a question of up to 1,000 characters.';
+        return;
+      }
+      const identity = getIdentity();
+      const current = () => isSandbox() && getIdentity() === identity;
+      draft = null;
+      preview.disabled = true;
+      generate.disabled = true;
+      $('ask-draft').textContent = '';
+      status.textContent = 'Drafting with WEB6…';
+      try {
+        const token = await ensureAccessToken();
+        if (!current() || !token) throw new Error('Sign in to the Development sandbox first.');
+        const response = await fetch('https://dev.api.web6.oasisomniverse.one/v1/complete', {
+          method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
+          headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
+            'Idempotency-Key': crypto.randomUUID() },
+          body: JSON.stringify({ messages: [{ role: 'system', content: instructions },
+            { role: 'user', content: question }], maxTokens: 350, temperature: 0,
+            useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
+        });
+        if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
+        const result = await response.json();
+        if (!current()) return;
+        const text = (result.result ?? result).content?.trim();
+        if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
+        root.CqlText.compile(text);
+        draft = { text, identity };
+        $('ask-draft').textContent = text;
+        preview.disabled = false;
+        status.textContent = 'Review the draft and open it in the Playground to run it.';
+      } catch (error) {
+        if (current()) status.textContent = error.message;
+      } finally {
+        if (!current()) status.textContent = 'The sandbox session changed. Draft a new query.';
+        generate.disabled = false;
+      }
+    });
+    preview.addEventListener('click', () => {
+      try {
+        if (!draft || !isSandbox() || getIdentity() !== draft.identity)
+          throw new Error('The sandbox session changed. Draft a new query.');
+        playground.loadText(draft.text);
+        $('cql-text').value = draft.text;
+        document.querySelector('[data-tab="cql"]').click();
+      } catch (error) { status.textContent = error.message; }
+    });
+  }
+  root.CqlAsk = { init };
+})(globalThis);

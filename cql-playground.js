@@ -409,7 +409,21 @@
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
     const ready = syncAuth();
-    return { syncAuth, ready };
+    function loadText(text) {
+      if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
+      const query = root.CqlText.compile(text);
+      const source = sources?.find(row => row.provider === query.body.provider);
+      if (!source?.available) throw new Error('This provider is unavailable on the selected WEB4 host.');
+      $('cql-provider').value = query.body.provider;
+      chooseProvider();
+      preparation = null;
+      endpoint = query.path;
+      $('cql-endpoint').textContent = 'POST /api/' + endpoint;
+      $('cql-request').value = JSON.stringify(query.body, null, 2);
+      note('Review the compiled request, then run it on WEB4.');
+      controls();
+    }
+    return { syncAuth, ready, loadText };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
