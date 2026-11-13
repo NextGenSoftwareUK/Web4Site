@@ -80,8 +80,11 @@
         }
         scalar = 'String';
         if (accept('AS')) {
-          expect('UINT64');
-          scalar = 'UInt64';
+          if (accept('BOOLEAN')) scalar = 'Boolean';
+          else {
+            expect('UINT64');
+            scalar = 'UInt64';
+          }
         }
       } else {
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown filter field.');

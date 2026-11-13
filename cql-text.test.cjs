@@ -287,3 +287,10 @@ test('compiles a Boolean existence query without counting or selecting rows', ()
   assert.throws(() => compile('SELECT ANY(Version) FROM MongoDBOASIS'), /Expected/);
   assert.throws(() => compile('SELECT ANY(*) FROM MongoDBOASIS, Neo4jOASIS'), /single provider/);
 });
+
+test('compiles explicitly typed Boolean metadata without coercing strings', () => {
+  const { body } = compile('SELECT * FROM MongoDBOASIS WHERE metadata.flags.active AS BOOLEAN IN (TRUE, FALSE)');
+  assert.deepEqual(body.filters, [{ metadataPath: ['flags', 'active'], scalar: 'Boolean', operator: 'In', value: [true, false] }]);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE metadata.active AS BOOLEAN = 'true'"), /Boolean literal/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata.active AS BOOLEAN > TRUE'), /Ordered comparisons/);
+});
