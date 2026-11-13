@@ -94,3 +94,24 @@ test('fills a question from the selected public example without contacting WEB6'
   assert.deepEqual(app.requests, []);
   assert.equal(app.node('ask-preview').disabled, true);
 });
+
+test('editing a question discards completed and in-flight drafts', async () => {
+  const reply = { ok: true, json: async () => ({ result: { content: 'SELECT * FROM MongoDBOASIS' } }) };
+  let finish;
+  const app = setup(() => new Promise(resolve => { finish = resolve; }));
+  const first = app.node('ask-generate').click();
+  await new Promise(resolve => setImmediate(resolve));
+  finish(reply);
+  await first;
+  assert.equal(app.node('ask-preview').disabled, false);
+  app.node('ask-question').input();
+  assert.equal(app.node('ask-preview').disabled, true);
+
+  const second = app.node('ask-generate').click();
+  await new Promise(resolve => setImmediate(resolve));
+  app.node('ask-question').input();
+  finish(reply);
+  await second;
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.equal(app.node('ask-draft').textContent, '');
+});

@@ -24,6 +24,19 @@
     const generate = $('ask-generate');
     const preview = $('ask-preview');
     let draft;
+    const questionInput = $('ask-question');
+    let questionVersion = 0;
+
+    function clearDraft() {
+      questionVersion++;
+      draft = null;
+      preview.disabled = true;
+      $('ask-draft').textContent = '';
+    }
+    questionInput.addEventListener('input', () => {
+      clearDraft();
+      status.textContent = '';
+    });
     $('cql-compile').addEventListener('click', () => {
       try { playground.loadText($('cql-text').value); }
       catch (error) { $('cql-note').textContent = error.message; }
@@ -37,22 +50,23 @@
         const field = filter.field ?? 'metadata.' + filter.metadataPath[0];
         const question = `Show up to ${request.take} public records from ${provider} with ${field} matching any of these keys: ${filter.value.join(', ')}.`;
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
-        $('ask-question').value = question;
+        clearDraft();
+        questionInput.value = question;
         status.textContent = 'Review the question, then select Draft query.';
       } catch (error) { status.textContent = error.message; }
     });
     generate.addEventListener('click', async () => {
-      const question = $('ask-question').value.trim();
+      const question = questionInput.value.trim();
       if (!question || question.length > 1000 || !isSandbox()) {
         status.textContent = 'Select WEB4 Development and enter a question of up to 1,000 characters.';
         return;
       }
       const identity = getIdentity();
-      const current = () => isSandbox() && getIdentity() === identity;
-      draft = null;
-      preview.disabled = true;
+      const sameSession = () => isSandbox() && getIdentity() === identity;
+      clearDraft();
+      const version = questionVersion;
+      const current = () => sameSession() && version === questionVersion;
       generate.disabled = true;
-      $('ask-draft').textContent = '';
       status.textContent = 'Drafting with WEB6…';
       let requestKey;
       try {
@@ -85,7 +99,7 @@
       } catch (error) {
         if (current()) status.textContent = error.message;
       } finally {
-        if (!current()) status.textContent = 'The sandbox session changed. Draft a new query.';
+        if (!sameSession()) status.textContent = 'The sandbox session changed. Draft a new query.';
         generate.disabled = false;
       }
     });
