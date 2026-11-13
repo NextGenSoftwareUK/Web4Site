@@ -24,7 +24,7 @@
       /^[a-z1-5.]{1,12}(?:[a-j1-5.])?$/.test(value) && !value.endsWith('.') }
   };
   const fields = { id: ['Id', 'Guid'], name: ['Name', 'String'],
-    description: ['Description', 'String'], version: ['Version', 'Integer'],
+    parentholonid: ['ParentHolonId', 'Guid'], description: ['Description', 'String'], version: ['Version', 'Integer'],
     isactive: ['IsActive', 'Boolean'] };
   const comparisons = { '=': 'Equal', '<>': 'NotEqual', '!=': 'NotEqual',
     '<': 'LessThan', '<=': 'LessThanOrEqual', '>': 'GreaterThan',
@@ -99,7 +99,7 @@
         if (scalar === 'Guid') {
           const value = token?.slice(1, -1);
           if (!token?.startsWith("'") || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value))
-            throw new Error('Expected a quoted GUID for Id.');
+            throw new Error('Expected a quoted GUID for the selected field.');
           return value;
         }
         if (scalar === 'String' && token?.startsWith("'")) {

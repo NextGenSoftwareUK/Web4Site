@@ -228,7 +228,7 @@ test('rejects malformed Id literals before a drafted query can be opened', () =>
   const id = 'B5D3F5A8-2539-4F94-9B12-AED841902CCB';
   assert.equal(compile("SELECT * FROM HoloOASIS WHERE Id = '" + id + "'").body.filters[0].value, id);
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Id IN ('" + id + "', 'customer-123')"),
-    /Expected a quoted GUID for Id/);
+    /Expected a quoted GUID/);
 });
 
 test('rejects filters WEB4 cannot compile before opening a draft', () => {
@@ -248,4 +248,11 @@ test('keeps typed UInt64 metadata literals exact in WEB4 requests', () => {
     /unsigned 64-bit/);
   assert.throws(() => compile('SELECT * FROM SQLLiteDBOASIS WHERE metadata.Sequence AS UINT64 = -1'),
     /unsigned 64-bit/);
+});
+
+test('compiles direct parent IDs as exact GUID membership', () => {
+  const parent = 'fd184f58-4317-4e21-896b-2f908248e12c';
+  const { body } = compile("SELECT * FROM MongoDBOASIS, SQLLiteDBOASIS, Neo4jOASIS WHERE ParentHolonId IN ('" + parent + "') LIMIT 5");
+  assert.deepEqual(body.source.filters, [{ field: 'ParentHolonId', scalar: 'Guid', operator: 'In', value: [parent] }]);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE ParentHolonId = 'invalid'"), /quoted GUID/);
 });
