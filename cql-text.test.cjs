@@ -195,5 +195,17 @@ test('preserves a public example deadline and supports explicit bounded query ti
 });
 
 test('rejects a timeout on the scalar COUNT route', () => {
-  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS TIMEOUT 8000'), /COUNT uses the server timeout/);
+  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS TIMEOUT 8000'), /Scalar queries use the server timeout/);
+});
+
+test('compiles native numeric aggregates over Version', () => {
+  for (const [fn, operation] of [['MIN','Min'],['MAX','Max'],['SUM','Sum'],['AVG','Average']]) {
+    const { path, body } = compile(`SELECT ${fn}(Version) FROM MongoDBOASIS WHERE IsActive = TRUE`);
+    assert.equal(path, 'data/query-cql/scalar');
+    assert.equal(body.operation, operation);
+    assert.deepEqual(body.selection, { field: 'Version' });
+    assert.equal(body.includeMetadata, undefined);
+  }
+  assert.throws(() => compile('SELECT SUM(Name) FROM MongoDBOASIS'));
+  assert.throws(() => compile('SELECT AVG(Version) FROM MongoDBOASIS, Neo4jOASIS'));
 });

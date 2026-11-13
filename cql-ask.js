@@ -3,7 +3,7 @@
 
   const instructions = [
     'Translate the question into one read-only CQL statement. Output only the statement, or UNSUPPORTED.',
-    'Use SELECT * or SELECT COUNT(*) FROM MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.',
+    'MongoDBOASIS, SQLLiteDBOASIS, and Neo4jOASIS support SELECT *, SELECT COUNT(*), MIN(Version), MAX(Version), SUM(Version), and AVG(Version). Scalar queries use one database and no TIMEOUT.',
     'HoloOASIS supports SELECT * with optional Id equality or IN, LIMIT and OFFSET. Use IDs supplied by the user. Do not invent IDs or use other filters, COUNT, or ORDER BY with HoloOASIS.',
     'SolanaOASIS supports SELECT * with optional metadata.SolanaAccountAddress equality or IN, LIMIT and OFFSET. Use addresses supplied by the user. Do not invent addresses or use other filters, COUNT, or ORDER BY with SolanaOASIS.',
     'EthereumOASIS, PolygonOASIS, and ArbitrumOASIS support SELECT * with LIMIT and OFFSET and an optional equality or IN filter on their own metadata key: EthereumAccountAddress, PolygonAccountAddress, or ArbitrumAccountAddress. Use only addresses supplied by the user. Do not use COUNT, ORDER BY, or mix account networks.',

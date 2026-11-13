@@ -104,10 +104,13 @@
     }
 
     expect('SELECT');
-    const count = accept('COUNT');
-    if (count) expect('(');
-    expect('*');
-    if (count) expect(')');
+    const aggregates = { COUNT: 'LongCount', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
+    const operation = Object.hasOwn(aggregates, peek()) ? aggregates[tokens[index++].toUpperCase()] : null;
+    if (operation) expect('(');
+    const hasSelection = operation && operation !== 'LongCount';
+    if (hasSelection) expect('VERSION');
+    else expect('*');
+    if (operation) expect(')');
     expect('FROM');
     const selected = [];
     do {
@@ -116,12 +119,12 @@
       selected.push(provider);
       index++;
     } while (accept(','));
-    if (count && selected.length > 1) throw new Error('COUNT requires a single provider.');
+    if (operation && selected.length > 1) throw new Error('Scalar queries require a single provider.');
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
     const accountProviders = selected.filter(provider => Object.hasOwn(accountProfiles, provider));
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
-    if (!count) Object.assign(body, { take: 10, includeMetadata: true });
+    if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
     function predicates(target, allowChildren) {
       do {
         if (accept('(')) {
@@ -154,7 +157,7 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (!count && accept('ORDER')) {
+    if (!operation && accept('ORDER')) {
       expect('BY');
       const field = fields[tokens[index++]?.toLowerCase()]?.[0];
       if (!['Name', 'Version', 'Id'].includes(field)) throw new Error('Order by Name, Version, or Id.');
@@ -162,10 +165,10 @@
       if (accept('DESC')) body.descending = true;
       else accept('ASC');
     }
-    if (!count && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
-    if (!count && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
+    if (!operation && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
+    if (!operation && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
     if (accept('TIMEOUT')) {
-      if (count) throw new Error('TIMEOUT applies to row queries. COUNT uses the server timeout.');
+      if (operation) throw new Error('TIMEOUT applies to row queries. Scalar queries use the server timeout.');
       body.maximumDurationMilliseconds = integer(tokens[index++], 1, 30000);
     }
     accept(';');
@@ -175,7 +178,7 @@
     const filterCount = [body, ...relationships].reduce(
       (total, scope) => total + scope.filters.length + (scope.anyOf?.length ?? 0), 0);
     if (filterCount > 12) throw new Error('Use at most twelve filters across the query.');
-    if (holo && (count || body.orderBy !== 'None' || relationships.length ||
+    if (holo && (operation || body.orderBy !== 'None' || relationships.length ||
         [...body.filters, ...(body.anyOf ?? [])].some(item =>
           item.field !== 'Id' || !['Equal', 'In'].includes(item.operator)))) {
       throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
@@ -188,12 +191,13 @@
         const values = Array.isArray(filter.value) ? filter.value : [filter.value];
         return values.length > maximumKeys || values.some(value => !accepts(value));
       });
-      if (count || body.orderBy !== 'None' || relationships.length || invalidFilter) {
+      if (operation || body.orderBy !== 'None' || relationships.length || invalidFilter) {
         throw new Error(accountProvider + ' supports row queries with ' + key +
           ' equality or IN (up to ' + maximumKeys + ' keys), LIMIT, and OFFSET.');
       }
     }
-    if (count) body.operation = 'LongCount';
+    if (operation) body.operation = operation;
+    if (hasSelection) body.selection = { field: 'Version' };
     if (selected.length > 1) {
       const { provider: _, skip, take, maximumDurationMilliseconds, ...source } = body;
       return { path: 'data/query-cql/federation', body: {
@@ -203,7 +207,7 @@
         maximumProviderAttempts: selected.length, maximumDurationMilliseconds: maximumDurationMilliseconds ?? 5000
       } };
     }
-    return { path: count ? 'data/query-cql/scalar' : 'data/query-cql', body };
+    return { path: operation ? 'data/query-cql/scalar' : 'data/query-cql', body };
   }
 
   function publicExample(provider, request) {
