@@ -86,7 +86,10 @@
             { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
         });
-        const result = await response.json();
+        const result = await response.json().catch(error => {
+          if (error.name !== 'SyntaxError') throw error;
+          throw new Error('WEB6 returned an invalid response (HTTP ' + response.status + ').');
+        });
         if (!current()) return;
         if (result.code === 'MEASUREMENT_REQUIRED')
           throw new Error('WEB6 could not confirm usage for this request. Reconciliation reference: ' +

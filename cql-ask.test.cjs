@@ -116,3 +116,11 @@ test('editing a question discards completed and in-flight drafts', async () => {
   assert.equal(app.node('ask-preview').disabled, true);
   assert.equal(app.node('ask-draft').textContent, '');
 });
+
+test('reports the WEB6 HTTP status when the gateway returns a non-JSON response', async () => {
+  const app = setup(() => new Response('<html>Bad Gateway</html>', { status: 502 }));
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent, /WEB6 returned an invalid response [(]HTTP 502[)]/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.deepEqual(app.opened, []);
+});
