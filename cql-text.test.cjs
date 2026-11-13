@@ -298,6 +298,18 @@ test('preserves SQL column aliases in typed projections', () => {
   assert.throws(() => compile('SELECT Name AS _private FROM MongoDBOASIS'), /Expected a column alias/);
 });
 
+test('groups a filtered database query before paging result groups', () => {
+  const { path, body } = compile('SELECT Version AS Revision, COUNT(*) AS Total FROM MongoDBOASIS ' +
+    'WHERE IsActive = TRUE GROUP BY Version ORDER BY Total DESC LIMIT 2');
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.keys, [{ field: 'Version', alias: 'Revision' }]);
+  assert.deepEqual(body.columns, [{ alias: 'Revision', keyAlias: 'Revision' }, { alias: 'Total', operation: 'LongCount' }]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Total', descending: true }]);
+  assert.equal(body.resultTake, 2);
+  assert.equal(body.take, undefined);
+  assert.throws(() => compile('SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Name'), /matches GROUP BY/);
+});
+
 test('compiles a Boolean existence query without counting or selecting rows', () => {
   const { path, body } = compile('SELECT ANY(*) FROM MongoDBOASIS WHERE EXISTS CHILD (Version >= 2)');
   assert.equal(path, 'data/query-cql/scalar');

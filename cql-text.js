@@ -159,8 +159,20 @@
     if (hasSelection) expect('VERSION');
     else if (operation) expect('*');
     const columns = [];
+    let groupedCount;
     if (!operation && !accept('*')) {
       do {
+        if (accept('COUNT')) {
+          if (groupedCount) throw new Error('Select one grouped COUNT(*).');
+          expect('(');
+          expect('*');
+          expect(')');
+          expect('AS');
+          groupedCount = tokens[index++];
+          if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(groupedCount ?? ''))
+            throw new Error('Expected a column alias for COUNT(*).');
+          continue;
+        }
         const name = tokens[index++]?.toLowerCase();
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
         const [field] = fields[name];
@@ -221,6 +233,40 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
+    if (groupedCount) {
+      expect('GROUP');
+      expect('BY');
+      const groupField = fields[tokens[index++]?.toLowerCase()]?.[0];
+      if (columns.length !== 1 || columns[0].field !== groupField)
+        throw new Error('Select one field that matches GROUP BY and one COUNT(*).');
+      const [key] = columns;
+      if (key.alias.toLowerCase() === groupedCount.toLowerCase())
+        throw new Error('Use a distinct alias for each selected column.');
+      delete body.includeMetadata;
+      delete body.take;
+      const grouped = {
+        ...body,
+        keys: [key],
+        columns: [{ alias: key.alias, keyAlias: key.alias }, { alias: groupedCount, operation: 'LongCount' }],
+        maximumGroups: 100
+      };
+      if (accept('ORDER')) {
+        expect('BY');
+        const alias = [key.alias, groupedCount].find(value => value.toUpperCase() === peek());
+        if (!alias) throw new Error('Order grouped results by a selected column alias.');
+        index++;
+        const descending = accept('DESC');
+        if (!descending) accept('ASC');
+        grouped.resultOrder = [{ alias, descending }];
+      }
+      if (accept('LIMIT')) grouped.resultTake = integer(tokens[index++], 1, 100);
+      accept(';');
+      if (index !== tokens.length) throw new Error('Unexpected grouped query clause.');
+      const filterCount = body.filters.length + (body.anyOf?.length ?? 0);
+      if (body.anyChildren || body.anyDescendants || filterCount > 12)
+        throw new Error('Grouped queries support up to twelve filters on the source records.');
+      return { path: 'data/query-cql/grouped', body: grouped };
+    }
     if (!operation && accept('ORDER')) {
       expect('BY');
       const field = fields[tokens[index++]?.toLowerCase()]?.[0];
