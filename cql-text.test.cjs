@@ -276,3 +276,14 @@ test('compiles selected columns into the native projection endpoint', () => {
   assert.equal(Object.hasOwn(body, 'includeMetadata'), false);
   assert.throws(() => compile('SELECT Id FROM Neo4jOASIS, MongoDBOASIS'), /Selected columns require one/);
 });
+
+test('compiles a Boolean existence query without counting or selecting rows', () => {
+  const { path, body } = compile('SELECT ANY(*) FROM MongoDBOASIS WHERE EXISTS CHILD (Version >= 2)');
+  assert.equal(path, 'data/query-cql/scalar');
+  assert.equal(body.operation, 'Any');
+  assert.equal(body.selection, undefined);
+  assert.equal(body.take, undefined);
+  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
+  assert.throws(() => compile('SELECT ANY(Version) FROM MongoDBOASIS'), /Expected/);
+  assert.throws(() => compile('SELECT ANY(*) FROM MongoDBOASIS, Neo4jOASIS'), /single provider/);
+});

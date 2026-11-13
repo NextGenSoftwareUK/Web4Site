@@ -130,10 +130,10 @@
     }
 
     expect('SELECT');
-    const aggregates = { COUNT: 'LongCount', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
+    const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
     const operation = Object.hasOwn(aggregates, peek()) ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
-    const hasSelection = operation && operation !== 'LongCount';
+    const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
     if (hasSelection) expect('VERSION');
     else if (operation) expect('*');
     const columns = [];
