@@ -156,3 +156,16 @@ test('compiles network record lookups with their native metadata keys', () => {
     assert.throws(() => compile(`SELECT * FROM ${provider} WHERE Name = 'Example'`), new RegExp(provider + ' supports'));
   }
 });
+
+test('compiles Cosmos validators and Polkadot and TON block lookups', () => {
+  for (const [provider, key, value] of [
+    ['CosmosBlockChainOASIS', 'CosmosValidatorAddress', 'cosmosvaloper1' + 'a'.repeat(38)],
+    ['PolkadotOASIS', 'PolkadotBlockHash', '0x' + 'a'.repeat(64)],
+    ['TONOASIS', 'TonBlockRootHash', 'a'.repeat(43) + '=']
+  ]) {
+    const { body } = compile(`SELECT * FROM ${provider} WHERE metadata.${key} = '${value}' LIMIT 2`);
+    assert.equal(body.orderBy, 'None');
+    assert.deepEqual(body.filters, [{ metadataPath: [key], scalar: 'String', operator: 'Equal', value }]);
+    assert.throws(() => compile(`SELECT * FROM ${provider} WHERE Name = 'Example'`), new RegExp(provider + ' supports'));
+  }
+});
