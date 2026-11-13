@@ -179,8 +179,9 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="mono" id="cql-endpoint" style="margin-bottom:12px"></p>
       <details>
         <summary>Write a SQL-like CQL query</summary>
-        <label for="cql-text">Query</label>
-        <textarea id="cql-text" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
+        <p id="cql-text-help">Use SELECT * for rows or SELECT COUNT(*) for one provider. List multiple providers for a federated row query. Use EXISTS CHILD or EXISTS DESCENDANT to filter by related records.</p>
+          <label for="cql-text">Query</label>
+        <textarea id="cql-text" aria-describedby="cql-text-help" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
 WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = 'tea')
 ORDER BY Name LIMIT 10</textarea>
         <button type="button" id="cql-compile">Preview request</button>
@@ -1717,7 +1718,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>Ask Your Data</h2>
       <p>WEB6 drafts a read-only query from your question. Review it before running it on WEB4 Development.</p>
       <label for="ask-question">Question</label>
-      <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show up to five active coffee or tea records in MongoDB, ordered by name"></textarea>
+      <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show five active Neo4j records with a descendant named Coffee or Tea"></textarea>
       <button type="button" id="ask-generate">Draft query</button>
       <p id="ask-status" role="status" aria-live="polite"></p>
       <pre id="ask-draft"></pre>
@@ -2219,9 +2220,9 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-text.js?v=2"></script>
+<script src="cql-text.js?v=3"></script>
 <script src="cql-playground.js?v=cql-text-v2"></script>
-<script src="cql-ask.js?v=4"></script>
+<script src="cql-ask.js?v=5"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
 CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken });
