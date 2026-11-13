@@ -104,7 +104,13 @@
           expect(')');
           (target.anyChildren ??= []).push(child);
         } else {
-          target.filters.push(filter());
+          const predicate = filter();
+          if (!allowChildren && !target.filters.length && !target.anyOf && accept('OR')) {
+            target.anyOf = [predicate, filter()];
+            while (accept('OR')) target.anyOf.push(filter());
+            break;
+          }
+          target.filters.push(predicate);
         }
       } while (accept('AND'));
     }
