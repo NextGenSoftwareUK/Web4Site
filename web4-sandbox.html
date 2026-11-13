@@ -193,11 +193,11 @@ WHERE IsActive = TRUE
 ORDER BY Name LIMIT 5</code></pre>
         </details>
         <details>
-          <summary>Example grouping records by version</summary>
-          <pre><code id="cql-grouped-example">SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS
-GROUP BY Version
-HAVING Total &gt;= 2
-ORDER BY Version LIMIT 5</code></pre>
+          <summary>Example counting records by version and active status</summary>
+          <pre><code id="cql-grouped-example">SELECT Version, IsActive, COUNT(*) AS Total FROM MongoDBOASIS
+GROUP BY Version, IsActive
+HAVING Total &gt;= 1 AND Total &lt;= 9223372036854775807
+ORDER BY Total DESC, Version ASC, IsActive ASC LIMIT 5</code></pre>
         </details>
         <button type="button" id="cql-load-text-example" disabled>Load public example</button>
         <button type="button" id="cql-compile">Preview request</button>
