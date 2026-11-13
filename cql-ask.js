@@ -44,7 +44,7 @@
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
             'Idempotency-Key': requestKey },
           body: JSON.stringify({ messages: [{ role: 'system', content: instructions },
-            { role: 'user', content: question }], maxTokens: 350, temperature: 0,
+            { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
         });
         const result = await response.json();
