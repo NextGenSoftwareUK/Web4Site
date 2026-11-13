@@ -8,6 +8,7 @@
     'SolanaOASIS supports SELECT * with optional metadata.SolanaAccountAddress equality or IN, LIMIT and OFFSET. Use addresses supplied by the user. Do not invent addresses or use other filters, COUNT, or ORDER BY with SolanaOASIS.',
     'EthereumOASIS, PolygonOASIS, and ArbitrumOASIS support SELECT * with LIMIT and OFFSET and an optional equality or IN filter on their own metadata key: EthereumAccountAddress, PolygonAccountAddress, or ArbitrumAccountAddress. Use only addresses supplied by the user. Do not use COUNT, ORDER BY, or mix account networks.',
     'NEAROASIS and EOSIOOASIS support SELECT * with LIMIT and OFFSET and an optional equality or IN filter on metadata.NearAccountId or metadata.EOSIOAccountName respectively. Use only account names supplied by the user. Do not use COUNT or ORDER BY.',
+    'SOLIDOASIS, IPFSOASIS, and ActivityPubOASIS support SELECT * with LIMIT and OFFSET and equality or IN on metadata.SolidRecordId, metadata.IPFSRecordCid, or metadata.MastodonStatusId respectively. Use keys supplied by the user. Omit COUNT and ORDER BY.',
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, Name, Description, Version, IsActive, and metadata paths with up to four segments such as metadata.location.city. Metadata supports IS PRESENT and IS NULL.',
     'A top-level AND clause may use EXISTS CHILD (filters) for direct children or EXISTS DESCENDANT (filters) for descendants within eight levels. Relationship fields use the same rules.',

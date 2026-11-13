@@ -2,9 +2,12 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS'];
   const evmAddress = /^0x[0-9a-fA-F]{40}$/;
   const accountProfiles = {
+    SOLIDOASIS: { key: 'SolidRecordId', accepts: value => /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(value) },
+    IPFSOASIS: { key: 'IPFSRecordCid', accepts: value => /^[a-zA-Z0-9]{1,128}$/.test(value) },
+    ActivityPubOASIS: { key: 'MastodonStatusId', maximumKeys: 40, accepts: value => /^[0-9]{1,128}$/.test(value) },
     SolanaOASIS: { key: 'SolanaAccountAddress', accepts: value => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(value) },
     EthereumOASIS: { key: 'EthereumAccountAddress', accepts: value => evmAddress.test(value) },
     PolygonOASIS: { key: 'PolygonAccountAddress', accepts: value => evmAddress.test(value) },
@@ -171,16 +174,16 @@
       throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
     }
     for (const accountProvider of accountProviders) {
-      const { key, accepts } = accountProfiles[accountProvider];
+      const { key, accepts, maximumKeys = 8 } = accountProfiles[accountProvider];
       const invalidFilter = [...body.filters, ...(body.anyOf ?? [])].some(filter => {
         if (filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
             !['Equal', 'In'].includes(filter.operator)) return true;
         const values = Array.isArray(filter.value) ? filter.value : [filter.value];
-        return values.length > 8 || values.some(value => !accepts(value));
+        return values.length > maximumKeys || values.some(value => !accepts(value));
       });
       if (count || body.orderBy !== 'None' || relationships.length || invalidFilter) {
         throw new Error(accountProvider + ' supports row queries with ' + key +
-          ' equality or IN (up to eight accounts), LIMIT, and OFFSET.');
+          ' equality or IN (up to ' + maximumKeys + ' keys), LIMIT, and OFFSET.');
       }
     }
     if (count) body.operation = 'LongCount';

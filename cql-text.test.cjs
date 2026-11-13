@@ -143,3 +143,16 @@ test('compiles NEAR and EOS public lookups with their respective native account 
     assert.throws(() => compile(`SELECT * FROM ${provider} WHERE metadata.${key} = 'BAD'`), new RegExp(provider + ' supports'));
   }
 });
+
+test('compiles network record lookups with their native metadata keys', () => {
+  for (const [provider, key, value] of [
+    ['SOLIDOASIS', 'SolidRecordId', 'b5d3f5a8-2539-4f94-9b12-aed841902ccb'],
+    ['IPFSOASIS', 'IPFSRecordCid', 'bafkreigh2akiscaildc'],
+    ['ActivityPubOASIS', 'MastodonStatusId', '123456789']
+  ]) {
+    const { body } = compile(`SELECT * FROM ${provider} WHERE metadata.${key} = '${value}' LIMIT 2`);
+    assert.equal(body.orderBy, 'None');
+    assert.deepEqual(body.filters, [{ metadataPath: [key], scalar: 'String', operator: 'Equal', value }]);
+    assert.throws(() => compile(`SELECT * FROM ${provider} WHERE Name = 'Example'`), new RegExp(provider + ' supports'));
+  }
+});
