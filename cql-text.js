@@ -153,13 +153,16 @@
 
     expect('SELECT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
-    const operation = Object.hasOwn(aggregates, peek()) ? aggregates[tokens[index++].toUpperCase()] : null;
+    const startsWithAliasedCount = peek() === 'COUNT' && tokens[index + 4]?.toUpperCase() === 'AS';
+    const operation = !startsWithAliasedCount && Object.hasOwn(aggregates, peek())
+      ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
     if (hasSelection) expect('VERSION');
     else if (operation) expect('*');
     const columns = [];
     let groupedCount;
+    let countFirst = false;
     if (!operation && !accept('*')) {
       do {
         if (accept('COUNT')) {
@@ -168,6 +171,7 @@
           expect('*');
           expect(')');
           expect('AS');
+          countFirst = columns.length === 0;
           groupedCount = tokens[index++];
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(groupedCount ?? ''))
             throw new Error('Expected a column alias for COUNT(*).');
@@ -244,10 +248,12 @@
         throw new Error('Use a distinct alias for each selected column.');
       delete body.includeMetadata;
       delete body.take;
+      const resultColumns = [{ alias: key.alias, keyAlias: key.alias }, { alias: groupedCount, operation: 'LongCount' }];
+      if (countFirst) resultColumns.reverse();
       const grouped = {
         ...body,
         keys: [key],
-        columns: [{ alias: key.alias, keyAlias: key.alias }, { alias: groupedCount, operation: 'LongCount' }],
+        columns: resultColumns,
         maximumGroups: 100
       };
       if (accept('ORDER')) {
