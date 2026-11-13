@@ -82,6 +82,7 @@
         if (accept('AS')) {
           if (accept('BOOLEAN')) scalar = 'Boolean';
           else if (accept('DECIMAL')) scalar = 'Decimal';
+          else if (accept('DATETIME')) scalar = 'DateTime';
           else {
             expect('UINT64');
             scalar = 'UInt64';
@@ -96,6 +97,14 @@
       function literal() {
         const token = tokens[index++];
         if (scalar === 'Integer') return integer(token, -2147483648, 2147483647);
+        if (scalar === 'DateTime') {
+          const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,7})?Z'$/.exec(token ?? '');
+          const utcSeconds = match && new Date(match[1] + 'Z');
+          if (!utcSeconds || match[1].startsWith('0000') || !Number.isFinite(utcSeconds.getTime())
+              || utcSeconds.toISOString().slice(0, 19) !== match[1])
+            throw new Error('Expected a quoted UTC timestamp with up to seven fractional digits.');
+          return token.slice(1, -1);
+        }
         if (scalar === 'Decimal') {
           const match = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,28}))?$/.exec(token ?? '');
           if (!match || token.length > 31) throw new Error('Expected an exact decimal literal.');
@@ -135,8 +144,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
-      if (!['Integer', 'UInt64', 'Decimal'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64 or AS DECIMAL.');
+      if (!['Integer', 'UInt64', 'Decimal', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64, AS DECIMAL, or AS DATETIME.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };

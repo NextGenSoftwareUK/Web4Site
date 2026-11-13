@@ -277,6 +277,16 @@ test('compiles selected columns into the native projection endpoint', () => {
   assert.throws(() => compile('SELECT Id FROM Neo4jOASIS, MongoDBOASIS'), /Selected columns require one/);
 });
 
+test('preserves UTC timestamp precision in metadata filters', () => {
+  const filter = value => compile("SELECT * FROM MongoDBOASIS WHERE metadata.observedAt AS DATETIME >= '" + value + "'").body.filters[0];
+  assert.deepEqual(filter('2024-02-29T12:34:56.1234567Z'), {
+    metadataPath: ['observedAt'], scalar: 'DateTime', operator: 'GreaterThanOrEqual', value: '2024-02-29T12:34:56.1234567Z'
+  });
+  for (const value of ['2023-02-29T00:00:00Z', '0000-01-01T00:00:00Z', '2024-01-01T24:00:00Z',
+    '2024-01-01T00:00:00+00:00', '2024-01-01T00:00:00.12345678Z'])
+    assert.throws(() => filter(value), /quoted UTC timestamp/);
+});
+
 test('preserves SQL column aliases in typed projections', () => {
   const query = compile('SELECT Name AS DisplayName, Name AS Title, Id FROM MongoDBOASIS');
   assert.deepEqual(query.body.columns, [
