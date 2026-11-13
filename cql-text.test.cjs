@@ -119,3 +119,15 @@ test('compiles Ethereum public account lookups without ordering', () => {
   assert.deepEqual(query.body.filters, [{ metadataPath: ['EthereumAccountAddress'], scalar: 'String', operator: 'Equal', value: address }]);
   assert.throws(() => compile("SELECT * FROM EthereumOASIS WHERE metadata.EthereumAccountAddress = 'bad'"), /EthereumOASIS supports/);
 });
+
+test('compiles each EVM account lookup with its own native metadata key', () => {
+  const address = '0x' + 'a'.repeat(40);
+  for (const network of ['Polygon', 'Arbitrum']) {
+    const provider = network + 'OASIS';
+    const key = network + 'AccountAddress';
+    const { body } = compile(`SELECT * FROM MongoDBOASIS, ${provider} WHERE metadata.${key} IN ('${address}') LIMIT 2`);
+    assert.equal(body.source.orderBy, 'None');
+    assert.deepEqual(body.source.filters[0].metadataPath, [key]);
+    assert.throws(() => compile(`SELECT * FROM ${provider} WHERE metadata.EthereumAccountAddress = '${address}'`), new RegExp(provider + ' supports'));
+  }
+});
