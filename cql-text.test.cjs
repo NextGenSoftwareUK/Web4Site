@@ -370,3 +370,13 @@ test('groups by multiple fields and preserves the SELECT column order', () => {
   assert.deepEqual(body.columns.map(column => column.alias), ['Revision', 'Total', 'IsActive']);
   assert.throws(() => compile(base + ' GROUP BY Version, Version'), /matches GROUP BY/);
 });
+
+test('grouped HAVING compiles both inclusive range boundaries before paging', () => {
+  const { body } = compile('SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS ' +
+    'GROUP BY Version HAVING Total >= 2 AND total <= 10 ORDER BY Version LIMIT 5');
+  assert.deepEqual(body.resultFilters, [
+    { alias: 'Total', operator: 'GreaterThanOrEqual', value: '2' },
+    { alias: 'Total', operator: 'LessThanOrEqual', value: '10' }
+  ]);
+  assert.equal(body.resultTake, 5);
+});
