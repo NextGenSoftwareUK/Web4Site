@@ -192,6 +192,13 @@ WHERE IsActive = TRUE
   AND EXISTS DESCENDANT (IsActive = TRUE)
 ORDER BY Name LIMIT 5</code></pre>
         </details>
+        <details>
+          <summary>Example grouping records by version</summary>
+          <pre><code id="cql-grouped-example">SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS
+GROUP BY Version
+HAVING Total &gt;= 2
+ORDER BY Version LIMIT 5</code></pre>
+        </details>
         <button type="button" id="cql-load-text-example" disabled>Load public example</button>
         <button type="button" id="cql-compile">Preview request</button>
       </details>
