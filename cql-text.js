@@ -164,7 +164,10 @@
     }
     if (!count && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
     if (!count && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
-    if (accept('TIMEOUT')) body.maximumDurationMilliseconds = integer(tokens[index++], 1, 30000);
+    if (accept('TIMEOUT')) {
+      if (count) throw new Error('TIMEOUT applies to row queries. COUNT uses the server timeout.');
+      body.maximumDurationMilliseconds = integer(tokens[index++], 1, 30000);
+    }
     accept(';');
     if (index !== tokens.length) throw new Error('Unexpected clause near token ' + (index + 1) + '.');
     const relationships = [...(body.anyChildren ?? []), ...(body.anyDescendants ?? [])];

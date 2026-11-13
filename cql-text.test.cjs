@@ -193,3 +193,7 @@ test('preserves a public example deadline and supports explicit bounded query ti
   assert.equal(federation.source.maximumDurationMilliseconds, undefined);
   assert.throws(() => compile('SELECT * FROM MongoDBOASIS TIMEOUT 30001'));
 });
+
+test('rejects a timeout on the scalar COUNT route', () => {
+  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS TIMEOUT 8000'), /COUNT uses the server timeout/);
+});
