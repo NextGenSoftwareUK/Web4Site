@@ -34,13 +34,15 @@
       generate.disabled = true;
       $('ask-draft').textContent = '';
       status.textContent = 'Drafting with WEB6…';
+      let requestKey;
       try {
         const token = await ensureAccessToken();
         if (!current() || !token) throw new Error('Sign in to the Development sandbox first.');
+        requestKey = crypto.randomUUID();
         const response = await fetch('https://dev.api.web6.oasisomniverse.one/v1/complete', {
           method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
-            'Idempotency-Key': crypto.randomUUID() },
+            'Idempotency-Key': requestKey },
           body: JSON.stringify({ messages: [{ role: 'system', content: instructions },
             { role: 'user', content: question }], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
@@ -48,7 +50,8 @@
         const result = await response.json();
         if (!current()) return;
         if (result.code === 'MEASUREMENT_REQUIRED')
-          throw new Error('WEB6 could not confirm usage for this request. The draft is unavailable while WEB6 reconciles it.');
+          throw new Error('WEB6 could not confirm usage for this request. Reconciliation reference: ' +
+            (result.operationId ?? response.headers.get('X-OASIS-Operation-Id') ?? requestKey));
         if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const text = (result.result ?? result).content?.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
