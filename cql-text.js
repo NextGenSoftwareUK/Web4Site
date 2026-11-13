@@ -66,7 +66,8 @@
         if (value.length > 100) throw new Error('IN accepts up to 100 values.');
         return { ...selector, scalar, operator: 'In', value };
       }
-      const operator = comparisons[tokens[index++]?.toUpperCase()];
+      const comparison = tokens[index++]?.toUpperCase();
+      const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
       return { ...selector, scalar, operator, value: literal() };
     }
