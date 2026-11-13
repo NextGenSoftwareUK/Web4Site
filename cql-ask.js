@@ -10,6 +10,7 @@
     'NEAROASIS and EOSIOOASIS support SELECT * with LIMIT and OFFSET and an optional equality or IN filter on metadata.NearAccountId or metadata.EOSIOAccountName respectively. Use only account names supplied by the user. Do not use COUNT or ORDER BY.',
     'SOLIDOASIS, IPFSOASIS, and ActivityPubOASIS support SELECT * with LIMIT and OFFSET and equality or IN on metadata.SolidRecordId, metadata.IPFSRecordCid, or metadata.MastodonStatusId respectively. Use keys supplied by the user. Omit COUNT and ORDER BY.',
     'CosmosBlockChainOASIS, PolkadotOASIS, and TONOASIS support SELECT * with equality or IN on metadata.CosmosValidatorAddress, metadata.PolkadotBlockHash, or metadata.TonBlockRootHash respectively. Use keys supplied by the user, with LIMIT and OFFSET. Omit COUNT and ORDER BY.',
+    'TRONOASIS supports SELECT * with equality or IN on metadata.TronBlockHeight using quoted positive block heights supplied by the user. Omit COUNT and ORDER BY.',
     'HashgraphOASIS supports SELECT * with optional equality or IN on metadata.HederaAccountId, LIMIT and OFFSET. Use only account IDs supplied by the user. Omit COUNT and ORDER BY.',
     'Use TIMEOUT followed by milliseconds (1–30000) for row queries when requested. COUNT uses the server timeout.',
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',

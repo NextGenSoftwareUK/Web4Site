@@ -256,3 +256,14 @@ test('compiles direct parent IDs as exact GUID membership', () => {
   assert.deepEqual(body.source.filters, [{ field: 'ParentHolonId', scalar: 'Guid', operator: 'In', value: [parent] }]);
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE ParentHolonId = 'invalid'"), /quoted GUID/);
 });
+
+test('preserves TRON block heights and rejects noncanonical or overflowing keys', () => {
+  const sql = "SELECT * FROM TRONOASIS WHERE metadata.TronBlockHeight IN ('9007199254740993', '9223372036854775807')";
+  const { body } = compile(sql);
+  assert.equal(body.provider, 'TRONOASIS');
+  assert.equal(body.orderBy, 'None');
+  assert.deepEqual(body.filters[0].value, ['9007199254740993', '9223372036854775807']);
+  for (const height of ['0', '01', '9223372036854775808']) {
+    assert.throws(() => compile("SELECT * FROM TRONOASIS WHERE metadata.TronBlockHeight = '" + height + "'"), /TronBlockHeight/);
+  }
+});
