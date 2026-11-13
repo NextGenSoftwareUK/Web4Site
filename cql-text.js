@@ -202,7 +202,26 @@
     return { path: count ? 'data/query-cql/scalar' : 'data/query-cql', body };
   }
 
-  const api = { compile };
+  function publicExample(provider, request) {
+    const expectedKey = accountProfiles[provider]?.key;
+    const [filter] = request?.filters ?? [];
+    if (request?.provider !== provider || request.filters?.length !== 1 || filter?.operator !== 'In' ||
+        !Array.isArray(filter.value) || !filter.value.length || request.orderBy !== 'None' ||
+        request.anyOf?.length || request.anyChildren?.length || request.anyDescendants?.length || request.graph)
+      return null;
+    const field = provider === 'HoloOASIS' && filter.field === 'Id' && filter.scalar === 'Guid' ? 'Id'
+      : expectedKey && filter.metadataPath?.length === 1 && filter.metadataPath[0] === expectedKey &&
+        filter.scalar === 'String' ? 'metadata.' + expectedKey : null;
+    if (!field || filter.value.some(key => typeof key !== 'string') ||
+        !Number.isInteger(request.take) || request.take < 1 || request.take > 100 || request.skip)
+      return null;
+    const keys = filter.value.map(key => "'" + key.replace(/'/g, "''") + "'").join(', ');
+    const text = `SELECT * FROM ${provider} WHERE ${field} IN (${keys}) LIMIT ${request.take}`;
+    compile(text);
+    return text;
+  }
+
+  const api = { compile, publicExample };
   if (typeof module !== 'undefined') module.exports = api;
   else root.CqlText = api;
 })(globalThis);

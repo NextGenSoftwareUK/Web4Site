@@ -169,3 +169,14 @@ test('compiles Cosmos validators and Polkadot and TON block lookups', () => {
     assert.throws(() => compile(`SELECT * FROM ${provider} WHERE Name = 'Example'`), new RegExp(provider + ' supports'));
   }
 });
+
+test('renders a reviewed native public preset as editable SQL-like CQL', () => {
+  const { publicExample } = require('./cql-text.js');
+  const provider = 'SolanaOASIS';
+  const filter = { metadataPath: ['SolanaAccountAddress'], scalar: 'String', operator: 'In',
+    value: ['11111111111111111111111111111111'] };
+  const request = { provider, orderBy: 'None', take: 2, filters: [filter] };
+  assert.deepEqual(compile(publicExample(provider, request)).body.filters, [filter]);
+  assert.equal(publicExample(provider, { ...request, anyOf: [filter] }), null);
+  assert.equal(publicExample(provider, { ...request, provider: 'MongoDBOASIS' }), null);
+});

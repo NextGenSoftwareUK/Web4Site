@@ -186,6 +186,7 @@
     function controls() {
       const busy = controller !== null || preparing;
       const ready = sources !== null && endpoint !== '';
+      $('cql-load-text-example').disabled = busy || discovery !== null || !getToken() || !ready;
       $('cql-run').disabled = busy || discovery !== null || !getToken() || !ready;
       $('cql-cancel').disabled = controller === null;
       $('cql-preset').disabled = busy || !ready || discovery !== null;
@@ -409,6 +410,18 @@
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
     const ready = syncAuth();
+    $('cql-load-text-example').addEventListener('click', () => {
+      try {
+        const source = sources?.find(row => row.provider === $('cql-provider').value);
+        const example = source?.examples?.find(row => ['public-records', 'public-posts'].includes(row.id) &&
+          row.available !== false && row.operation !== 'Federation');
+        const text = source?.available && root.CqlText.publicExample(source.provider, example?.request);
+        if (!text) throw new Error('This provider has no SQL-like public example on this host.');
+        $('cql-text').value = text;
+        note('Review the SQL-like example, then preview its request.');
+      } catch (error) { note(error.message, true); }
+    });
+
     function loadText(text) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
       const query = root.CqlText.compile(text);

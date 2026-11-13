@@ -184,6 +184,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <textarea id="cql-text" aria-describedby="cql-text-help" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
 WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = 'tea')
 ORDER BY Name LIMIT 10</textarea>
+        <button type="button" id="cql-load-text-example" disabled>Load public example</button>
         <button type="button" id="cql-compile">Preview request</button>
       </details>
       <label for="cql-request">JSON query description</label>
