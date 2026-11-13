@@ -7,7 +7,7 @@
     'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider.',
     'WHERE accepts Id, Name, Description, Version, IsActive, and metadata.category.',
     'A top-level AND clause may use EXISTS CHILD (filters) for direct children or EXISTS DESCENDANT (filters) for descendants within eight levels. Relationship fields use the same rules.',
-    'Use single-quoted strings, integers, or TRUE/FALSE as appropriate. Use comparisons, IN, or CONTAINS.',
+    'Use single-quoted strings, integers, or TRUE/FALSE as appropriate. Use comparisons or IN. String fields also support CONTAINS, STARTSWITH, and ENDSWITH.',
     'Combine filters with AND and at most one parenthesized OR group. Row queries may use ORDER BY Name, Version, or Id, LIMIT 1–100 and OFFSET 0–1000. Use at most twelve filters and four relationship predicates.',
     'Example: SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (metadata.category = \'coffee\' OR metadata.category = \'tea\') ORDER BY Name LIMIT 5'
   ].join('\n');

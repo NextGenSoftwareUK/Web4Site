@@ -8,7 +8,8 @@
     isactive: ['IsActive', 'Boolean'] };
   const comparisons = { '=': 'Equal', '<>': 'NotEqual', '!=': 'NotEqual',
     '<': 'LessThan', '<=': 'LessThanOrEqual', '>': 'GreaterThan',
-    '>=': 'GreaterThanOrEqual', CONTAINS: 'Contains' };
+    '>=': 'GreaterThanOrEqual', CONTAINS: 'Contains',
+    STARTSWITH: 'StartsWith', ENDSWITH: 'EndsWith' };
 
   function compile(text) {
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
@@ -69,6 +70,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
+      if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
+        throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
     }
 

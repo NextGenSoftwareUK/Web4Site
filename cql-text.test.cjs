@@ -41,6 +41,12 @@ test('rejects unsupported statements, stacked statements and requests outside de
   ]) assert.throws(() => compile(text), Error, text);
 });
 
+test('compiles prefix and suffix matching only for string fields', () => {
+  const query = compile("SELECT * FROM MongoDBOASIS WHERE Name STARTSWITH 'Coffee' AND Name ENDSWITH 'Bar'");
+  assert.deepEqual(query.body.filters.map(filter => filter.operator), ['StartsWith', 'EndsWith']);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Version STARTSWITH 2"), /string field/);
+});
+
 test('enforces the WEB4 filter budget across root and relationship predicates', () => {
   const prefix = 'SELECT * FROM MongoDBOASIS WHERE ';
   const filters = Array(11).fill('IsActive = TRUE').join(' AND ');
