@@ -162,7 +162,7 @@
     else if (operation) expect('*');
     const columns = [];
     let groupedCount;
-    let countFirst = false;
+    let countIndex;
     if (!operation && !accept('*')) {
       do {
         if (accept('COUNT')) {
@@ -171,7 +171,7 @@
           expect('*');
           expect(')');
           expect('AS');
-          countFirst = columns.length === 0;
+          countIndex = columns.length;
           groupedCount = tokens[index++];
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(groupedCount ?? ''))
             throw new Error('Expected a column alias for COUNT(*).');
@@ -240,19 +240,25 @@
     if (groupedCount) {
       expect('GROUP');
       expect('BY');
-      const groupField = fields[tokens[index++]?.toLowerCase()]?.[0];
-      if (columns.length !== 1 || columns[0].field !== groupField)
-        throw new Error('Select one field that matches GROUP BY and one COUNT(*).');
-      const [key] = columns;
-      if (key.alias.toLowerCase() === groupedCount.toLowerCase())
+      const groupFields = [];
+      do {
+        const name = tokens[index++]?.toLowerCase();
+        if (!Object.hasOwn(fields, name)) throw new Error('Unknown GROUP BY field.');
+        groupFields.push(fields[name][0]);
+      } while (accept(','));
+      if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
+          !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
+        throw new Error('Select each field that matches GROUP BY once, along with COUNT(*).');
+      if (columns.some(column => column.alias.toLowerCase() === groupedCount.toLowerCase()))
         throw new Error('Use a distinct alias for each selected column.');
+      const keys = groupFields.map(field => columns.find(column => column.field === field));
       delete body.includeMetadata;
       delete body.take;
-      const resultColumns = [{ alias: key.alias, keyAlias: key.alias }, { alias: groupedCount, operation: 'LongCount' }];
-      if (countFirst) resultColumns.reverse();
+      const resultColumns = columns.map(({ alias }) => ({ alias, keyAlias: alias }));
+      resultColumns.splice(countIndex, 0, { alias: groupedCount, operation: 'LongCount' });
       const grouped = {
         ...body,
-        keys: [key],
+        keys,
         columns: resultColumns,
         maximumGroups: 100
       };
@@ -270,7 +276,7 @@
         expect('BY');
         grouped.resultOrder = [];
         do {
-          const alias = [key.alias, groupedCount].find(value => value.toUpperCase() === peek());
+          const alias = resultColumns.find(column => column.alias.toUpperCase() === peek())?.alias;
           if (!alias) throw new Error('Order grouped results by a selected column alias.');
           if (grouped.resultOrder.some(item => item.alias === alias))
             throw new Error('Use each grouped ordering alias only once.');

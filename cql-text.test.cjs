@@ -362,3 +362,11 @@ test('grouped paging accepts a second ordering alias as a tie-breaker', () => {
   assert.equal(body.resultSkip, 2);
   assert.throws(() => compile(query + 'ORDER BY Total, total'), /only once/);
 });
+
+test('groups by multiple fields and preserves the SELECT column order', () => {
+  const base = 'SELECT Version AS Revision, COUNT(*) AS Total, IsActive FROM SQLLiteDBOASIS';
+  const { body } = compile(base + ' GROUP BY IsActive, Version ORDER BY Total DESC, Revision ASC');
+  assert.deepEqual(body.keys.map(key => key.field), ['IsActive', 'Version']);
+  assert.deepEqual(body.columns.map(column => column.alias), ['Revision', 'Total', 'IsActive']);
+  assert.throws(() => compile(base + ' GROUP BY Version, Version'), /matches GROUP BY/);
+});
