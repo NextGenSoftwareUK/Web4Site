@@ -336,3 +336,18 @@ test('preserves exact decimal metadata literals without binary rounding', () => 
     assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata.amount AS DECIMAL = ' + literal), /exact decimal/);
   }
 });
+
+test('grouped HAVING preserves large count thresholds and pages after filtering', () => {
+  const query = 'SELECT COUNT(*) AS Total, Version FROM Neo4jOASIS GROUP BY Version HAVING ';
+  const { body } = compile(query + 'total >= 9007199254740993 ORDER BY Version LIMIT 1 OFFSET 2');
+  assert.deepEqual(body.columns.map(column => column.alias), ['Total', 'Version']);
+  assert.deepEqual(body.resultFilters, [
+    { alias: 'Total', operator: 'GreaterThanOrEqual', value: '9007199254740993' }
+  ]);
+  assert.equal(body.resultSkip, 2);
+  assert.equal(body.resultTake, 1);
+  assert.equal(body.skip, 0);
+  assert.equal(body.take, undefined);
+  assert.throws(() => compile(query + 'Total >= 9223372036854775808'), /64-bit/);
+  assert.throws(() => compile(query + 'Version = 1'), /alias/);
+});
