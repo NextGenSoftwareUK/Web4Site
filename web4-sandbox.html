@@ -179,7 +179,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="mono" id="cql-endpoint" style="margin-bottom:12px"></p>
       <details id="cql-text-editor">
         <summary>Write a SQL-like CQL query</summary>
-        <p id="cql-text-help">Use SELECT * for rows or SELECT COUNT(*) for one provider. List multiple providers for a federated row query. Use EXISTS CHILD or EXISTS DESCENDANT to filter by related records. Test nested metadata with <code>metadata.location.city IS PRESENT</code> or <code>metadata.location.zip IS NULL</code>.</p>
+        <p id="cql-text-help">Use SELECT * for rows or SELECT COUNT(*) for one provider. List multiple providers for a federated row query. Use EXISTS CHILD or EXISTS DESCENDANT to filter by related records. TIMEOUT sets the query budget in milliseconds (up to 30,000). Test nested metadata with <code>metadata.location.city IS PRESENT</code> or <code>metadata.location.zip IS NULL</code>.</p>
           <label for="cql-text">Query</label>
         <textarea id="cql-text" aria-describedby="cql-text-help" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
 WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = 'tea')

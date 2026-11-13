@@ -164,6 +164,7 @@
     }
     if (!count && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
     if (!count && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
+    if (accept('TIMEOUT')) body.maximumDurationMilliseconds = integer(tokens[index++], 1, 30000);
     accept(';');
     if (index !== tokens.length) throw new Error('Unexpected clause near token ' + (index + 1) + '.');
     const relationships = [...(body.anyChildren ?? []), ...(body.anyDescendants ?? [])];
@@ -191,12 +192,12 @@
     }
     if (count) body.operation = 'LongCount';
     if (selected.length > 1) {
-      const { provider: _, skip, take, ...source } = body;
+      const { provider: _, skip, take, maximumDurationMilliseconds, ...source } = body;
       return { path: 'data/query-cql/federation', body: {
         scope: 'Named', providers: selected, source: { ...source, skip: 0, take: 100 },
         identityMode: 'PreserveCopies', skip, take, maximumInputRows: 300, maximumRowsPerProvider: 100,
         maximumInputBytes: 4194304, maximumOutputBytes: 1048576, maximumWork: 100000,
-        maximumProviderAttempts: selected.length, maximumDurationMilliseconds: 5000
+        maximumProviderAttempts: selected.length, maximumDurationMilliseconds: maximumDurationMilliseconds ?? 5000
       } };
     }
     return { path: count ? 'data/query-cql/scalar' : 'data/query-cql', body };
@@ -216,7 +217,7 @@
         !Number.isInteger(request.take) || request.take < 1 || request.take > 100 || request.skip)
       return null;
     const keys = filter.value.map(key => "'" + key.replace(/'/g, "''") + "'").join(', ');
-    const text = `SELECT * FROM ${provider} WHERE ${field} IN (${keys}) LIMIT ${request.take}`;
+    const text = `SELECT * FROM ${provider} WHERE ${field} IN (${keys}) LIMIT ${request.take}${request.maximumDurationMilliseconds ? ' TIMEOUT ' + request.maximumDurationMilliseconds : ''}`;
     compile(text);
     return text;
   }

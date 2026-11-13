@@ -180,3 +180,14 @@ test('renders a reviewed native public preset as editable SQL-like CQL', () => {
   assert.equal(publicExample(provider, { ...request, anyOf: [filter] }), null);
   assert.equal(publicExample(provider, { ...request, provider: 'MongoDBOASIS' }), null);
 });
+
+test('preserves a public example deadline and supports explicit bounded query timeouts', () => {
+  const { publicExample } = require('./cql-text.js');
+  const request = { provider: 'HoloOASIS', orderBy: 'None', take: 3, maximumDurationMilliseconds: 30000,
+    filters: [{ field: 'Id', scalar: 'Guid', operator: 'In', value: ['b5d3f5a8-2539-4f94-9b12-aed841902ccb'] }] };
+  assert.equal(compile(publicExample(request.provider, request)).body.maximumDurationMilliseconds, 30000);
+  const federation = compile('SELECT * FROM MongoDBOASIS, Neo4jOASIS LIMIT 2 TIMEOUT 12000').body;
+  assert.equal(federation.maximumDurationMilliseconds, 12000);
+  assert.equal(federation.source.maximumDurationMilliseconds, undefined);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS TIMEOUT 30001'));
+});
