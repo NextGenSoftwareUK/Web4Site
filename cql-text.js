@@ -153,28 +153,30 @@
 
     expect('SELECT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
-    const startsWithAliasedCount = peek() === 'COUNT' && tokens[index + 4]?.toUpperCase() === 'AS';
-    const operation = !startsWithAliasedCount && Object.hasOwn(aggregates, peek())
+    const startsWithAliasedAggregate = peek() !== 'ANY' && tokens[index + 4]?.toUpperCase() === 'AS';
+    const operation = !startsWithAliasedAggregate && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
     if (hasSelection) expect('VERSION');
     else if (operation) expect('*');
     const columns = [];
-    let groupedCount;
-    let countIndex;
+    const groupedAggregates = [];
     if (!operation && !accept('*')) {
       do {
-        if (accept('COUNT')) {
-          if (groupedCount) throw new Error('Select one grouped COUNT(*).');
+        if (peek() !== 'ANY' && Object.hasOwn(aggregates, peek())) {
+          const aggregate = aggregates[tokens[index++].toUpperCase()];
           expect('(');
-          expect('*');
+          const isCount = aggregate === 'LongCount';
+          expect(isCount ? '*' : 'VERSION');
           expect(')');
           expect('AS');
-          countIndex = columns.length;
-          groupedCount = tokens[index++];
-          if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(groupedCount ?? ''))
-            throw new Error('Expected a column alias for COUNT(*).');
+          const alias = tokens[index++];
+          if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
+            throw new Error('Expected a column alias for the grouped aggregate.');
+          const binding = { alias, operation: aggregate };
+          if (!isCount) binding.selection = { field: 'Version' };
+          groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
         const name = tokens[index++]?.toLowerCase();
@@ -197,7 +199,7 @@
       selected.push(provider);
       index++;
     } while (accept(','));
-    if (columns.length && (selected.length !== 1 || !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(selected[0])))
+    if ((columns.length || groupedAggregates.length) && (selected.length !== 1 || !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(selected[0])))
       throw new Error('Selected columns require one of MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.');
     if (operation && selected.length > 1) throw new Error('Scalar queries require a single provider.');
     const [provider] = selected;
@@ -237,7 +239,7 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (groupedCount) {
+    if (groupedAggregates.length) {
       expect('GROUP');
       expect('BY');
       const groupFields = [];
@@ -248,14 +250,15 @@
       } while (accept(','));
       if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
           !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
-        throw new Error('Select each field that matches GROUP BY once, along with COUNT(*).');
-      if (columns.some(column => column.alias.toLowerCase() === groupedCount.toLowerCase()))
-        throw new Error('Use a distinct alias for each selected column.');
+        throw new Error('Select each field that matches GROUP BY once, along with an aggregate.');
       const keys = groupFields.map(field => columns.find(column => column.field === field));
       delete body.includeMetadata;
       delete body.take;
       const resultColumns = columns.map(({ alias }) => ({ alias, keyAlias: alias }));
-      resultColumns.splice(countIndex, 0, { alias: groupedCount, operation: 'LongCount' });
+      for (const { index, binding } of groupedAggregates) resultColumns.splice(index, 0, binding);
+      if (new Set(resultColumns.map(column => column.alias.toLowerCase())).size !== resultColumns.length)
+        throw new Error('Use a distinct alias for each selected column.');
+      if (resultColumns.length > 32) throw new Error('Use at most 32 grouped result columns.');
       const grouped = {
         ...body,
         keys,
@@ -265,14 +268,16 @@
       if (accept('HAVING')) {
         grouped.resultFilters = [];
         do {
-          if (peek() !== groupedCount.toUpperCase()) throw new Error('HAVING must name the COUNT(*) alias.');
+          const count = groupedAggregates.find(({ binding }) =>
+            binding.operation === 'LongCount' && binding.alias.toUpperCase() === peek());
+          if (!count) throw new Error('HAVING must name the COUNT(*) alias.');
           index++;
           const comparison = tokens[index++];
           const value = tokens[index++];
           if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison) ||
               !/^(0|[1-9][0-9]{0,18})$/.test(value ?? '') || BigInt(value) > 9223372036854775807n)
             throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
-          grouped.resultFilters.push({ alias: groupedCount, operator: comparisons[comparison], value });
+          grouped.resultFilters.push({ alias: count.binding.alias, operator: comparisons[comparison], value });
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');
         } while (accept('AND'));
       }

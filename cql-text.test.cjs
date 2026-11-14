@@ -380,3 +380,15 @@ test('grouped HAVING compiles both inclusive range boundaries before paging', ()
   ]);
   assert.equal(body.resultTake, 5);
 });
+
+test('preserves grouped numeric aggregates and counts in SELECT order', () => {
+  const { body } = compile('SELECT AVG(Version) AS Mean, IsActive, COUNT(*) AS Total, ' +
+    'MAX(Version) AS Latest FROM Neo4jOASIS GROUP BY IsActive HAVING Total >= 1 ORDER BY Mean DESC');
+  assert.deepEqual(body.columns, [
+    { alias: 'Mean', operation: 'Average', selection: { field: 'Version' } },
+    { alias: 'IsActive', keyAlias: 'IsActive' },
+    { alias: 'Total', operation: 'LongCount' },
+    { alias: 'Latest', operation: 'Max', selection: { field: 'Version' } }
+  ]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Mean', descending: true }]);
+});
