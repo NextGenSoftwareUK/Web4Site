@@ -56,7 +56,10 @@
         const filter = request.filters[0];
         const field = filter.field ?? 'metadata.' + filter.metadataPath[0];
         const timeout = request.maximumDurationMilliseconds;
-        const question = `Show up to ${request.take} public records from ${provider} with ${field} matching any of these keys: ${[].concat(filter.value).join(', ')}.` +
+        const predicate = filter.operator === 'Equal'
+        ? `${field} exactly equal to ${JSON.stringify(filter.value)}`
+        : `${field} matching any of these keys: ${[].concat(filter.value).map(value => JSON.stringify(value)).join(', ')}`;
+      const question = `Show up to ${request.take} public records from ${provider} with ${predicate}.` +
           (timeout ? ` Use a query timeout of ${timeout} milliseconds.` : '');
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
         clearDraft();

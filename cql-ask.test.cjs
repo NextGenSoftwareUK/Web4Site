@@ -187,7 +187,7 @@ test('fills an exact-key public question without calling WEB6', () => {
     request: { take: 1, filters: [{ field: 'Id', operator: 'Equal', value: key }] }
   });
   app.node('ask-use-example').click();
-  assert.match(app.node('ask-question').value, new RegExp('HoloOASIS.*Id.*' + key));
+  assert.match(app.node('ask-question').value, new RegExp('HoloOASIS.*Id exactly equal to "' + key + '"'));
   assert.deepEqual(app.requests, []);
   assert.equal(app.node('ask-preview').disabled, true);
 });
