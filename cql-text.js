@@ -353,13 +353,32 @@
         throw new Error('Grouped queries support up to twelve filters on the source records.');
       return { path: 'data/query-cql/grouped', body: grouped };
     }
+    let selectedOrder;
     if (!operation && accept('ORDER')) {
       expect('BY');
-      const field = fields[tokens[index++]?.toLowerCase()]?.[0];
-      if (!['Name', 'Version', 'Id'].includes(field)) throw new Error('Order by Name, Version, or Id.');
-      body.orderBy = field;
-      if (accept('DESC')) body.descending = true;
-      else accept('ASC');
+      const order = [];
+      do {
+        const name = tokens[index++];
+        const descending = accept('DESC');
+        if (!descending) accept('ASC');
+        order.push({ name, descending });
+      } while (accept(','));
+      if (order.length > 1) {
+        if (!columns.length || order.length > 8)
+          throw new Error('Multi-column ORDER BY requires selected columns and up to eight sort keys.');
+        selectedOrder = order.map(({ name, descending }) => {
+          const column = columns.find(item => item.alias.toLowerCase() === name?.toLowerCase());
+          if (!column) throw new Error('Order by selected column aliases.');
+          return { alias: column.alias, descending };
+        });
+        if (new Set(selectedOrder.map(item => item.alias)).size !== selectedOrder.length)
+          throw new Error('Use each selected ordering alias only once.');
+      } else {
+        const field = fields[order[0].name?.toLowerCase()]?.[0];
+        if (!['Name', 'Version', 'Id'].includes(field)) throw new Error('Order by Name, Version, or Id.');
+        body.orderBy = field;
+        if (order[0].descending) body.descending = true;
+      }
     }
     if (!operation && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
     if (!operation && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
@@ -395,6 +414,14 @@
     }
     if (columns.length) {
       delete body.includeMetadata;
+      if (selectedOrder) {
+        const { provider, take, skip, ...source } = body;
+        const stages = [{ operation: 'OrderBy', order: selectedOrder }];
+        if (skip) stages.push({ operation: 'Skip', count: skip });
+        stages.push({ operation: 'Take', count: take });
+        return { path: 'data/query-cql/composition',
+          body: { provider, source: { ...source, orderBy: 'Id', take: 100, columns }, stages } };
+      }
       return { path: 'data/query-cql/projection', body: { ...body, columns } };
     }
     if (operation) body.operation = operation;

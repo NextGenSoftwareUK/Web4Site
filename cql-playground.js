@@ -238,7 +238,7 @@
         return;
       }
       if (!payload || !Array.isArray(payload.rows)) throw new Error('The API returned no CQL rows envelope. See the response.');
-      const columns = ['cql-projection-v1', 'cql-grouped-v1'].includes(payload.version) ? payload.columns : null;
+      const columns = ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version) ? payload.columns : null;
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
       for (const label of columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata']) {

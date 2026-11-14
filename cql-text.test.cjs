@@ -438,3 +438,18 @@ test('compiles bounded Nostr event queries using the exact event metadata key', 
   assert.deepEqual(body.filters, [{ metadataPath: ['NostrEventId'], scalar: 'String', operator: 'Equal', value: id }]);
   assert.throws(() => compile("SELECT * FROM NostrOASIS WHERE metadata.NostrEventId = '" + id.toUpperCase() + "'"), /NostrOASIS supports/);
 });
+
+test('compiles selected multi-column sorting before result pagination', () => {
+  const { path, body } = compile('SELECT Id, Version AS Revision FROM Neo4jOASIS ORDER BY revision DESC, Id ASC LIMIT 5 OFFSET 1');
+  assert.equal(path, 'data/query-cql/composition');
+  assert.equal(body.source.provider, undefined);
+  assert.equal(body.source.orderBy, 'Id');
+  assert.equal(body.source.take, 100);
+  assert.deepEqual(body.stages, [
+    { operation: 'OrderBy', order: [{ alias: 'Revision', descending: true }, { alias: 'Id', descending: false }] },
+    { operation: 'Skip', count: 1 },
+    { operation: 'Take', count: 5 }
+  ]);
+  assert.throws(() => compile('SELECT * FROM Neo4jOASIS ORDER BY Name, Id'), /selected columns/);
+  assert.throws(() => compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Name, Id'), /selected column aliases/);
+});
