@@ -453,3 +453,10 @@ test('compiles selected multi-column sorting before result pagination', () => {
   assert.throws(() => compile('SELECT * FROM Neo4jOASIS ORDER BY Name, Id'), /selected columns/);
   assert.throws(() => compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Name, Id'), /selected column aliases/);
 });
+
+test('orders a single projected alias by its selected source field', () => {
+  const { path, body } = compile('SELECT Version AS Revision FROM SQLLiteDBOASIS ORDER BY Revision DESC LIMIT 5');
+  assert.equal(path, 'data/query-cql/projection');
+  assert.equal(body.orderBy, 'Version');
+  assert.equal(body.descending, true);
+});

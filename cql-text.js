@@ -374,7 +374,9 @@
         if (new Set(selectedOrder.map(item => item.alias)).size !== selectedOrder.length)
           throw new Error('Use each selected ordering alias only once.');
       } else {
-        const field = fields[order[0].name?.toLowerCase()]?.[0];
+        const name = order[0].name?.toLowerCase();
+        const selectedColumn = columns.find(column => column.alias.toLowerCase() === name);
+        const field = selectedColumn?.field ?? fields[name]?.[0];
         if (!['Name', 'Version', 'Id'].includes(field)) throw new Error('Order by Name, Version, or Id.');
         body.orderBy = field;
         if (order[0].descending) body.descending = true;
