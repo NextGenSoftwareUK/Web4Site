@@ -224,6 +224,16 @@ test('round-trips reviewed Hedera presets and enforces canonical account IDs', (
   assert.throws(() => compile('SELECT COUNT(*) FROM HashgraphOASIS'), /HashgraphOASIS supports/);
 });
 
+test('rejects federation with incompatible native key fields', () => {
+  assert.throws(() => compile('SELECT * FROM HoloOASIS, HashgraphOASIS LIMIT 6'),
+    /require different key fields/);
+  const id = 'b5d3f5a8-2539-4f94-9b12-aed841902ccb';
+  assert.equal(compile("SELECT * FROM MongoDBOASIS, HoloOASIS WHERE Id = '" + id + "'").path,
+    'data/query-cql/federation');
+  assert.equal(compile("SELECT * FROM MongoDBOASIS, HashgraphOASIS WHERE metadata.HederaAccountId = '0.0.2'").path,
+    'data/query-cql/federation');
+});
+
 test('rejects malformed Id literals before a drafted query can be opened', () => {
   const id = 'B5D3F5A8-2539-4F94-9B12-AED841902CCB';
   assert.equal(compile("SELECT * FROM HoloOASIS WHERE Id = '" + id + "'").body.filters[0].value, id);

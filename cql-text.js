@@ -244,6 +244,11 @@
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
     const accountProviders = selected.filter(provider => Object.hasOwn(accountProfiles, provider));
+    const nativeKeys = new Set(accountProviders.map(name => accountProfiles[name].key));
+    if (holo) nativeKeys.add('Id');
+    if (nativeKeys.size > 1)
+      throw new Error('These providers require different key fields. Run separate queries for each key field.');
+
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
     function predicates(target, allowChildren) {
