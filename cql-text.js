@@ -59,6 +59,15 @@
         throw new Error('Expected an integer from ' + minimum + ' to ' + maximum + '.');
       return value;
     }
+    function exactDecimal(token) {
+      const match = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,28}))?$/.exec(token ?? '');
+      if (!match || token.length > 31) throw new Error('Expected an exact decimal literal.');
+      const [, sign, whole, fraction = ''] = match;
+      const coefficient = BigInt(whole + fraction);
+      if (coefficient > 79228162514264337593543950335n || (sign && coefficient === 0n))
+        throw new Error('Expected an exact decimal literal.');
+      return token;
+    }
     function filter() {
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
@@ -106,13 +115,7 @@
           return token.slice(1, -1);
         }
         if (scalar === 'Decimal') {
-          const match = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,28}))?$/.exec(token ?? '');
-          if (!match || token.length > 31) throw new Error('Expected an exact decimal literal.');
-          const [, sign, whole, fraction = ''] = match;
-          const coefficient = BigInt(whole + fraction);
-          if (coefficient > 79228162514264337593543950335n || (sign && coefficient === 0n))
-            throw new Error('Expected an exact decimal literal.');
-          return token;
+          return exactDecimal(token);
         }
         if (scalar === 'UInt64') {
           if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
@@ -268,16 +271,23 @@
       if (accept('HAVING')) {
         grouped.resultFilters = [];
         do {
-          const count = groupedAggregates.find(({ binding }) =>
-            binding.operation === 'LongCount' && binding.alias.toUpperCase() === peek());
-          if (!count) throw new Error('HAVING must name the COUNT(*) alias.');
+          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === peek());
+          if (!aggregate) throw new Error('HAVING must name a selected aggregate alias.');
           index++;
           const comparison = tokens[index++];
-          const value = tokens[index++];
-          if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison) ||
-              !/^(0|[1-9][0-9]{0,18})$/.test(value ?? '') || BigInt(value) > 9223372036854775807n)
-            throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
-          grouped.resultFilters.push({ alias: count.binding.alias, operator: comparisons[comparison], value });
+          const token = tokens[index++];
+          if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
+            throw new Error('HAVING requires a numeric comparison.');
+          let value = token;
+          if (aggregate.binding.operation === 'LongCount') {
+            if (!/^(0|[1-9][0-9]{0,18})$/.test(token ?? '') || BigInt(token) > 9223372036854775807n)
+              throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
+          } else if (aggregate.binding.operation === 'Average') {
+            value = exactDecimal(token);
+          } else {
+            value = integer(token, -2147483648, 2147483647);
+          }
+          grouped.resultFilters.push({ alias: aggregate.binding.alias, operator: comparisons[comparison], value });
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');
         } while (accept('AND'));
       }

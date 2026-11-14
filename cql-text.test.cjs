@@ -392,3 +392,12 @@ test('preserves grouped numeric aggregates and counts in SELECT order', () => {
   ]);
   assert.deepEqual(body.resultOrder, [{ alias: 'Mean', descending: true }]);
 });
+
+test('HAVING binds each aggregate using its exact WEB4 scalar type', () => {
+  const sql = 'SELECT IsActive, COUNT(*) AS Total, AVG(Version) AS Mean, SUM(Version) AS Combined ' +
+    'FROM MongoDBOASIS GROUP BY IsActive HAVING ';
+  const { body } = compile(sql + 'Total >= 2 AND Mean > 1.250 AND Combined <= 9');
+  assert.deepEqual(body.resultFilters.map(filter => filter.value), ['2', '1.250', 9]);
+  assert.throws(() => compile(sql + 'Combined = 1.1'), /Expected an integer/);
+  assert.throws(() => compile(sql + 'Mean = 79228162514264337593543950336'), /exact decimal/);
+});
