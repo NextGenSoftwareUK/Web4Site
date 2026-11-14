@@ -154,9 +154,9 @@ test('the WEB6 relationship example compiles to independent child and descendant
 });
 
 test('Ask your data hands a grouped count draft to the Playground only after review', async () => {
-  const text = 'SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Version HAVING Total >= 2';
+  const text = 'SELECT IsActive, COUNT(*) AS Total, AVG(Version) AS Mean, SUM(Version) AS Combined FROM MongoDBOASIS GROUP BY IsActive HAVING Total >= 2 AND Mean >= 1.5 AND Combined >= 3';
   const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
-  app.node('ask-question').value = 'Count MongoDB holons per version with at least two records';
+  app.node('ask-question').value = 'Group MongoDB holons by active status with at least two records, average version 1.5 or higher, and total version at least 3';
   await app.node('ask-generate').click();
   assert.equal(app.node('ask-draft').textContent, text);
   assert.deepEqual(app.opened, []);
