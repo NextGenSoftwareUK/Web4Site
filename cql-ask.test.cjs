@@ -11,6 +11,7 @@ function setup(reply, example = null, compileAvailableText = compile) {
   let identity = 'visitor', tabOpened = false;
   const node = id => {
     if (!elements.has(id)) elements.set(id, {
+      focus() { this.focused = true; },
       disabled: id === 'ask-preview',
       addEventListener(event, listener) { this[event] = listener; }
     });
@@ -58,6 +59,7 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.deepEqual(app.opened, [text]);
   assert.equal(app.node('cql-text').value, text);
   assert.equal(app.node('cql-text-editor').open, true);
+  assert.equal(app.node('cql-text').focused, true);
   assert.equal(app.tabOpened(), true);
 });
 

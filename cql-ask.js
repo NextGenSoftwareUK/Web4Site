@@ -121,6 +121,7 @@
         $('cql-text').value = draft.text;
         $('cql-text-editor').open = true;
         document.querySelector('[data-tab="cql"]').click();
+        $('cql-text').focus();
       } catch (error) { status.textContent = error.message; }
     });
   }
