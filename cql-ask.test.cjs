@@ -191,3 +191,14 @@ test('fills an exact-key public question without calling WEB6', () => {
   assert.deepEqual(app.requests, []);
   assert.equal(app.node('ask-preview').disabled, true);
 });
+
+test('explains the deployed WEB6 response when the visitor plan admits no model', async () => {
+  const app = setup(() => ({ ok: false, status: 400, json: async () => ({
+    isError: true, errorCode: null,
+    message: 'Error calling AI provider(s). Reason: No LeelaAI model in the catalogue is admitted by your plan.'
+  }) }));
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent, /Your Development plan has no available WEB6 model/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.deepEqual(app.opened, []);
+});

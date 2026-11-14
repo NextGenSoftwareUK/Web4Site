@@ -103,6 +103,9 @@
             (result.operationId ?? response.headers.get('X-OASIS-Operation-Id') ?? requestKey));
         if (result.code === 'DAILY_TOKEN_LIMIT_EXCEEDED')
           throw new Error('Your remaining daily AI token allowance is too low for this draft. You can still write and run CQL in the Playground.');
+        if (response.status === 400 && result.isError === true &&
+            result.message === 'Error calling AI provider(s). Reason: No LeelaAI model in the catalogue is admitted by your plan.')
+          throw new Error('Your Development plan has no available WEB6 model. You can still write and run CQL in the Playground.');
         if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
         const text = (result.result ?? result).content?.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');

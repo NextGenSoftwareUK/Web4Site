@@ -1,5 +1,9 @@
 # CQL website current status
 
+## Live WEB6 visitor-plan response
+
+14 November. The exact Ask your data client sent a read-only drafting request with the retained Development visitor. WEB6 returned HTTP 400 in its OASIS result envelope with no error code and the message that the plan admits no model. The tab now explains this specific result while keeping draft review disabled. The signed-in entitled draft and hosted browser walkthrough remain open. No credentials, provider records, or local runtime installs were added.
+
 ## November 14 demo acceptance
 
 Web4Site e94bc018d234 passed 185 tests and built the [exact protected preview](https://web4-site-bgfpzusha-oasis-team.vercel.app/web4-sandbox.html). The SQL-like editor compiled the reviewed HoloOASIS and Hedera typed presets. Development returned the expected three full and two filtered records and provider provenance. MongoDB pairing with either source also returned the expected results. Populated projected-alias ordering was verified earlier on MongoDB, SQLite and Neo4j.
