@@ -1,5 +1,9 @@
 # CQL website current status
 
+## Live WEB6 draft and WEB4 execution verified
+
+14 November. The existing Development test visitor received the approved 30-minute Bronze grant. The exact website scripts sent a natural-language question to live WEB6, displayed its read-only draft for review and compiled the request. Live WEB4 returned both requested public Hedera accounts (0.0.2 and 0.0.3). A separate MongoDB draft for active holons ordered by name ran successfully and returned no visible rows for this visitor. The exact scripts ran in a Node harness. Hosted sign-in and browser walkthrough are still open.
+
 ## Live WEB6 visitor-plan response
 
 14 November. [Exact preview of a7105438d5e5](https://web4-site-1e2u3lgjq-oasis-team.vercel.app/web4-sandbox.html) built successfully and requires Vercel sign-in. All 186 website tests passed. A live replay of the client confirmed the specific plan message and disabled review.
@@ -10,7 +14,7 @@
 
 Web4Site e94bc018d234 passed 185 tests and built the [exact protected preview](https://web4-site-bgfpzusha-oasis-team.vercel.app/web4-sandbox.html). The SQL-like editor compiled the reviewed HoloOASIS and Hedera typed presets. Development returned the expected three full and two filtered records and provider provenance. MongoDB pairing with either source also returned the expected results. Populated projected-alias ordering was verified earlier on MongoDB, SQLite and Neo4j.
 
-Hosted browser acceptance remains open. The preview requires Vercel access. The intended Development browser hostname still needs DNS, TLS and the exact WEB4 credentialed-origin setting. The signed-in WEB6 draft through WEB4 execution still awaits the approved temporary Bronze grant and private administrator session. SQLite, MongoDB and Neo4j remain at 48 of 164 parity rows each.
+Hosted browser acceptance remains open. The preview requires Vercel access. The intended Development browser hostname still needs DNS, TLS and the exact WEB4 credentialed-origin setting. The signed-in WEB6 draft through WEB4 execution is verified in the Node harness above. SQLite, MongoDB and Neo4j remain at 48 of 164 parity rows each.
 
 ## November 13 demo delivery status
 
