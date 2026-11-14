@@ -401,3 +401,13 @@ test('HAVING binds each aggregate using its exact WEB4 scalar type', () => {
   assert.throws(() => compile(sql + 'Combined = 1.1'), /Expected an integer/);
   assert.throws(() => compile(sql + 'Mean = 79228162514264337593543950336'), /exact decimal/);
 });
+
+test('compiles bounded SQL LIKE patterns and rejects unsupported wildcards', () => {
+  const query = predicate => compile('SELECT * FROM SQLLiteDBOASIS WHERE ' + predicate).body.filters[0];
+  for (const [pattern, operator] of [['A', 'Equal'], ['A%', 'StartsWith'], ['%A', 'EndsWith'], ['%A%', 'Contains']]) {
+    assert.deepEqual(query("Name LIKE '" + pattern + "'"), { field: 'Name', scalar: 'String', operator, value: 'A' });
+  }
+  for (const predicate of ["Name LIKE 'A%B'", "Name LIKE '%'", "Name LIKE 'A_'", "Version LIKE '3'"]) {
+    assert.throws(() => query(predicate), /LIKE/);
+  }
+});

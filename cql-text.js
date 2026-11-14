@@ -136,6 +136,20 @@
         }
         throw new Error('Expected a ' + scalar + ' literal.');
       }
+      if (accept('LIKE')) {
+        if (scalar !== 'String') throw new Error('LIKE requires a string field.');
+        const pattern = literal();
+        const leading = pattern.startsWith('%');
+        const trailing = pattern.endsWith('%');
+        const value = pattern.slice(leading ? 1 : 0, trailing ? -1 : undefined);
+        if (!value || /[%_]/.test(value))
+          throw new Error('LIKE supports nonempty text with optional % at either end.');
+        let operator = 'Equal';
+        if (leading && trailing) operator = 'Contains';
+        else if (leading) operator = 'EndsWith';
+        else if (trailing) operator = 'StartsWith';
+        return { ...selector, scalar, operator, value };
+      }
       if (accept('IN')) {
         expect('(');
         const value = [literal()];
