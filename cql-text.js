@@ -2,9 +2,10 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS'];
   const evmAddress = /^0x[0-9a-fA-F]{40}$/;
   const accountProfiles = {
+    NostrOASIS: { key: 'NostrEventId', accepts: value => /^[0-9a-f]{64}$/.test(value) },
     TRONOASIS: { key: 'TronBlockHeight', accepts: value =>
       /^[1-9][0-9]{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n },
     HashgraphOASIS: { key: 'HederaAccountId', accepts: value =>

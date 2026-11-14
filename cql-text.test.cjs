@@ -430,3 +430,11 @@ test('preserves a public exact-key preset as equality', () => {
   const request = { provider, orderBy: 'None', includeMetadata: true, take: 1, filters: [filter] };
   assert.deepEqual(compile(publicExample(provider, request)).body.filters, [filter]);
 });
+
+test('compiles bounded Nostr event queries using the exact event metadata key', () => {
+  const id = 'ab'.repeat(32);
+  const { body } = compile("SELECT * FROM NostrOASIS WHERE metadata.NostrEventId = '" + id + "' LIMIT 1");
+  assert.equal(body.orderBy, 'None');
+  assert.deepEqual(body.filters, [{ metadataPath: ['NostrEventId'], scalar: 'String', operator: 'Equal', value: id }]);
+  assert.throws(() => compile("SELECT * FROM NostrOASIS WHERE metadata.NostrEventId = '" + id.toUpperCase() + "'"), /NostrOASIS supports/);
+});
