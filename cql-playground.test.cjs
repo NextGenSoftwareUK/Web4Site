@@ -82,6 +82,7 @@ function harness(fetcher, discover, setup = {}) {
   function element() {
     return {
       value: '', textContent: '', children: [], listeners: {}, disabled: false,
+      focus() { this.focused = true; },
       add(option) { this.children.push(option); if (!this.value) this.value = option.value; },
       append(child) { this.children.push(child); },
       replaceChildren(...children) { this.children = children; this.value = ''; },
@@ -667,4 +668,21 @@ test('a false ANY result is displayed as a Boolean outcome', async () => {
   await h.elements.get('cql-run').listeners.click();
   assert.match(h.elements.get('cql-note').textContent, /Neo4jOASIS .* Any: false/);
   assert.equal(h.elements.get('cql-results').children.length, 0);
+});
+
+test('loads the displayed grouped example for review without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const fs = require('node:fs');
+  const page = fs.readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-grouped-example', { textContent: sql });
+  h.elements.get('cql-load-grouped-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.resultFilters.map(({ alias, value }) => [alias, value]),
+    [['AverageVersion', '1.0'], ['TotalVersion', 1]]);
 });
