@@ -1,5 +1,11 @@
 # CQL website current status
 
+## November 13 demo delivery status
+
+Web4Site 9192a62a5aa5 passed 176 website tests. It includes the SQL-like CQL editor, grouped numeric HAVING example and WEB6 draft review handoff. The current canonical page still references the earlier Playground asset cql-preset-labels-v1. The exact build is available as a [protected Vercel preview](https://web4-site-9yxq0sxw9-oasis-team.vercel.app/web4-sandbox.html). Hosted authenticated browser acceptance remains open.
+
+Development WEB4 b4270f9cb9d2 accepts credentialed requests from web4.oasisomniverse.one. The proposed same-site Development preview hostname still needs DNS, TLS and the WEB4 opt-in. The approved temporary Bronze grant awaits private administrator sign-in. Earlier live API checks verified grouped mixed-version numeric results on MongoDB, SQLite and Neo4j, and all six fixtures were removed.
+
 Updated 1 November 2026. Breadth-first live demo; full ORM/parity remains incomplete.
 
 - 40 providers have scoped hosted HTTP proof;5browser-verified and35browser gates open. HTTP and asset checks do not certify browser interaction.
