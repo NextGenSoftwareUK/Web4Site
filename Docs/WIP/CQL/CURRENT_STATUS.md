@@ -1,5 +1,11 @@
 # CQL website current status
 
+## November 14 demo acceptance
+
+Web4Site e94bc018d234 passed 185 tests and built the [exact protected preview](https://web4-site-bgfpzusha-oasis-team.vercel.app/web4-sandbox.html). The SQL-like editor compiled the reviewed HoloOASIS and Hedera typed presets. Development returned the expected three full and two filtered records and provider provenance. MongoDB pairing with either source also returned the expected results. Populated projected-alias ordering was verified earlier on MongoDB, SQLite and Neo4j.
+
+Hosted browser acceptance remains open. The preview requires Vercel access. The intended Development browser hostname still needs DNS, TLS and the exact WEB4 credentialed-origin setting. The signed-in WEB6 draft through WEB4 execution still awaits the approved temporary Bronze grant and private administrator session. SQLite, MongoDB and Neo4j remain at 48 of 164 parity rows each.
+
 ## November 13 demo delivery status
 
 Web4Site 9192a62a5aa5 passed 176 website tests. It includes the SQL-like CQL editor, grouped numeric HAVING example and WEB6 draft review handoff. The current canonical page still references the earlier Playground asset cql-preset-labels-v1. The exact build is available as a [protected Vercel preview](https://web4-site-9yxq0sxw9-oasis-team.vercel.app/web4-sandbox.html). Hosted authenticated browser acceptance remains open.
