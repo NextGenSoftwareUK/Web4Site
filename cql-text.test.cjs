@@ -411,3 +411,14 @@ test('compiles bounded SQL LIKE patterns and rejects unsupported wildcards', () 
     assert.throws(() => query(predicate), /LIKE/);
   }
 });
+
+test('escapes literal LIKE wildcard characters before native compilation', () => {
+  const filter = pattern => compile('SELECT * FROM Neo4jOASIS WHERE Name LIKE ' + pattern).body.filters[0];
+  assert.deepEqual(filter("'%100!%!_!!%' ESCAPE '!'"),
+    { field: 'Name', scalar: 'String', operator: 'Contains', value: '100%_!' });
+  assert.equal(filter("'!_start%' ESCAPE '!'").operator, 'StartsWith');
+  assert.equal(filter("'%end!%' ESCAPE '!'").operator, 'EndsWith');
+  assert.equal(filter("'100!%' ESCAPE '!'").operator, 'Equal');
+  for (const pattern of ["'a!' ESCAPE '!'", "'a!b' ESCAPE '!'", "'a' ESCAPE 'ab'", "'a' ESCAPE '%'"])
+    assert.throws(() => filter(pattern), /LIKE ESCAPE/);
+});
