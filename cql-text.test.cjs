@@ -422,3 +422,11 @@ test('escapes literal LIKE wildcard characters before native compilation', () =>
   for (const pattern of ["'a!' ESCAPE '!'", "'a!b' ESCAPE '!'", "'a' ESCAPE 'ab'", "'a' ESCAPE '%'"])
     assert.throws(() => filter(pattern), /LIKE ESCAPE/);
 });
+
+test('preserves a public exact-key preset as equality', () => {
+  const { publicExample } = require('./cql-text.js');
+  const provider = 'HoloOASIS';
+  const filter = { field: 'Id', scalar: 'Guid', operator: 'Equal', value: 'b5d3f5a8-2539-4f94-9b12-aed841902ccb' };
+  const request = { provider, orderBy: 'None', includeMetadata: true, take: 1, filters: [filter] };
+  assert.deepEqual(compile(publicExample(provider, request)).body.filters, [filter]);
+});

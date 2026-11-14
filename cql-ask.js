@@ -54,7 +54,7 @@
         const filter = request.filters[0];
         const field = filter.field ?? 'metadata.' + filter.metadataPath[0];
         const timeout = request.maximumDurationMilliseconds;
-        const question = `Show up to ${request.take} public records from ${provider} with ${field} matching any of these keys: ${filter.value.join(', ')}.` +
+        const question = `Show up to ${request.take} public records from ${provider} with ${field} matching any of these keys: ${[].concat(filter.value).join(', ')}.` +
           (timeout ? ` Use a query timeout of ${timeout} milliseconds.` : '');
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
         clearDraft();

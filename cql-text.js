@@ -413,19 +413,20 @@
   function publicExample(provider, request) {
     const expectedKey = accountProfiles[provider]?.key;
     const [filter] = request?.filters ?? [];
-    if (request?.provider !== provider || request.filters?.length !== 1 || filter?.operator !== 'In' ||
-        !Array.isArray(filter.value) || !filter.value.length || request.orderBy !== 'None' ||
+    const values = filter?.operator === 'Equal' ? [filter.value] : filter?.operator === 'In' ? filter.value : null;
+    if (request?.provider !== provider || request.filters?.length !== 1 || !values ||
+        !Array.isArray(values) || !values.length || request.orderBy !== 'None' ||
         request.descending || request.includeMetadata !== true ||
         request.anyOf?.length || request.anyChildren?.length || request.anyDescendants?.length || request.graph)
       return null;
     const field = provider === 'HoloOASIS' && filter.field === 'Id' && filter.scalar === 'Guid' ? 'Id'
       : expectedKey && filter.metadataPath?.length === 1 && filter.metadataPath[0] === expectedKey &&
         filter.scalar === 'String' ? 'metadata.' + expectedKey : null;
-    if (!field || filter.value.some(key => typeof key !== 'string') ||
+    if (!field || values.some(key => typeof key !== 'string') ||
         !Number.isInteger(request.take) || request.take < 1 || request.take > 100 || request.skip)
       return null;
-    const keys = filter.value.map(key => "'" + key.replace(/'/g, "''") + "'").join(', ');
-    const text = `SELECT * FROM ${provider} WHERE ${field} IN (${keys}) LIMIT ${request.take}${request.maximumDurationMilliseconds ? ' TIMEOUT ' + request.maximumDurationMilliseconds : ''}`;
+    const keys = values.map(key => "'" + key.replace(/'/g, "''") + "'").join(', ');
+    const text = `SELECT * FROM ${provider} WHERE ${field} ${filter.operator === 'Equal' ? '= ' + keys : 'IN (' + keys + ')'} LIMIT ${request.take}${request.maximumDurationMilliseconds ? ' TIMEOUT ' + request.maximumDurationMilliseconds : ''}`;
     compile(text);
     return text;
   }
