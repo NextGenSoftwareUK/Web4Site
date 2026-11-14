@@ -460,3 +460,13 @@ test('orders a single projected alias by its selected source field', () => {
   assert.equal(body.orderBy, 'Version');
   assert.equal(body.descending, true);
 });
+
+test('orders a selected description alias through bounded composition', () => {
+  const { path, body } = compile('SELECT Id, Description AS Detail FROM SQLLiteDBOASIS ORDER BY Detail DESC LIMIT 3');
+  assert.equal(path, 'data/query-cql/composition');
+  assert.equal(body.source.take, 100);
+  assert.deepEqual(body.stages, [
+    { operation: 'OrderBy', order: [{ alias: 'Detail', descending: true }] },
+    { operation: 'Take', count: 3 }
+  ]);
+});

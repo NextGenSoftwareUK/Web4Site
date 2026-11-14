@@ -377,9 +377,14 @@
         const name = order[0].name?.toLowerCase();
         const selectedColumn = columns.find(column => column.alias.toLowerCase() === name);
         const field = selectedColumn?.field ?? fields[name]?.[0];
-        if (!['Name', 'Version', 'Id'].includes(field)) throw new Error('Order by Name, Version, or Id.');
-        body.orderBy = field;
-        if (order[0].descending) body.descending = true;
+        if (['Name', 'Version', 'Id'].includes(field)) {
+          body.orderBy = field;
+          if (order[0].descending) body.descending = true;
+        } else if (selectedColumn) {
+          selectedOrder = [{ alias: selectedColumn.alias, descending: order[0].descending }];
+        } else {
+          throw new Error('Order by Name, Version, Id, or a selected column alias.');
+        }
       }
     }
     if (!operation && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
