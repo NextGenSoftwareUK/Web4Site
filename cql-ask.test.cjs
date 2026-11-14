@@ -179,3 +179,15 @@ test('withholds a syntactically valid draft when its provider is unavailable', a
   assert.equal(app.node('ask-draft').textContent, '');
   assert.deepEqual(app.opened, []);
 });
+
+test('fills an exact-key public question without calling WEB6', () => {
+  const key = 'b5d3f5a8-2539-4f94-9b12-aed841902ccb';
+  const app = setup(() => { throw new Error('Unexpected request'); }, {
+    provider: 'HoloOASIS',
+    request: { take: 1, filters: [{ field: 'Id', operator: 'Equal', value: key }] }
+  });
+  app.node('ask-use-example').click();
+  assert.match(app.node('ask-question').value, new RegExp('HoloOASIS.*Id.*' + key));
+  assert.deepEqual(app.requests, []);
+  assert.equal(app.node('ask-preview').disabled, true);
+});
