@@ -2,7 +2,7 @@
 
 ## Live WEB6 draft and WEB4 execution verified
 
-14 November. The existing Development test visitor received the approved 30-minute Bronze grant. The exact website scripts sent a natural-language question to live WEB6, displayed its read-only draft for review and compiled the request. Live WEB4 returned both requested public Hedera accounts (0.0.2 and 0.0.3). A separate MongoDB draft for active holons ordered by name ran successfully and returned no visible rows for this visitor. The exact scripts ran in a Node harness. Hosted sign-in and browser walkthrough are still open.
+14 November. The existing Development test visitor received the approved 30-minute Bronze grant. The exact website scripts sent a natural-language question to live WEB6, displayed its read-only draft for review and compiled the request. Live WEB4 returned both requested public Hedera accounts (0.0.2 and 0.0.3). A separate MongoDB draft for active holons ordered by name ran successfully and returned no visible rows for this visitor. An explicit COUNT(*) example drafted by WEB6 also compiled to LongCount and returned a typed Int64 zero from live MongoDB through WEB4. The exact scripts ran in a Node harness. Hosted sign-in and browser walkthrough are still open.
 
 ## Live WEB6 visitor-plan response
 
