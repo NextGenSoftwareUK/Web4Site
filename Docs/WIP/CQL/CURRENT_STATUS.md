@@ -2,6 +2,8 @@
 
 ## Live WEB6 visitor-plan response
 
+14 November. [Exact preview of a7105438d5e5](https://web4-site-1e2u3lgjq-oasis-team.vercel.app/web4-sandbox.html) built successfully and requires Vercel sign-in. All 186 website tests passed. A live replay of the client confirmed the specific plan message and disabled review.
+
 14 November. The exact Ask your data client sent a read-only drafting request with the retained Development visitor. WEB6 returned HTTP 400 in its OASIS result envelope with no error code and the message that the plan admits no model. The tab now explains this specific result while keeping draft review disabled. The signed-in entitled draft and hosted browser walkthrough remain open. No credentials, provider records, or local runtime installs were added.
 
 ## November 14 demo acceptance
