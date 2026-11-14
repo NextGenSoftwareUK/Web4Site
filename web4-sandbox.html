@@ -199,6 +199,7 @@ FROM MongoDBOASIS
 GROUP BY IsActive
 HAVING AverageVersion &gt;= 1.0 AND TotalVersion &gt;= 1
 ORDER BY Total DESC, IsActive ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-example">Load grouped example</button>
         </details>
         <button type="button" id="cql-load-text-example" disabled>Load public example</button>
         <button type="button" id="cql-compile">Preview request</button>
@@ -2239,7 +2240,7 @@ function renderMetrics(metrics, connections, best){
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-text.js?v=8"></script>
-<script src="cql-playground.js?v=cql-text-v3"></script>
+<script src="cql-playground.js?v=cql-text-v4"></script>
 <script src="cql-ask.js?v=11"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });

@@ -430,6 +430,13 @@
       return { provider: source.provider, request: example.request };
     }
 
+    $('cql-load-grouped-example').addEventListener('click', () => {
+      const editor = $('cql-text');
+      editor.value = $('cql-grouped-example').textContent.trim();
+      editor.focus();
+      note('Review the grouped example, then preview its request.');
+    });
+
     $('cql-load-text-example').addEventListener('click', () => {
       try {
         const example = selectedPublicExample();
