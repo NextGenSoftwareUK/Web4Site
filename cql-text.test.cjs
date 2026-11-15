@@ -707,6 +707,22 @@ test('projects typed metadata with CAST while retaining exact aliases and nullab
   const sorted = compile('SELECT CAST(metadata.total AS DECIMAL) AS Total FROM Neo4jOASIS ORDER BY Total DESC');
   assert.equal(sorted.path, 'data/query-cql/composition');
   assert.deepEqual(sorted.body.stages[0].order, [{ alias: 'Total', descending: true }]);
-  assert.throws(() => compile('SELECT DISTINCT CAST(metadata.total AS DECIMAL) AS Total FROM Neo4jOASIS'), /canonical fields/);
   assert.throws(() => compile('SELECT CAST(metadata.total AS INTEGER) AS Total FROM Neo4jOASIS'), /exact metadata projection type/);
+});
+
+test('groups or deduplicates exact metadata keys and resolves aliases without exposing hidden keys', () => {
+  const select = 'CAST(metadata.Stock.current AS INT64)';
+  const distinct = compile('SELECT DISTINCT ' + select + ' AS Stock FROM MongoDBOASIS ORDER BY Stock');
+  const grouped = compile('SELECT ' + select + ' AS Stock FROM MongoDBOASIS GROUP BY ' + select + ' ORDER BY Stock');
+  assert.deepEqual(distinct, grouped);
+  assert.deepEqual(grouped.body.keys, [
+    { metadataPath: ['Stock', 'current'], valueType: 'Int64', nullable: true, alias: 'Stock' }
+  ]);
+  const count = compile('SELECT COUNT(*) FROM Neo4jOASIS GROUP BY ' + select);
+  assert.equal(count.body.keys[0].alias, 'GroupKey1');
+  assert.deepEqual(count.body.columns, [{ alias: 'Count', operation: 'LongCount' }]);
+  assert.throws(() => compile('SELECT ' + select + ' AS Stock FROM MongoDBOASIS GROUP BY CAST(metadata.Stock.current AS DECIMAL)'),
+    /match GROUP BY/);
+  assert.throws(() => compile('SELECT DISTINCT ' + select + ' AS First, ' + select + ' AS Second FROM MongoDBOASIS'),
+    /different selected fields/);
 });

@@ -274,6 +274,25 @@
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
     if (hasSelection) expect('VERSION');
     else if (operation) expect('*');
+    function readSelection() {
+      if (!accept('CAST')) {
+        const name = tokens[index++]?.toLowerCase();
+        if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
+        return { field: fields[name][0] };
+      }
+      expect('(');
+      expect('METADATA');
+      const metadataPath = readMetadataPath();
+      expect('AS');
+      const types = { STRING: 'String', BOOLEAN: 'Boolean', INT32: 'Int32', INT64: 'Int64',
+        UINT64: 'UInt64', DECIMAL: 'Decimal', GUID: 'Guid', DATETIME: 'DateTime' };
+      const type = tokens[index++]?.toUpperCase();
+      if (!Object.hasOwn(types, type)) throw new Error('Choose an exact metadata projection type.');
+      expect(')');
+      return { metadataPath, valueType: types[type], nullable: true };
+    }
+
+    const selectionKey = column => column.field ?? [column.valueType, ...column.metadataPath].join('.');
     const columns = [];
     const groupedAggregates = [];
     if (!operation && !accept('*')) {
@@ -293,24 +312,8 @@
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
-        let selection;
-        if (accept('CAST')) {
-          expect('(');
-          expect('METADATA');
-          const metadataPath = readMetadataPath();
-          expect('AS');
-          const types = { STRING: 'String', BOOLEAN: 'Boolean', INT32: 'Int32', INT64: 'Int64',
-            UINT64: 'UInt64', DECIMAL: 'Decimal', GUID: 'Guid', DATETIME: 'DateTime' };
-          const type = tokens[index++]?.toUpperCase();
-          if (!Object.hasOwn(types, type)) throw new Error('Choose an exact metadata projection type.');
-          expect(')');
-          expect('AS');
-          selection = { metadataPath, valueType: types[type], nullable: true };
-        } else {
-          const name = tokens[index++]?.toLowerCase();
-          if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
-          selection = { field: fields[name][0] };
-        }
+        const selection = readSelection();
+        if (selection.metadataPath) expect('AS');
         const alias = selection.metadataPath ? tokens[index++] : accept('AS') ? tokens[index++] : selection.field;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
           throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
@@ -320,9 +323,7 @@
       } while (accept(','));
     }
     if (operation) expect(')');
-    if ((distinct || hasGrouping) && columns.some(column => column.metadataPath))
-      throw new Error('Use canonical fields for SQL DISTINCT and GROUP BY.');
-    if (distinct && (!columns.length || groupedAggregates.length || new Set(columns.map(column => column.field)).size !== columns.length))
+    if (distinct && (!columns.length || groupedAggregates.length || new Set(columns.map(selectionKey)).size !== columns.length))
       throw new Error('DISTINCT requires one or more different selected fields without aggregates.');
     expect('FROM');
     const selected = [];
@@ -386,24 +387,24 @@
         expect('BY');
         const groupFields = [];
         do {
-          const name = tokens[index++]?.toLowerCase();
-          if (!Object.hasOwn(fields, name)) throw new Error('Unknown GROUP BY field.');
-          groupFields.push(fields[name][0]);
+          groupFields.push(readSelection());
         } while (accept(','));
-        if (groupFields.length > 8 || new Set(groupFields).size !== groupFields.length)
+        const groupKeys = groupFields.map(selectionKey);
+        if (groupFields.length > 8 || new Set(groupKeys).size !== groupFields.length)
           throw new Error('Use up to eight different GROUP BY fields.');
+        const selectedKeys = columns.map(selectionKey);
         if ((!columns.length && !groupedAggregates.length) ||
-            columns.some(column => !groupFields.includes(column.field)) ||
-            new Set(columns.map(column => column.field)).size !== columns.length)
+            selectedKeys.some(key => !groupKeys.includes(key)) ||
+            new Set(selectedKeys).size !== columns.length)
           throw new Error('Each selected field must match GROUP BY once.');
         const keyAliases = new Set(columns.map(column => column.alias.toLowerCase()));
-        keys = groupFields.map(field => {
-          const selected = columns.find(column => column.field === field);
+        keys = groupFields.map((selection, position) => {
+          const selected = columns[selectedKeys.indexOf(groupKeys[position])];
           if (selected) return selected;
-          let alias = field;
+          let alias = selection.field ?? 'GroupKey' + (position + 1);
           while (keyAliases.has(alias.toLowerCase())) alias += '_';
           keyAliases.add(alias.toLowerCase());
-          return { field, alias };
+          return { ...selection, alias };
         });
       }
       delete body.includeMetadata;
