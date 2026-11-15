@@ -853,3 +853,19 @@ test('HAVING LIKE matches selected text keys using the row LIKE escape rules', (
   assert.throws(() => compile(head + "Label LIKE 'Tea_'"), /literal underscore/);
   assert.throws(() => compile("SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Version HAVING Version LIKE 'x'"), /string field/);
 });
+
+test('HAVING null checks and inequality handle empty nullable numeric aggregates', () => {
+  const head = 'SELECT Version, AVG(CAST(metadata.amount AS DECIMAL)) AS Mean, COUNT(*) AS Total ' +
+    'FROM SQLLiteDBOASIS GROUP BY Version HAVING ';
+  assert.deepEqual(compile(head + 'Mean IS NULL AND Total > 0').body.resultFilters, [
+    { alias: 'Mean', operator: 'IsNull' },
+    { alias: 'Total', operator: 'GreaterThan', value: '0' }
+  ]);
+  assert.deepEqual(compile(head + 'Mean IS NOT NULL').body.resultFilters,
+    [{ alias: 'Mean', operator: 'NotEqual', value: null }]);
+  assert.deepEqual(compile(head + 'Mean <> 0.10').body.resultFilters, [
+    { alias: 'Mean', operator: 'NotEqual', value: null },
+    { alias: 'Mean', operator: 'NotEqual', value: '0.10' }
+  ]);
+  assert.throws(() => compile(head + 'Total IS NULL'), /cannot be null/);
+});

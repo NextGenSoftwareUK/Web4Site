@@ -548,7 +548,7 @@
           grouped.resultFilters.push(filter);
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');
         }
-        function addHavingComparison(alias, type, comparison, nullableKey = false) {
+        function addHavingComparison(alias, type, comparison, nullable = false) {
           if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
             throw new Error('HAVING requires a scalar comparison.');
           if (['String', 'Boolean', 'Guid'].includes(type) && !['=', '<>', '!='].includes(comparison))
@@ -570,7 +570,7 @@
               throw error;
             }
           }
-          if (nullableKey && ['<>', '!='].includes(comparison))
+          if (nullable && ['<>', '!='].includes(comparison))
             addHavingFilter({ alias, operator: 'NotEqual', value: null });
           addHavingFilter({ alias, operator: comparisons[comparison], value });
         }
@@ -584,20 +584,21 @@
             ? aggregate.operation === 'LongCount' ? 'Count'
               : aggregate.operation === 'Average' ? 'Decimal' : aggregate.selection.valueType ?? 'Int32'
             : key.valueType ?? fields[key.field.toLowerCase()][1];
+          const nullable = aggregate ? aggregate.selection?.nullable === true : key.nullable || type === 'String';
           index++;
           if (key && accept('LIKE')) {
             addHavingFilter({ alias, ...readLike(type) });
-          } else if (key && accept('IS')) {
+          } else if (accept('IS')) {
             const not = accept('NOT');
             expect('NULL');
-            if (!key.nullable && type !== 'String') throw new Error('This grouped key cannot be null.');
+            if (!nullable) throw new Error('This selected alias cannot be null.');
             addHavingFilter(not ? { alias, operator: 'NotEqual', value: null } : { alias, operator: 'IsNull' });
           } else if (accept('BETWEEN')) {
             addHavingComparison(alias, type, '>=');
             expect('AND');
             addHavingComparison(alias, type, '<=');
           } else {
-            addHavingComparison(alias, type, tokens[index++], key && (key.nullable || type === 'String'));
+            addHavingComparison(alias, type, tokens[index++], nullable);
           }
         } while (accept('AND'));
       }
