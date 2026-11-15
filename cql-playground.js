@@ -428,14 +428,29 @@
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
     const ready = syncAuth();
+    function publicExampleFor(source, selectedPreset = null) {
+      if (!source?.available || discovery || !getToken()) return null;
+      const example = source.examples?.find(row =>
+        (selectedPreset === null || 'host:' + row.id === selectedPreset) &&
+        ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
+        row.available !== false && row.operation === 'Rows' &&
+        root.CqlText.publicExample(source.provider, row.request, discoveredTextProfiles));
+      return example ? { provider: source.provider, request: example.request } : null;
+    }
+
     function selectedPublicExample() {
       const source = sources?.find(row => row.provider === $('cql-provider').value);
-      const example = source?.examples?.find(row =>
-        'host:' + row.id === $('cql-preset').value &&
-        ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
-        row.available !== false && row.operation !== 'Federation');
-      if (!source?.available || !root.CqlText.publicExample(source.provider, example?.request, discoveredTextProfiles)) return null;
-      return { provider: source.provider, request: example.request };
+      return publicExampleFor(source, $('cql-preset').value);
+    }
+
+    function publicQuestionExample() {
+      const selected = selectedPublicExample();
+      if (selected) return selected;
+      for (const source of sources ?? []) {
+        const example = publicExampleFor(source);
+        if (example) return example;
+      }
+      return null;
     }
 
     for (const example of ['grouped', 'join']) {
@@ -487,7 +502,7 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample };
+    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,

@@ -31,7 +31,7 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
+    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';

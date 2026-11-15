@@ -635,12 +635,18 @@ test('loads the selected public subset into the SQL editor', async () => {
     }] }) }));
   await h.ui.ready;
   const select = h.elements.get('cql-preset');
+  select.value = '';
+  assert.equal(h.ui.selectedPublicExample(), null);
+  assert.deepEqual(Array.from(h.ui.publicQuestionExample().request.filters[0].value), ids);
   select.value = 'host:public-subset';
   select.listeners.change();
   h.elements.get('cql-load-text-example').listeners.click();
   const { body } = require('./cql-text.js').compile(h.elements.get('cql-text').value);
   assert.deepEqual(body.filters[0].value, ids.slice(1));
   assert.deepEqual(Array.from(h.ui.selectedPublicExample().request.filters[0].value), ids.slice(1));
+  assert.deepEqual(Array.from(h.ui.publicQuestionExample().request.filters[0].value), ids.slice(1));
+  h.signOut();
+  assert.equal(h.ui.publicQuestionExample(), null);
 });
 
 test('selected columns render in request order as plain text', async () => {
