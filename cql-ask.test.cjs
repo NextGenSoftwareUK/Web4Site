@@ -251,3 +251,17 @@ test('explains the deployed WEB6 response when the visitor plan admits no model'
   assert.equal(app.node('ask-preview').disabled, true);
   assert.deepEqual(app.opened, []);
 });
+
+test('Ask your data can return counts with an unselected grouping field', async () => {
+  const text = 'SELECT COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Version';
+  const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
+  app.node('ask-question').value = 'Count MongoDB holons per version and return only the counts';
+  await app.node('ask-generate').click();
+  const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.ok(prompt.includes(text));
+  assert.equal(app.node('ask-draft').textContent, text);
+  assert.deepEqual(compile(text).body.columns, [{ alias: 'Total', operation: 'LongCount' }]);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [text]);
+});
