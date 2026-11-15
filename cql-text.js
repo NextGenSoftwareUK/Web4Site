@@ -2,9 +2,16 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS', 'AxelarOASIS', 'BitcoinOASIS', 'XRPLOASIS', 'StellarOASIS', 'CardanoOASIS', 'BNBChainOASIS', 'AvalancheOASIS', 'BaseOASIS', 'OptimismOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS', 'AxelarOASIS', 'BitcoinOASIS', 'XRPLOASIS', 'StellarOASIS', 'CardanoOASIS', 'BNBChainOASIS', 'AvalancheOASIS', 'BaseOASIS', 'OptimismOASIS', 'SuiOASIS', 'AptosOASIS', 'StarknetOASIS', 'FantomOASIS'];
   const evmAddress = /^0x[0-9a-fA-F]{40}$/;
+  const lowercaseHex32 = /^0x[0-9a-f]{64}$/;
+  const starknetFieldPrime = (1n << 251n) + 17n * (1n << 192n) + 1n;
   const accountProfiles = {
+    SuiOASIS: { key: 'SuiObjectId', requiresSingleKeyFilter: true, accepts: value => lowercaseHex32.test(value) },
+    AptosOASIS: { key: 'AptosAccountAddress', requiresSingleKeyFilter: true, accepts: value => lowercaseHex32.test(value) },
+    StarknetOASIS: { key: 'StarknetBlockHash', requiresSingleKeyFilter: true, accepts: value =>
+      /^0x(?:0|[1-9a-f][0-9a-f]{0,62})$/.test(value) && BigInt(value) < starknetFieldPrime },
+    FantomOASIS: { key: 'FantomAccountAddress', requiresSingleKeyFilter: true, accepts: value => evmAddress.test(value) },
     BitcoinOASIS: { key: 'BitcoinBlockHash', requiresSingleKeyFilter: true, accepts: value => /^[0-9a-f]{64}$/.test(value) },
     XRPLOASIS: { key: 'XRPLLedgerHash', requiresSingleKeyFilter: true, accepts: value => /^[0-9A-F]{64}$/.test(value) },
     StellarOASIS: { key: 'StellarLedgerSequence', requiresSingleKeyFilter: true, accepts: value =>

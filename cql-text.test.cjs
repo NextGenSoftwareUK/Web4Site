@@ -109,6 +109,25 @@ test('binds BNB Chain, Avalanche, Base and Optimism to independent public accoun
   assert.throws(() => compile("SELECT * FROM BaseOASIS, OptimismOASIS"), /different key fields/);
 });
 
+test('preserves native key domains for Sui, Aptos, Starknet and Fantom', () => {
+  const prime = (1n << 251n) + 17n * (1n << 192n) + 1n;
+  const maxFelt = '0x' + (prime - 1n).toString(16);
+  for (const [provider, key, value, invalid] of [
+    ['SuiOASIS', 'SuiObjectId', '0x' + 'a'.repeat(64), '0x' + 'A'.repeat(64)],
+    ['AptosOASIS', 'AptosAccountAddress', '0x' + 'b'.repeat(64), '0x1'],
+    ['StarknetOASIS', 'StarknetBlockHash', maxFelt, '0x' + prime.toString(16)],
+    ['FantomOASIS', 'FantomAccountAddress', '0x' + 'aB'.repeat(20), '0x' + 'a'.repeat(41)]
+  ]) {
+    const prefix = "SELECT * FROM " + provider + " WHERE metadata." + key;
+    assert.deepEqual(compile(prefix + " = '" + value + "'").body.filters, [
+      { metadataPath: [key], scalar: 'String', operator: 'Equal', value }
+    ]);
+    assert.throws(() => compile(prefix + " = '" + invalid + "'"), new RegExp(key));
+    assert.throws(() => compile("SELECT * FROM " + provider), /requires one/);
+  }
+  assert.throws(() => compile("SELECT * FROM StarknetOASIS WHERE metadata.StarknetBlockHash = '0x01'"), /StarknetBlockHash/);
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
