@@ -29,6 +29,17 @@ test('compiles a plain OR list as the same typed request as a parenthesized OR g
   assert.throws(() => compile(prefix + "Version BETWEEN 1 AND 5 OR IsActive = TRUE"), /outside OR/);
 });
 
+test('preserves the difference between missing and non-null metadata', () => {
+  const prefix = "SELECT Id FROM MongoDBOASIS WHERE ";
+  const { body } = compile(prefix + "(metadata.profile.nickname IS MISSING OR metadata.profile.since IS NOT NULL)");
+  assert.deepEqual(body.anyOf, [
+    { metadataPath: ['profile', 'nickname'], operator: 'IsMissing' },
+    { metadataPath: ['profile', 'since'], operator: 'IsNotNull' }
+  ]);
+  assert.throws(() => compile(prefix + "Name IS NOT NULL"));
+  assert.throws(() => compile(prefix + "metadata.profile.nickname IS NOT PRESENT"));
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +

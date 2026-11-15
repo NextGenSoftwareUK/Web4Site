@@ -85,6 +85,11 @@
         selector = { metadataPath };
         if (accept('IS')) {
           if (accept('NULL')) return { ...selector, operator: 'IsNull' };
+          if (accept('MISSING')) return { ...selector, operator: 'IsMissing' };
+          if (accept('NOT')) {
+            expect('NULL');
+            return { ...selector, operator: 'IsNotNull' };
+          }
           expect('PRESENT');
           return { ...selector, operator: 'Exists' };
         }
