@@ -766,3 +766,19 @@ test('SQL left join renders a matching row with a null value distinctly from an 
   assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)),
     [['Matched', 'NULL', 'Yes'], ['Unmatched', 'NULL', 'No']]);
 });
+
+test('loads the displayed bounded SQL join for review without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the join must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-join-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-join-example', { textContent: sql });
+  h.elements.get('cql-load-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Left');
+  assert.equal(body.maximumResults, 25);
+});
