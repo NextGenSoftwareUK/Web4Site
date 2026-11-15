@@ -131,7 +131,7 @@
         return { id: row.id, label: row.label, request, operation, available: row.available !== false };
       });
       return { provider: source.provider, available: source.available, queryOnly: source.queryOnly,
-        federationAvailable: source.federationAvailable, examples };
+        federationAvailable: source.federationAvailable, textKeyProfile: source.textKeyProfile, examples };
     });
   }
 
@@ -174,6 +174,7 @@
     let sessionIdentity = null;
     let sessionBase = null;
     let sources = null;
+    let discoveredTextProfiles = {};
     let discovery = null;
     let preparation = null;
     let preparing = false;
@@ -336,7 +337,7 @@
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
       }
-      sessionIdentity = identity; sessionBase = base; sources = null; endpoint = '';
+      sessionIdentity = identity; sessionBase = base; sources = null; discoveredTextProfiles = {}; endpoint = '';
       $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
       $('cql-sources').textContent = '';
@@ -359,6 +360,7 @@
         if (!response.ok || result?.isError)
           throw new Error(`Provider discovery failed: HTTP ${response.status} · ${result?.errorCode || 'CQL_CATALOGUE_UNAVAILABLE'}`);
         sources = catalogue(result);
+        discoveredTextProfiles = root.CqlText.discoverKeyProfiles(sources);
         for (const source of sources) {
           const playable = profileChoices(source, sources).length > 0;
           const option = new Option(source.provider + (!source.available ? ' · unavailable' : !playable ? ' · examples pending' : ''), source.provider);
@@ -426,7 +428,7 @@
         'host:' + row.id === $('cql-preset').value &&
         ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
         row.available !== false && row.operation !== 'Federation');
-      if (!source?.available || !root.CqlText.publicExample(source.provider, example?.request)) return null;
+      if (!source?.available || !root.CqlText.publicExample(source.provider, example?.request, discoveredTextProfiles)) return null;
       return { provider: source.provider, request: example.request };
     }
 
@@ -441,20 +443,24 @@
       try {
         const example = selectedPublicExample();
         if (!example) throw new Error('This provider has no SQL-like public example on this host.');
-        $('cql-text').value = root.CqlText.publicExample(example.provider, example.request);
+        $('cql-text').value = root.CqlText.publicExample(example.provider, example.request, discoveredTextProfiles);
         note('Review the SQL-like example, then preview its request.');
       } catch (error) { note(error.message, true); }
     });
 
     function availableTextProviders() {
       if (discovery || !getToken()) return [];
-      return root.CqlText.providers.filter(provider =>
+      return [...root.CqlText.providers, ...Object.keys(discoveredTextProfiles)].filter(provider =>
         sources?.some(source => source.provider === provider && source.available));
+    }
+
+    function availableTextProfiles() {
+      return discovery || !getToken() ? {} : discoveredTextProfiles;
     }
 
     function compileAvailableText(text) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
-      const query = root.CqlText.compile(text);
+      const query = root.CqlText.compile(text, discoveredTextProfiles);
       const selected = query.body.providers ?? [query.body.provider];
       if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
         (selected.length === 1 || row.federationAvailable))))
@@ -473,7 +479,7 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, availableTextProviders, compileAvailableText, loadText, selectedPublicExample };
+    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,

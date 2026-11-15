@@ -57,7 +57,27 @@
     '>=': 'GreaterThanOrEqual', CONTAINS: 'Contains',
     STARTSWITH: 'StartsWith', ENDSWITH: 'EndsWith' };
 
-  function compile(text) {
+  function discoverKeyProfiles(sources) {
+    const profiles = Object.create(null);
+    for (const source of sources) {
+      const { provider, textKeyProfile } = source;
+      if (!source.available || !source.queryOnly || !textKeyProfile || providers.includes(provider) ||
+          !/^[A-Za-z][A-Za-z0-9]{0,39}$/.test(provider) || ['Default', 'None'].includes(provider)) continue;
+      const { metadataKey, maximumKeyCharacters, maximumSetKeys } = textKeyProfile;
+      if (!/^[A-Za-z_][A-Za-z0-9_]{0,63}$/.test(metadataKey ?? '') ||
+          !Number.isInteger(maximumKeyCharacters) || maximumKeyCharacters < 1 || maximumKeyCharacters > 512 ||
+          !Number.isInteger(maximumSetKeys) || maximumSetKeys < 0 || maximumSetKeys > 40) continue;
+      profiles[provider] = {
+        key: metadataKey, maximumKeys: maximumSetKeys, requiresSingleKeyFilter: true,
+        accepts: value => value.length <= maximumKeyCharacters && /^[!-~]+$/.test(value)
+      };
+    }
+    return profiles;
+  }
+
+  function compile(text, discoveredProfiles = {}) {
+    const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
+    const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
     const lexer = /\s+|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
     const tokens = [];
@@ -283,8 +303,8 @@
     expect('FROM');
     const selected = [];
     do {
-      const provider = providers.find(value => value.toUpperCase() === peek());
-      if (!provider || selected.includes(provider)) throw new Error('Choose distinct providers from: ' + providers.join(', '));
+      const provider = selectableProviders.find(value => value.toUpperCase() === peek());
+      if (!provider || selected.includes(provider)) throw new Error('Choose distinct available providers.');
       selected.push(provider);
       index++;
     } while (accept(','));
@@ -293,8 +313,8 @@
     if (operation && selected.length > 1) throw new Error('Scalar queries require a single provider.');
     const [provider] = selected;
     const holo = selected.includes('HoloOASIS');
-    const accountProviders = selected.filter(provider => Object.hasOwn(accountProfiles, provider));
-    const nativeKeys = new Set(accountProviders.map(name => accountProfiles[name].key));
+    const accountProviders = selected.filter(provider => Object.hasOwn(keyProfiles, provider));
+    const nativeKeys = new Set(accountProviders.map(name => keyProfiles[name].key));
     if (holo) nativeKeys.add('Id');
     if (nativeKeys.size > 1)
       throw new Error('These providers require different key fields. Run separate queries for each key field.');
@@ -468,14 +488,14 @@
       throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
     }
     for (const accountProvider of accountProviders) {
-      const { key, accepts, maximumKeys = 8, requiresSingleKeyFilter } = accountProfiles[accountProvider];
+      const { key, accepts, maximumKeys = 8, requiresSingleKeyFilter } = keyProfiles[accountProvider];
       if (requiresSingleKeyFilter && (body.filters.length !== 1 || body.anyOf))
         throw new Error(accountProvider + ' requires one ' + key + ' equality or IN filter.');
       const invalidFilter = [...body.filters, ...(body.anyOf ?? [])].some(filter => {
         if (filter.scalar !== 'String' || filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
             !['Equal', 'In'].includes(filter.operator)) return true;
         const values = Array.isArray(filter.value) ? filter.value : [filter.value];
-        return values.length > maximumKeys || values.some(value => !accepts(value)) ||
+        return (filter.operator === 'In' && values.length > maximumKeys) || values.some(value => !accepts(value)) ||
           (requiresSingleKeyFilter && new Set(values).size !== values.length);
       });
       if (operation || body.orderBy !== 'None' || relationships.length || invalidFilter) {
@@ -509,8 +529,8 @@
     return { path: operation ? 'data/query-cql/scalar' : 'data/query-cql', body };
   }
 
-  function publicExample(provider, request) {
-    const expectedKey = accountProfiles[provider]?.key;
+  function publicExample(provider, request, discoveredProfiles = {}) {
+    const expectedKey = (accountProfiles[provider] ?? discoveredProfiles[provider])?.key;
     const [filter] = request?.filters ?? [];
     const values = filter?.operator === 'Equal' ? [filter.value] : filter?.operator === 'In' ? filter.value : null;
     if (request?.provider !== provider || request.filters?.length !== 1 || !values ||
@@ -526,11 +546,11 @@
       return null;
     const keys = values.map(key => "'" + key.replace(/'/g, "''") + "'").join(', ');
     const text = `SELECT * FROM ${provider} WHERE ${field} ${filter.operator === 'Equal' ? '= ' + keys : 'IN (' + keys + ')'} LIMIT ${request.take}${request.maximumDurationMilliseconds ? ' TIMEOUT ' + request.maximumDurationMilliseconds : ''}`;
-    compile(text);
+    compile(text, discoveredProfiles);
     return text;
   }
 
-  const api = { providers: Object.freeze([...providers]), compile, publicExample };
+  const api = { providers: Object.freeze([...providers]), compile, publicExample, discoverKeyProfiles };
   if (typeof module !== 'undefined') module.exports = api;
   else root.CqlText = api;
 })(globalThis);

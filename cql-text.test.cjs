@@ -1,6 +1,6 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { compile } = require('./cql-text.js');
+const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
 test('compiles typed filters, grouped alternatives and ordered pagination', () => {
   const { path, body } = compile(
@@ -142,6 +142,25 @@ test('binds Algorand, Filecoin, Zcash and Radix to their enrolled key shapes', (
     assert.throws(() => compile(prefix + " = '" + invalid + "'"), new RegExp(key));
     assert.throws(() => compile("SELECT * FROM " + provider), /requires one/);
   }
+});
+
+test('enables only ready enrolled native key profiles without weakening built-in validation', () => {
+  const keyProfile = { metadataKey: 'DemoKey', maximumKeyCharacters: 4, maximumSetKeys: 0 };
+  const sources = [
+    { provider: 'NewOASIS', queryOnly: true, available: true, textKeyProfile: keyProfile },
+    { provider: 'OfflineOASIS', queryOnly: true, available: false, textKeyProfile: keyProfile },
+    { provider: 'OrdinaryOASIS', queryOnly: false, available: true, textKeyProfile: keyProfile },
+    { provider: 'BitcoinOASIS', queryOnly: true, available: true, textKeyProfile: keyProfile },
+    { provider: 'BadOASIS', queryOnly: true, available: true, textKeyProfile: { ...keyProfile, maximumSetKeys: 41 } }
+  ];
+  const profiles = discoverKeyProfiles(sources);
+  assert.deepEqual(Object.keys(profiles), ['NewOASIS']);
+  const prefix = "SELECT * FROM NewOASIS WHERE metadata.DemoKey ";
+  assert.equal(compile(prefix + "= 'abcd'", profiles).body.provider, 'NewOASIS');
+  assert.throws(() => compile(prefix + "= 'abcde'", profiles), /DemoKey/);
+  assert.throws(() => compile(prefix + "IN ('abcd')", profiles), /DemoKey/);
+  assert.throws(() => compile(prefix + "= 'abcd'"));
+  assert.throws(() => compile("SELECT * FROM BitcoinOASIS WHERE metadata.DemoKey = 'abcd'", profiles), /BitcoinBlockHash/);
 });
 
 test('compiles inclusive ranges without rounding typed bounds', () => {
