@@ -168,8 +168,8 @@ test('compiles key-only GROUP BY to the same native request as DISTINCT', () => 
   const grouped = 'SELECT Version AS Revision, IsActive FROM MongoDBOASIS GROUP BY Version, IsActive';
   const page = ' ORDER BY Revision DESC, IsActive LIMIT 5 OFFSET 2';
   assert.deepEqual(compile(grouped + page), compile(distinct + page));
-  assert.throws(() => compile('SELECT * FROM MongoDBOASIS GROUP BY Version'), /matches GROUP BY/);
-  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS GROUP BY Version'), /matches GROUP BY/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS GROUP BY Version'), /match GROUP BY/);
+
 });
 
 test('compiles inclusive ranges without rounding typed bounds', () => {
@@ -501,7 +501,7 @@ test('groups a filtered database query before paging result groups', () => {
   assert.deepEqual(body.resultOrder, [{ alias: 'Total', descending: true }]);
   assert.equal(body.resultTake, 2);
   assert.equal(body.take, undefined);
-  assert.throws(() => compile('SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Name'), /matches GROUP BY/);
+  assert.throws(() => compile('SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Name'), /match GROUP BY/);
 });
 
 test('compiles a Boolean existence query without counting or selecting rows', () => {
@@ -562,7 +562,7 @@ test('groups by multiple fields and preserves the SELECT column order', () => {
   const { body } = compile(base + ' GROUP BY IsActive, Version ORDER BY Total DESC, Revision ASC');
   assert.deepEqual(body.keys.map(key => key.field), ['IsActive', 'Version']);
   assert.deepEqual(body.columns.map(column => column.alias), ['Revision', 'Total', 'IsActive']);
-  assert.throws(() => compile(base + ' GROUP BY Version, Version'), /matches GROUP BY/);
+  assert.throws(() => compile(base + ' GROUP BY Version, Version'), /different GROUP BY fields/);
 });
 
 test('grouped HAVING compiles both inclusive range boundaries before paging', () => {
@@ -684,4 +684,15 @@ test('compiles SQL with inline and block comments while preserving string litera
   assert.deepEqual(compile(withComments), compile(query));
   assert.throws(() => compile(query + ' /* unfinished'), /Unexpected character/);
   assert.throws(() => compile(query + '; /* comment */ SELECT * FROM MongoDBOASIS'), /Unexpected clause/);
+});
+
+test('groups on hidden keys and returns only selected columns', () => {
+  const count = compile('SELECT COUNT(*) FROM MongoDBOASIS GROUP BY Version ORDER BY Count DESC');
+  assert.equal(count.path, 'data/query-cql/grouped');
+  assert.deepEqual(count.body.keys, [{ field: 'Version', alias: 'Version' }]);
+  assert.deepEqual(count.body.columns, [{ alias: 'Count', operation: 'LongCount' }]);
+  const hidden = compile('SELECT Version AS IsActive, COUNT(*) AS Total FROM Neo4jOASIS GROUP BY Version, IsActive');
+  assert.deepEqual(hidden.body.keys, [{ field: 'Version', alias: 'IsActive' }, { field: 'IsActive', alias: 'IsActive_' }]);
+  assert.deepEqual(hidden.body.columns, [{ alias: 'IsActive', keyAlias: 'IsActive' }, { alias: 'Total', operation: 'LongCount' }]);
+  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS GROUP BY Version, Version'), /different GROUP BY fields/);
 });

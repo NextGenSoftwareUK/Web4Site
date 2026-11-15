@@ -261,7 +261,10 @@
     expect('SELECT');
     const distinct = accept('DISTINCT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
-    const startsWithGroupedAggregate = peek() !== 'ANY' && ['AS', ','].includes(tokens[index + 4]?.toUpperCase());
+    const hasGrouping = tokens.some((token, position) =>
+      token.toUpperCase() === 'GROUP' && tokens[position + 1]?.toUpperCase() === 'BY');
+    const startsWithGroupedAggregate = peek() !== 'ANY' &&
+      (hasGrouping || ['AS', ','].includes(tokens[index + 4]?.toUpperCase()));
     const operation = !startsWithGroupedAggregate && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
@@ -367,10 +370,21 @@
           if (!Object.hasOwn(fields, name)) throw new Error('Unknown GROUP BY field.');
           groupFields.push(fields[name][0]);
         } while (accept(','));
-        if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
-            !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
-          throw new Error('Select each field that matches GROUP BY once.');
-        keys = groupFields.map(field => columns.find(column => column.field === field));
+        if (groupFields.length > 8 || new Set(groupFields).size !== groupFields.length)
+          throw new Error('Use up to eight different GROUP BY fields.');
+        if ((!columns.length && !groupedAggregates.length) ||
+            columns.some(column => !groupFields.includes(column.field)) ||
+            new Set(columns.map(column => column.field)).size !== columns.length)
+          throw new Error('Each selected field must match GROUP BY once.');
+        const keyAliases = new Set(columns.map(column => column.alias.toLowerCase()));
+        keys = groupFields.map(field => {
+          const selected = columns.find(column => column.field === field);
+          if (selected) return selected;
+          let alias = field;
+          while (keyAliases.has(alias.toLowerCase())) alias += '_';
+          keyAliases.add(alias.toLowerCase());
+          return { field, alias };
+        });
       }
       delete body.includeMetadata;
       delete body.take;
