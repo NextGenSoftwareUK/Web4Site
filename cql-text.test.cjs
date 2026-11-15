@@ -900,3 +900,19 @@ test('RIGHT OUTER JOIN preserves the original right input and selected output or
   ]);
   assert.deepEqual([query.body.maximumLeftRows, query.body.maximumRightRows, query.body.maximumPairs], [4, 2, 8]);
 });
+
+test('bounded CROSS JOIN requires no ON condition and preserves the product limit', () => {
+  const left = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 2) AS l';
+  const right = '(SELECT * FROM MongoDBOASIS ORDER BY Name LIMIT 3 OFFSET 1) AS r';
+  const text = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' CROSS JOIN ' + right;
+  const query = compile(text);
+  assert.equal(query.path, 'data/query-cql/join');
+  assert.equal(query.body.kind, 'Cross');
+  assert.deepEqual(query.body.keys, []);
+  assert.deepEqual([query.body.maximumLeftRows, query.body.maximumRightRows, query.body.maximumPairs, query.body.maximumResults],
+    [2, 3, 6, 6]);
+  assert.equal(query.body.right.skip, 1);
+  assert.deepEqual(query.body.columns.map(column => column.source), ['Left', 'Right']);
+  assert.throws(() => compile(text + ' ON l.Id = r.Id'), /Unexpected join clause/);
+  assert.throws(() => compile(text.replace('CROSS JOIN', 'INNER JOIN')), /Expected ON/);
+});

@@ -327,8 +327,9 @@
       const leftJoin = accept('LEFT');
       const rightJoin = !leftJoin && accept('RIGHT');
       const outerJoin = leftJoin || rightJoin;
+      const crossJoin = !outerJoin && accept('CROSS');
       if (outerJoin) accept('OUTER');
-      else accept('INNER');
+      else if (!crossJoin) accept('INNER');
       expect('JOIN');
       const secondSource = source();
       const [left, right] = rightJoin ? [secondSource, firstSource] : [firstSource, secondSource];
@@ -339,20 +340,22 @@
         if (alias === right.alias) return 'Right';
         throw new Error('Unknown join source alias.');
       };
-      expect('ON');
       const keys = [];
-      do {
-        const first = qualifiedField();
-        expect('=');
-        const second = qualifiedField();
-        const one = sourceSide(first.source);
-        if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
-        const [l, r] = one === 'Left' ? [first, second] : [second, first];
-        if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
-            selectionKey(key.right) === selectionKey(r.selection)))
-          throw new Error('Use each join key pair once.');
-        keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection });
-      } while (accept('AND'));
+      if (!crossJoin) {
+        expect('ON');
+        do {
+          const first = qualifiedField();
+          expect('=');
+          const second = qualifiedField();
+          const one = sourceSide(first.source);
+          if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
+          const [l, r] = one === 'Left' ? [first, second] : [second, first];
+          if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
+              selectionKey(key.right) === selectionKey(r.selection)))
+            throw new Error('Use each join key pair once.');
+          keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection });
+        } while (accept('AND'));
+      }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
       if (keys.length > 8 || left.body.filters.length + right.body.filters.length > 12)
@@ -365,7 +368,7 @@
       });
       const maximumPairs = left.body.take * right.body.take;
       return { path: 'data/query-cql/join', body: {
-        provider: left.provider, kind: outerJoin ? 'Left' : 'Inner',
+        provider: left.provider, kind: crossJoin ? 'Cross' : outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns,
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
       } };
