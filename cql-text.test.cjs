@@ -40,6 +40,18 @@ test('preserves the difference between missing and non-null metadata', () => {
   assert.throws(() => compile(prefix + "metadata.profile.nickname IS NOT PRESENT"));
 });
 
+test('queries the enrolled Axelar block-height catalogue without numeric rounding', () => {
+  const prefix = "SELECT * FROM AxelarOASIS WHERE ";
+  const request = compile(prefix + "metadata.AxelarBlockHeight IN ('37269326', '9007199254740993') LIMIT 2");
+  assert.equal(request.body.provider, 'AxelarOASIS');
+  assert.equal(request.body.orderBy, 'None');
+  assert.deepEqual(request.body.filters[0].value, ['37269326', '9007199254740993']);
+  assert.throws(() => compile(prefix + "metadata.TronBlockHeight = '37269326'"), /AxelarBlockHeight/);
+  assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '9223372036854775808'"), /AxelarBlockHeight/);
+  assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '0'"), /AxelarBlockHeight/);
+  assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '37269326' ORDER BY Id"));
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
