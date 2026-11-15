@@ -17,6 +17,18 @@ test('compiles typed filters, grouped alternatives and ordered pagination', () =
   assert.deepEqual([body.orderBy, body.descending, body.take, body.skip], ['Version', true, 5, 2]);
 });
 
+test('compiles a plain OR list as the same typed request as a parenthesized OR group', () => {
+  const prefix = "SELECT Name FROM MongoDBOASIS WHERE ";
+  const alternatives = "Name = 'Coffee' OR Name = 'Tea' OR IsActive = TRUE";
+  const suffix = " ORDER BY Name LIMIT 5";
+  const unwrapped = compile(prefix + alternatives + suffix);
+  assert.deepEqual(unwrapped, compile(prefix + '(' + alternatives + ')' + suffix));
+  assert.deepEqual(unwrapped.body.anyOf.map(filter => filter.value), ['Coffee', 'Tea', true]);
+  assert.throws(() => compile(prefix + alternatives + " AND Version = 2"), /Parenthesize the OR group/);
+  assert.throws(() => compile(prefix + "EXISTS CHILD (Version = 2) AND " + alternatives));
+  assert.throws(() => compile(prefix + "Version BETWEEN 1 AND 5 OR IsActive = TRUE"), /outside OR/);
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +

@@ -292,10 +292,11 @@
           }
         } else {
           const predicate = filter(true);
-          if (!allowChildren && !target.filters.length && !target.anyOf && accept('OR')) {
+          if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && accept('OR')) {
             if (Array.isArray(predicate)) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
             target.anyOf = [predicate, filter()];
             while (accept('OR')) target.anyOf.push(filter());
+            if (peek() === 'AND') throw new Error('Parenthesize the OR group when combining it with AND.');
             break;
           }
           target.filters.push(...[].concat(predicate));
