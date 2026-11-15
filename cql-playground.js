@@ -251,7 +251,7 @@
       for (const item of payload.rows) {
         if (columns) {
           const tr = tbody.insertRow();
-          for (const value of item) tr.insertCell().textContent = String(value ?? '');
+          for (const value of item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
           continue;
         }
         const row = item.selected ? item.selected.row : item;

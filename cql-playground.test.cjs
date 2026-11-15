@@ -722,3 +722,23 @@ test('loads the displayed grouped example for review without submitting it', asy
   assert.deepEqual(body.resultFilters.map(({ alias, value }) => [alias, value]),
     [['AverageVersion', '1.0'], ['TotalVersion', 1]]);
 });
+
+test('typed grouped results distinguish NULL from empty strings and preserve exact numbers', async () => {
+  const h = harness(async url => {
+    assert.match(url, /query-cql\/grouped$/);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-grouped-v1', provider: 'MongoDBOASIS',
+      columns: [{ alias: 'Label' }, { alias: 'Stock' }, { alias: 'Amount' }],
+      rows: [['', '9007199254740993', '1.0000000000000000000000000001'], [null, null, null]]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT DISTINCT CAST(metadata.label AS STRING) AS Label, ' +
+    'CAST(metadata.stock AS INT64) AS Stock, CAST(metadata.amount AS DECIMAL) AS Amount FROM MongoDBOASIS');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [, rows] = table.children;
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)), [
+    ['', '9007199254740993', '1.0000000000000000000000000001'], ['NULL', 'NULL', 'NULL']
+  ]);
+});
