@@ -916,3 +916,16 @@ test('bounded CROSS JOIN requires no ON condition and preserves the product limi
   assert.throws(() => compile(text + ' ON l.Id = r.Id'), /Unexpected join clause/);
   assert.throws(() => compile(text.replace('CROSS JOIN', 'INNER JOIN')), /Expected ON/);
 });
+
+test('keeps each OR group inside its own bounded join input', () => {
+  const left = "(SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (Version = 1 OR Version = 3) ORDER BY Id LIMIT 2) AS l";
+  const right = "(SELECT * FROM MongoDBOASIS WHERE Name LIKE 'Demo%' OR Name = 'Sample' ORDER BY Name LIMIT 3 OFFSET 1) AS r";
+  const text = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' CROSS JOIN ' + right;
+  const { body } = compile(text);
+  assert.deepEqual(body.left.filters.map(filter => [filter.field, filter.value]), [['IsActive', true]]);
+  assert.deepEqual(body.left.anyOf.map(filter => [filter.field, filter.value]), [['Version', 1], ['Version', 3]]);
+  assert.deepEqual(body.right.anyOf.map(filter => [filter.field, filter.value]), [['Name', 'Demo'], ['Name', 'Sample']]);
+  assert.equal(body.right.skip, 1);
+  assert.equal(body.maximumPairs, 6);
+  assert.throws(() => compile(text.replace('IsActive = TRUE','EXISTS CHILD (IsActive = TRUE)')), /Unknown filter field/);
+});

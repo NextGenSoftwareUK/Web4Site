@@ -290,13 +290,8 @@
         const provider = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].find(name => name.toUpperCase() === peek());
         if (!provider) throw new Error('Join sources require MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.');
         index++;
-        const filters = [];
-        if (accept('WHERE')) {
-          do {
-            filters.push(...[].concat(filter(true)));
-          } while (accept('AND'));
-        }
-        const body = { filters, orderBy: 'Id' };
+        const body = { filters: [], orderBy: 'Id' };
+        if (accept('WHERE')) predicates(body, false);
         if (accept('ORDER')) {
           expect('BY');
           const field = fields[tokens[index++]?.toLowerCase()]?.[0];
