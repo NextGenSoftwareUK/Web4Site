@@ -2,6 +2,30 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('SQL FETCH and OFFSET ROWS preserve the existing native row and selected windows', () => {
+  const cases = [
+    ['SELECT * FROM MongoDBOASIS ORDER BY Name', 'LIMIT 3 OFFSET 2', 'OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY'],
+    ['SELECT Id, Description AS Detail FROM SQLLiteDBOASIS ORDER BY Detail', 'LIMIT 3 OFFSET 2', 'OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY'],
+    ['SELECT DISTINCT Version FROM Neo4jOASIS ORDER BY Version', 'LIMIT 3 OFFSET 2', 'OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY'],
+    ['SELECT Version, COUNT(*) AS Total FROM Neo4jOASIS GROUP BY Version ORDER BY Total', 'LIMIT 3 OFFSET 2', 'OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY'],
+    ['SELECT * FROM MongoDBOASIS', 'LIMIT 1', 'FETCH FIRST ROW ONLY'],
+    ['SELECT * FROM MongoDBOASIS', 'OFFSET 2', 'OFFSET 2 ROWS']
+  ];
+  for (const [query, existing, standard] of cases)
+    assert.deepEqual(compile(query + ' ' + standard), compile(query + ' ' + existing));
+});
+
+test('SQL FETCH retains join input pagination and rejects invalid or excessive windows', () => {
+  const query = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 3 OFFSET 1) l ' +
+    'INNER JOIN (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 2) r ON l.Id = r.Id';
+  assert.deepEqual(compile(query.replace('LIMIT 3 OFFSET 1', 'OFFSET 1 ROW FETCH NEXT 3 ROWS ONLY')
+    .replace('LIMIT 2', 'FETCH FIRST 2 ROWS ONLY')), compile(query));
+  assert.throws(() => compile(query.replace('LIMIT 2', 'FETCH FIRST 11 ROWS ONLY')), /integer from 1 to 10/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS FETCH FIRST 3 ROWS WITH TIES'), /Expected ONLY/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS OFFSET 2 FETCH NEXT 3 ROWS ONLY'), /OFFSET n ROWS/);
+  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS FETCH FIRST 3 ROWS ONLY'), /Unexpected clause/);
+});
+
 test('compiles typed filters, grouped alternatives and ordered pagination', () => {
   const { path, body } = compile(
     "select * from SQLLiteDBOASIS where IsActive = TRUE AND Version >= 2 " +

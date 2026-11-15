@@ -104,6 +104,27 @@
         throw new Error('Expected an integer from ' + minimum + ' to ' + maximum + '.');
       return value;
     }
+    function readWindow(maximumTake, maximumSkip) {
+      let take, skip;
+      if (accept('LIMIT')) {
+        take = integer(tokens[index++], 1, maximumTake);
+        if (accept('OFFSET')) skip = integer(tokens[index++], 0, maximumSkip);
+      } else {
+        if (accept('OFFSET')) {
+          skip = integer(tokens[index++], 0, maximumSkip);
+          if (!accept('ROW') && !accept('ROWS') && peek() === 'FETCH')
+            throw new Error('Use OFFSET n ROWS before FETCH.');
+        }
+        if (accept('FETCH')) {
+          if (!accept('FIRST')) expect('NEXT');
+          take = peek() === 'ROW' || peek() === 'ROWS' ? 1 : integer(tokens[index++], 1, maximumTake);
+          if (!accept('ROW')) expect('ROWS');
+          expect('ONLY');
+        }
+      }
+      return { take, skip };
+    }
+
     function exactDecimal(token) {
       const match = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,28}))?$/.exec(token ?? '');
       if (!match || token.length > 31) throw new Error('Expected an exact decimal literal.');
@@ -306,9 +327,10 @@
           if (accept('DESC')) body.descending = true;
           else accept('ASC');
         }
-        expect('LIMIT');
-        body.take = integer(tokens[index++], 1, 10);
-        if (accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
+        const window = readWindow(10, 1000);
+        if (window.take === undefined) throw new Error('Join inputs require a LIMIT or FETCH row bound.');
+        body.take = window.take;
+        if (window.skip !== undefined) body.skip = window.skip;
         expect(')');
         accept('AS');
         return { alias: identifier('source').toLowerCase(), provider, body };
@@ -636,10 +658,11 @@
           grouped.resultOrder.push({ alias, descending });
         } while (accept(','));
       }
-      if (accept('LIMIT')) grouped.resultTake = integer(tokens[index++], 1, 100);
-      if (accept('OFFSET')) {
+      const window = readWindow(100, 100);
+      if (window.take !== undefined) grouped.resultTake = window.take;
+      if (window.skip !== undefined) {
         if (!grouped.resultOrder) throw new Error('Use ORDER BY before paging grouped results.');
-        grouped.resultSkip = integer(tokens[index++], 0, 100);
+        grouped.resultSkip = window.skip;
       }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected grouped query clause.');
@@ -682,8 +705,11 @@
         }
       }
     }
-    if (!operation && accept('LIMIT')) body.take = integer(tokens[index++], 1, 100);
-    if (!operation && accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
+    if (!operation) {
+      const window = readWindow(100, 1000);
+      if (window.take !== undefined) body.take = window.take;
+      if (window.skip !== undefined) body.skip = window.skip;
+    }
     if (accept('TIMEOUT')) {
       if (columns.length) throw new Error('Selected columns use the server timeout.');
       if (operation) throw new Error('TIMEOUT applies to row queries. Scalar queries use the server timeout.');
