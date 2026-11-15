@@ -1,5 +1,14 @@
 # CQL website current status
 
+## Public starting point for Ask your data
+
+The Ask your data tab can load an available public question directly. It uses a compatible selected example or chooses a ready public rows example from the current WEB4 catalogue. The visitor reviews the question before requesting a WEB6 draft, then reviews that draft before execution.
+
+All 224 website tests passed. The suite covers the discovery scope, selected-example precedence and clearing the example when the visitor signs out. Live WEB4 has populated native checks for bounded INNER and LEFT joins and for grouped-key HAVING filters on MongoDB, SQLite and Neo4j.
+
+The protected preview built for 8e366e6022b5. The signed-in browser walkthrough and a new real WEB6 draft on this preview remain open. [Protected preview](https://web4-site-290746kyw-oasis-team.vercel.app/web4-sandbox.html)
+
+
 ## Live provider scope for Ask Your Data
 
 The SQL-like editor runs current text directly or previews the compiled request. WEB6 drafting waits for successful WEB4 discovery and receives only current supported providers. Drafts require explicit review before running. The 192 committed-file tests passed. Hosted signed-in browser verification and the signed Int64 backend rollout remain open.
