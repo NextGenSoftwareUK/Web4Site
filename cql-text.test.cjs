@@ -163,6 +163,15 @@ test('enables only ready enrolled native key profiles without weakening built-in
   assert.throws(() => compile("SELECT * FROM BitcoinOASIS WHERE metadata.DemoKey = 'abcd'", profiles), /BitcoinBlockHash/);
 });
 
+test('compiles key-only GROUP BY to the same native request as DISTINCT', () => {
+  const distinct = 'SELECT DISTINCT Version AS Revision, IsActive FROM MongoDBOASIS';
+  const grouped = 'SELECT Version AS Revision, IsActive FROM MongoDBOASIS GROUP BY Version, IsActive';
+  const page = ' ORDER BY Revision DESC, IsActive LIMIT 5 OFFSET 2';
+  assert.deepEqual(compile(grouped + page), compile(distinct + page));
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS GROUP BY Version'), /matches GROUP BY/);
+  assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS GROUP BY Version'), /matches GROUP BY/);
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +

@@ -355,7 +355,7 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (distinct || groupedAggregates.length) {
+    if (distinct || groupedAggregates.length || peek() === 'GROUP') {
       let keys = columns;
       if (!distinct) {
         expect('GROUP');
@@ -368,7 +368,7 @@
         } while (accept(','));
         if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
             !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
-          throw new Error('Select each field that matches GROUP BY once, along with an aggregate.');
+          throw new Error('Select each field that matches GROUP BY once.');
         keys = groupFields.map(field => columns.find(column => column.field === field));
       }
       delete body.includeMetadata;
