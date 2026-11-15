@@ -664,3 +664,15 @@ test('orders a selected description alias through bounded composition', () => {
     { operation: 'Take', count: 3 }
   ]);
 });
+
+test('uses default aliases for grouped aggregates in either SELECT order', () => {
+  const tail = ' FROM MongoDBOASIS GROUP BY Version HAVING Count >= 2 ORDER BY Avg DESC LIMIT 5';
+  const columns = ['COUNT(*)', 'AVG(Version)', 'Version'];
+  const aliases = ['COUNT(*) AS Count', 'AVG(Version) AS Avg', 'Version'];
+  assert.deepEqual(compile('SELECT ' + columns.join(', ') + tail),
+    compile('SELECT ' + aliases.join(', ') + tail));
+  assert.deepEqual(compile('SELECT Version, COUNT(*) FROM Neo4jOASIS GROUP BY Version').body.columns,
+    [{ alias: 'Version', keyAlias: 'Version' }, { alias: 'Count', operation: 'LongCount' }]);
+  assert.throws(() => compile('SELECT Version AS Count, COUNT(*) FROM MongoDBOASIS GROUP BY Version'),
+    /distinct alias/);
+});

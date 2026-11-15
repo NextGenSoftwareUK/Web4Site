@@ -260,8 +260,8 @@
     expect('SELECT');
     const distinct = accept('DISTINCT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
-    const startsWithAliasedAggregate = peek() !== 'ANY' && tokens[index + 4]?.toUpperCase() === 'AS';
-    const operation = !startsWithAliasedAggregate && Object.hasOwn(aggregates, peek())
+    const startsWithGroupedAggregate = peek() !== 'ANY' && ['AS', ','].includes(tokens[index + 4]?.toUpperCase());
+    const operation = !startsWithGroupedAggregate && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
@@ -272,13 +272,13 @@
     if (!operation && !accept('*')) {
       do {
         if (peek() !== 'ANY' && Object.hasOwn(aggregates, peek())) {
-          const aggregate = aggregates[tokens[index++].toUpperCase()];
+          const name = tokens[index++].toUpperCase();
+          const aggregate = aggregates[name];
           expect('(');
           const isCount = aggregate === 'LongCount';
           expect(isCount ? '*' : 'VERSION');
           expect(')');
-          expect('AS');
-          const alias = tokens[index++];
+          const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
             throw new Error('Expected a column alias for the grouped aggregate.');
           const binding = { alias, operation: aggregate };
