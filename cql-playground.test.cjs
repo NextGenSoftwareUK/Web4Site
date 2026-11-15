@@ -788,3 +788,33 @@ test('loads the displayed bounded SQL join for review without submitting it', as
   assert.equal(body.kind, 'Left');
   assert.equal(body.maximumResults, 25);
 });
+
+test('SQL full outer join shows which source row exists even when projected values are null', async () => {
+  const source = '(SELECT * FROM Neo4jOASIS ORDER BY Id LIMIT 2)';
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/join$/);
+    const request = JSON.parse(options.body);
+    assert.equal(request.kind, 'Full');
+    assert.deepEqual(request.columns.map(column => column.allowMissing), [true, true]);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-join-v1', provider: 'Neo4jOASIS', kind: 'Full',
+      columns: [{ alias: 'LeftDescription' }, { alias: 'RightDescription' }],
+      rows: [
+        { hasLeft: true, hasRight: true, values: [null, null] },
+        { hasLeft: true, hasRight: false, values: ['Only left', null] },
+        { hasLeft: false, hasRight: true, values: [null, 'Only right'] }
+      ]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT l.Description AS LeftDescription, r.Description AS RightDescription FROM ' +
+    source + ' AS l FULL OUTER JOIN ' + source + ' AS r ON l.Id = r.Id');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [head, rows] = table.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent),
+    ['LeftDescription', 'RightDescription', 'Source rows']);
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)), [
+    ['NULL', 'NULL', 'Both'], ['Only left', 'NULL', 'Left only'], ['NULL', 'Only right', 'Right only']
+  ]);
+});

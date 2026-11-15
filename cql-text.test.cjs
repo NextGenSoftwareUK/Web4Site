@@ -968,3 +968,41 @@ test('compiles NOT BETWEEN to two strict ordered alternatives in the same scope'
   assert.throws(() => compile(head + 'Version NOT BETWEEN 2 AND 5 AND Version NOT BETWEEN 7 AND 9'), /one OR group/);
   assert.throws(() => compile(head + "Name NOT BETWEEN 'A' AND 'B'"), /requires a numeric or UTC timestamp/);
 });
+
+test('keeps floating-point metadata literals in the WEB4 wire format', () => {
+  const head = 'SELECT * FROM MongoDBOASIS WHERE ';
+  const { body } = compile(head + 'metadata.score AS DOUBLE BETWEEN -1e-7 AND 2.5E+9 ' +
+    'AND metadata.rank AS SINGLE IN (001.2500, 3e-2)');
+  assert.deepEqual(body.filters.map(({ scalar, value }) => [scalar, value]), [
+    ['Double', '-1E-07'], ['Double', '2500000000'], ['Single', ['1.25', '0.03']]
+  ]);
+  assert.throws(() => compile(head + 'metadata.score AS DOUBLE > 1E+999'), /finite floating-point/);
+  const { body: boundaries } = compile(head + 'metadata.score AS DOUBLE IN (0.00001, 100000000000000000) ' +
+    'AND metadata.rank AS SINGLE IN (-0.000, 100000000, 1000000000)');
+  assert.deepEqual(boundaries.filters.map(({ value }) => value),
+    [['1E-05', '1E+17'], ['0', '100000000', '1E+09']]);
+  assert.equal(compile(head + 'metadata.score AS DOUBLE = 1.00000000000000001').body.filters[0].value,
+    '1.00000000000000001');
+  assert.throws(() => compile(head + 'metadata.score AS DECIMAL > 1e2'), /exact decimal/);
+  assert.throws(() => compile(head + 'Version = 1e2'), /Expected an integer/);
+});
+
+test('projects both floating-point metadata widths as distinct typed columns', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const { body } = compile('SELECT DISTINCT CAST(metadata.score AS DOUBLE) AS Score, ' +
+      'CAST(metadata.rank AS SINGLE) AS Rank FROM ' + provider);
+    assert.deepEqual(body.keys.map(({ valueType }) => valueType), ['Double', 'Single']);
+  }
+});
+
+test('FULL OUTER JOIN lifts both projections and reserves each unmatched input', () => {
+  const left = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 1) AS l';
+  const right = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 1) AS r';
+  const text = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' FULL OUTER JOIN ' + right + ' ON l.Id = r.Id';
+  const { body } = compile(text);
+  assert.equal(body.kind, 'Full');
+  assert.equal(body.maximumPairs, 2);
+  assert.equal(body.maximumResults, 2);
+  assert.deepEqual(body.columns.map(column => column.allowMissing), [true, true]);
+  assert.throws(() => compile(text.split(' ON ')[0]), /Expected ON/);
+});

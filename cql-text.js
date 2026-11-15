@@ -79,7 +79,7 @@
     const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
     const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
-    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
@@ -166,6 +166,38 @@
       if (scalar === 'Decimal') {
         return exactDecimal(token);
       }
+      if (scalar === 'Double' || scalar === 'Single') {
+        const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(token ?? '');
+        if (!match) throw new Error('Expected a finite floating-point literal.');
+        const [, sign, whole, fraction = '', scale = '0'] = match;
+        const digits = whole + fraction;
+        const firstNonzero = digits.search(/[1-9]/);
+        if (firstNonzero < 0) return '0';
+        const magnitude = Number(token);
+        if (!Number.isFinite(magnitude) || magnitude === 0)
+          throw new Error('Expected a finite floating-point literal.');
+
+        // Reformat the input digits without rounding. WEB4 validates that the result
+        // is the shortest exact round-trip spelling for the declared width.
+        const significant = digits.slice(firstNonzero).replace(/0+$/, '');
+        const exponent = Number(scale) + whole.length - firstNonzero - 1;
+        const exponentThreshold = scalar === 'Double' ? 17 : 9;
+        let canonical;
+        if (exponent < -4 || exponent >= exponentThreshold) {
+          const mantissa = significant.length === 1 ? significant : significant[0] + '.' + significant.slice(1);
+          canonical = mantissa + 'E' + (exponent < 0 ? '-' : '+') + String(Math.abs(exponent)).padStart(2, '0');
+        } else if (exponent < 0) {
+          canonical = '0.' + '0'.repeat(-exponent - 1) + significant;
+        } else {
+          const point = exponent + 1;
+          canonical = significant.length > point
+            ? significant.slice(0, point) + '.' + significant.slice(point)
+            : significant.padEnd(point, '0');
+        }
+        if (sign.length + canonical.length > 24)
+          throw new Error('Floating-point literals may use up to 24 canonical characters.');
+        return sign + canonical;
+      }
       if (scalar === 'UInt64') {
         if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
           throw new Error('Expected an unsigned 64-bit integer.');
@@ -242,6 +274,8 @@
           if (accept('INT64')) scalar = 'Integer';
           else if (accept('BOOLEAN')) scalar = 'Boolean';
           else if (accept('DECIMAL')) scalar = 'Decimal';
+          else if (accept('DOUBLE')) scalar = 'Double';
+          else if (accept('SINGLE')) scalar = 'Single';
           else if (accept('DATETIME')) scalar = 'DateTime';
           else {
             expect('UINT64');
@@ -259,7 +293,7 @@
       if (negatedRange) expect('BETWEEN');
       if (negatedRange || accept('BETWEEN')) {
         if (!allowRange && !negatedRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
-        if (!['Integer', 'Decimal', 'UInt64', 'DateTime'].includes(scalar))
+        if (!['Integer', 'Decimal', 'UInt64', 'Double', 'Single', 'DateTime'].includes(scalar))
           throw new Error('BETWEEN requires a numeric or UTC timestamp field.');
         const lower = literal();
         expect('AND');
@@ -285,8 +319,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
-      if (!['Integer', 'UInt64', 'Decimal', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require Version or metadata typed AS INT64, AS UINT64, AS DECIMAL, or AS DATETIME.');
+      if (!['Integer', 'UInt64', 'Decimal', 'Double', 'Single', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require Version or metadata typed AS INT64, AS UINT64, AS DECIMAL, AS DOUBLE, AS SINGLE, or AS DATETIME.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
@@ -349,7 +383,8 @@
       const firstSource = source();
       const leftJoin = accept('LEFT');
       const rightJoin = !leftJoin && accept('RIGHT');
-      const outerJoin = leftJoin || rightJoin;
+      const fullJoin = !leftJoin && !rightJoin && accept('FULL');
+      const outerJoin = leftJoin || rightJoin || fullJoin;
       const crossJoin = !outerJoin && accept('CROSS');
       if (outerJoin) accept('OUTER');
       else if (!crossJoin) accept('INNER');
@@ -381,17 +416,20 @@
       }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
-      if (keys.length > 8 || left.body.filters.length + right.body.filters.length > 12)
+      const filterCount = left.body.filters.length + right.body.filters.length +
+        (left.body.anyOf?.length ?? 0) + (right.body.anyOf?.length ?? 0);
+      if (keys.length > 8 || filterCount > 12)
         throw new Error('Use up to eight join keys and twelve input filters.');
       const columns = fieldsToSelect.map(field => {
         const side = sourceSide(field.source);
         const column = { alias: field.alias, source: side, selection: field.selection };
-        if (outerJoin && side === 'Right') column.allowMissing = true;
+        if (fullJoin || (outerJoin && side === 'Right')) column.allowMissing = true;
         return column;
       });
-      const maximumPairs = left.body.take * right.body.take;
+      const product = left.body.take * right.body.take;
+      const maximumPairs = fullJoin ? Math.max(product, left.body.take + right.body.take) : product;
       return { path: 'data/query-cql/join', body: {
-        provider: left.provider, kind: crossJoin ? 'Cross' : outerJoin ? 'Left' : 'Inner',
+        provider: left.provider, kind: crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns,
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
       } };
@@ -427,7 +465,7 @@
       const metadataPath = readMetadataPath();
       expect('AS');
       const types = { STRING: 'String', BOOLEAN: 'Boolean', INT32: 'Int32', INT64: 'Int64',
-        UINT64: 'UInt64', DECIMAL: 'Decimal', GUID: 'Guid', DATETIME: 'DateTime' };
+        UINT64: 'UInt64', DECIMAL: 'Decimal', DOUBLE: 'Double', SINGLE: 'Single', GUID: 'Guid', DATETIME: 'DateTime' };
       const type = tokens[index++]?.toUpperCase();
       if (!Object.hasOwn(types, type)) throw new Error('Choose an exact metadata projection type.');
       expect(')');

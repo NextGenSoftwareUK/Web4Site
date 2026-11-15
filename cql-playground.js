@@ -241,12 +241,14 @@
       if (!payload || !Array.isArray(payload.rows)) throw new Error('The API returned no CQL rows envelope. See the response.');
       const joined = payload.version === 'cql-join-v1';
       const showRightMatch = joined && payload.kind === 'Left';
+      const showPairSource = joined && payload.kind === 'Full';
       const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version))
         ? payload.columns : null;
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
       const labels = columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata'];
       if (showRightMatch) labels.push('Matched');
+      if (showPairSource) labels.push('Source rows');
       for (const label of labels) {
         const th = document.createElement('th');
         th.textContent = label;
@@ -258,6 +260,8 @@
           const tr = tbody.insertRow();
           for (const value of joined ? item.values : item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
           if (showRightMatch) tr.insertCell().textContent = item.hasRight ? 'Yes' : 'No';
+          if (showPairSource) tr.insertCell().textContent = item.hasLeft
+            ? (item.hasRight ? 'Both' : 'Left only') : 'Right only';
           continue;
         }
         const row = item.selected ? item.selected.row : item;
