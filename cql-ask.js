@@ -158,7 +158,8 @@
       } catch (error) {
         if (current()) status.textContent = error.message;
       } finally {
-        if (!sameSession()) status.textContent = 'The sandbox session changed. Draft a new query.';
+        if (!sameSession() && version === questionVersion)
+          status.textContent = 'The sandbox session changed. Draft a new query.';
         generate.disabled = false;
       }
     });
@@ -173,6 +174,15 @@
         $('cql-text').focus();
       } catch (error) { status.textContent = error.message; }
     });
+
+    return {
+      resetSession() {
+        clearDraft();
+        questionInput.value = '';
+        status.textContent = '';
+        $('cql-text').value = '';
+      }
+    };
   }
   root.CqlAsk = { init };
 })(globalThis);

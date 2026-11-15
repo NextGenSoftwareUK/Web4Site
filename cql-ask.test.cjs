@@ -30,13 +30,13 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
     }
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
-  context.CqlAsk.init({
+  const ask = context.CqlAsk.init({
     playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
   return { node, requests, opened, changeIdentity: () => { identity = 'another'; },
-    tabOpened: () => tabOpened };
+    resetSession: ask.resetSession, tabOpened: () => tabOpened };
 }
 
 test('grounds the WEB6 draft in ready discovered key names and exact set bounds', async () => {
@@ -79,6 +79,44 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.equal(app.node('cql-text-editor').open, true);
   assert.equal(app.node('cql-text').focused, true);
   assert.equal(app.tabOpened(), true);
+});
+
+test('a changed session clears the question, review draft and copied editor text', async () => {
+  const text = "SELECT * FROM MongoDBOASIS WHERE Name = 'private query'";
+  const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }));
+  await app.node('ask-generate').click();
+  app.node('ask-preview').click();
+  app.changeIdentity();
+  app.resetSession();
+
+  assert.equal(app.node('ask-question').value, '');
+  assert.equal(app.node('ask-draft').textContent, '');
+  assert.equal(app.node('ask-status').textContent, '');
+  assert.equal(app.node('cql-text').value, '');
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.deepEqual(app.opened, [text]);
+});
+
+test('an old WEB6 response cannot repopulate a cleared session', async () => {
+  const text = 'SELECT COUNT(*) FROM MongoDBOASIS';
+  let respond, arrived;
+  const requestStarted = new Promise(resolve => { arrived = resolve; });
+  const app = setup(() => new Promise(resolve => {
+    respond = resolve;
+    arrived();
+  }));
+  const pending = app.node('ask-generate').click();
+  await requestStarted;
+  assert.equal(app.requests.length, 1);
+  app.changeIdentity();
+  app.resetSession();
+  respond({ ok: true, json: async () => ({ content: text }) });
+  await pending;
+
+  assert.equal(app.node('ask-draft').textContent, '');
+  assert.equal(app.node('ask-status').textContent, '');
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.equal(app.node('ask-generate').disabled, false);
 });
 
 test('waits for provider discovery without using WEB6', async () => {
