@@ -125,6 +125,46 @@
       } while (peek() === '.');
       return path;
     }
+    function readLiteral(scalar, wideInteger = false) {
+      const token = tokens[index++];
+      if (scalar === 'Integer') {
+          if (!wideInteger) return integer(token, -2147483648, 2147483647);
+          if (!/^(?:0|-?[1-9][0-9]{0,18})$/.test(token ?? '') ||
+              BigInt(token) < -9223372036854775808n || BigInt(token) > 9223372036854775807n)
+            throw new Error('Expected a signed 64-bit integer.');
+          return token;
+        }
+      if (scalar === 'DateTime') {
+        const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,7})?Z'$/.exec(token ?? '');
+        const utcSeconds = match && new Date(match[1] + 'Z');
+        if (!utcSeconds || match[1].startsWith('0000') || !Number.isFinite(utcSeconds.getTime())
+            || utcSeconds.toISOString().slice(0, 19) !== match[1])
+          throw new Error('Expected a quoted UTC timestamp with up to seven fractional digits.');
+        return token.slice(1, -1);
+      }
+      if (scalar === 'Decimal') {
+        return exactDecimal(token);
+      }
+      if (scalar === 'UInt64') {
+        if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
+          throw new Error('Expected an unsigned 64-bit integer.');
+        return token;
+      }
+      if (scalar === 'Boolean' && /^(true|false)$/i.test(token)) return token.toLowerCase() === 'true';
+      if (scalar === 'Guid') {
+        const value = token?.slice(1, -1);
+        if (!token?.startsWith("'") || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value))
+          throw new Error('Expected a quoted GUID for the selected field.');
+        return value;
+      }
+      if (scalar === 'String' && token?.startsWith("'")) {
+        const value = token.slice(1, -1).replace(/''/g, "'");
+        if (value.length > 512) throw new Error('String literals may contain up to 512 characters.');
+        return value;
+      }
+      throw new Error('Expected a ' + scalar + ' literal.');
+    }
+
     function filter(allowRange = false) {
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
@@ -157,45 +197,7 @@
         selector = { field };
         scalar = type;
       }
-      function literal() {
-        const token = tokens[index++];
-        if (scalar === 'Integer') {
-            if (!selector.metadataPath) return integer(token, -2147483648, 2147483647);
-            if (!/^(?:0|-?[1-9][0-9]{0,18})$/.test(token ?? '') ||
-                BigInt(token) < -9223372036854775808n || BigInt(token) > 9223372036854775807n)
-              throw new Error('Expected a signed 64-bit integer.');
-            return token;
-          }
-        if (scalar === 'DateTime') {
-          const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,7})?Z'$/.exec(token ?? '');
-          const utcSeconds = match && new Date(match[1] + 'Z');
-          if (!utcSeconds || match[1].startsWith('0000') || !Number.isFinite(utcSeconds.getTime())
-              || utcSeconds.toISOString().slice(0, 19) !== match[1])
-            throw new Error('Expected a quoted UTC timestamp with up to seven fractional digits.');
-          return token.slice(1, -1);
-        }
-        if (scalar === 'Decimal') {
-          return exactDecimal(token);
-        }
-        if (scalar === 'UInt64') {
-          if (!/^[0-9]{1,20}$/.test(token ?? '') || BigInt(token) > 18446744073709551615n)
-            throw new Error('Expected an unsigned 64-bit integer.');
-          return token;
-        }
-        if (scalar === 'Boolean' && /^(true|false)$/i.test(token)) return token.toLowerCase() === 'true';
-        if (scalar === 'Guid') {
-          const value = token?.slice(1, -1);
-          if (!token?.startsWith("'") || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value))
-            throw new Error('Expected a quoted GUID for the selected field.');
-          return value;
-        }
-        if (scalar === 'String' && token?.startsWith("'")) {
-          const value = token.slice(1, -1).replace(/''/g, "'");
-          if (value.length > 512) throw new Error('String literals may contain up to 512 characters.');
-          return value;
-        }
-        throw new Error('Expected a ' + scalar + ' literal.');
-      }
+      const literal = () => readLiteral(scalar, Boolean(selector.metadataPath));
       if (accept('BETWEEN')) {
         if (!allowRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
         if (!['Integer', 'Decimal', 'UInt64', 'DateTime'].includes(scalar))
@@ -540,39 +542,58 @@
       if (accept('HAVING')) {
         if (distinct) throw new Error('DISTINCT does not accept a HAVING clause.');
         grouped.resultFilters = [];
-        function addHavingComparison(aggregate, comparison) {
-          const token = tokens[index++];
-          if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
-            throw new Error('HAVING requires a numeric comparison.');
-          let value = token;
-          if (aggregate.operation === 'LongCount') {
-            if (!/^(0|[1-9][0-9]{0,18})$/.test(token ?? '') || BigInt(token) > 9223372036854775807n)
-              throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
-          } else {
-            const { operation, selection } = aggregate;
-            const valueType = operation === 'Average' ? 'Decimal' : selection.valueType;
-            if (valueType === 'Decimal') value = exactDecimal(token);
-            else if (valueType === 'Int64' || valueType === 'UInt64') {
-              const signed = valueType === 'Int64';
-              const minimum = signed ? -9223372036854775808n : 0n;
-              const maximum = signed ? 9223372036854775807n : 18446744073709551615n;
-              if (!/^(?:0|-?[1-9][0-9]{0,19})$/.test(token ?? '') || BigInt(token) < minimum || BigInt(token) > maximum)
-                throw new Error('HAVING requires an exact ' + valueType + ' threshold.');
-            } else value = integer(token, -2147483648, 2147483647);
-          }
-          grouped.resultFilters.push({ alias: aggregate.alias, operator: comparisons[comparison], value });
+        function addHavingFilter(filter) {
+          grouped.resultFilters.push(filter);
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');
         }
-        do {
-          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === peek())?.binding;
-          if (!aggregate) throw new Error('HAVING must name a selected aggregate alias.');
-          index++;
-          if (accept('BETWEEN')) {
-            addHavingComparison(aggregate, '>=');
-            expect('AND');
-            addHavingComparison(aggregate, '<=');
+        function addHavingComparison(alias, type, comparison, nullableKey = false) {
+          if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
+            throw new Error('HAVING requires a scalar comparison.');
+          if (['String', 'Boolean', 'Guid'].includes(type) && !['=', '<>', '!='].includes(comparison))
+            throw new Error('This grouped key supports equality and inequality in HAVING.');
+          let value;
+          if (type === 'Count') {
+            value = tokens[index++];
+            if (!/^(0|[1-9][0-9]{0,18})$/.test(value ?? '') || BigInt(value) > 9223372036854775807n)
+              throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
+          } else if (type === 'UInt64') {
+            value = tokens[index++];
+            if (!/^(0|[1-9][0-9]{0,19})$/.test(value ?? '') || BigInt(value) > 18446744073709551615n)
+              throw new Error('HAVING requires an exact UInt64 threshold.');
           } else {
-            addHavingComparison(aggregate, tokens[index++]);
+            const scalar = type === 'Int32' || type === 'Int64' ? 'Integer' : type;
+            try { value = readLiteral(scalar, type === 'Int64'); }
+            catch (error) {
+              if (type === 'Int64') throw new Error('HAVING requires an exact Int64 threshold.');
+              throw error;
+            }
+          }
+          if (nullableKey && ['<>', '!='].includes(comparison))
+            addHavingFilter({ alias, operator: 'NotEqual', value: null });
+          addHavingFilter({ alias, operator: comparisons[comparison], value });
+        }
+        do {
+          const aliasToken = peek();
+          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === aliasToken)?.binding;
+          const key = columns.find(column => column.alias.toUpperCase() === aliasToken);
+          if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate alias or a selected grouping key alias.');
+          const alias = (aggregate ?? key).alias;
+          const type = aggregate
+            ? aggregate.operation === 'LongCount' ? 'Count'
+              : aggregate.operation === 'Average' ? 'Decimal' : aggregate.selection.valueType ?? 'Int32'
+            : key.valueType ?? fields[key.field.toLowerCase()][1];
+          index++;
+          if (key && accept('IS')) {
+            const not = accept('NOT');
+            expect('NULL');
+            if (!key.nullable && type !== 'String') throw new Error('This grouped key cannot be null.');
+            addHavingFilter(not ? { alias, operator: 'NotEqual', value: null } : { alias, operator: 'IsNull' });
+          } else if (accept('BETWEEN')) {
+            addHavingComparison(alias, type, '>=');
+            expect('AND');
+            addHavingComparison(alias, type, '<=');
+          } else {
+            addHavingComparison(alias, type, tokens[index++], key && (key.nullable || type === 'String'));
           }
         } while (accept('AND'));
       }

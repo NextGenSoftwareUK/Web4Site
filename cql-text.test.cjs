@@ -543,7 +543,7 @@ test('grouped HAVING preserves large count thresholds and pages after filtering'
   assert.equal(body.skip, 0);
   assert.equal(body.take, undefined);
   assert.throws(() => compile(query + 'Total >= 9223372036854775808'), /64-bit/);
-  assert.throws(() => compile(query + 'Version = 1'), /alias/);
+  assert.throws(() => compile(query + 'Unknown = 1'), /alias/);
 });
 
 test('grouped paging accepts a second ordering alias as a tie-breaker', () => {
@@ -819,4 +819,24 @@ test('HAVING BETWEEN preserves exact count and Decimal thresholds before paging'
   assert.throws(() => compile(head + 'Total BETWEEN 1 OR 2'), /Expected AND/);
   assert.throws(() => compile(head + 'Total BETWEEN 1 AND 9223372036854775808'), /64-bit count/);
   assert.throws(() => compile(head + Array(17).fill('Total BETWEEN 1 AND 2').join(' AND ')), /32 HAVING comparisons/);
+});
+
+test('HAVING filters selected grouping keys and aggregate aliases before paging', () => {
+  const query = 'SELECT Version AS Revision, IsActive AS Enabled, COUNT(*) AS Total FROM MongoDBOASIS ' +
+    'GROUP BY Version, IsActive HAVING Revision BETWEEN 2 AND 4 AND Enabled = TRUE AND Total > 0 ORDER BY Revision LIMIT 2';
+  assert.deepEqual(compile(query).body.resultFilters, [
+    { alias: 'Revision', operator: 'GreaterThanOrEqual', value: 2 },
+    { alias: 'Revision', operator: 'LessThanOrEqual', value: 4 },
+    { alias: 'Enabled', operator: 'Equal', value: true },
+    { alias: 'Total', operator: 'GreaterThan', value: '0' }
+  ]);
+  const text = "SELECT CAST(metadata.label AS STRING) AS Label, COUNT(*) AS Total FROM Neo4jOASIS " +
+    "GROUP BY CAST(metadata.label AS STRING) HAVING Label <> 'O''Brien'";
+  assert.deepEqual(compile(text).body.resultFilters, [
+    { alias: 'Label', operator: 'NotEqual', value: null },
+    { alias: 'Label', operator: 'NotEqual', value: "O'Brien" }
+  ]);
+  assert.deepEqual(compile(text.replace("<> 'O''Brien'", 'IS NULL')).body.resultFilters, [{ alias: 'Label', operator: 'IsNull' }]);
+  assert.throws(() => compile(query.replace('Enabled = TRUE', 'Enabled > TRUE')), /equality/);
+  assert.throws(() => compile(query.replace('Revision BETWEEN 2 AND 4', 'Version > 2')), /selected/);
 });
