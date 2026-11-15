@@ -312,3 +312,24 @@ test('Ask your data drafts a scalar Decimal aggregate for review', async () => {
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
 });
+
+test('Ask your data drafts a bounded composite join on an available provider', async () => {
+  const text = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM (SELECT * FROM Neo4jOASIS ORDER BY Id LIMIT 2) AS l ' +
+    'LEFT JOIN (SELECT * FROM Neo4jOASIS ORDER BY Id LIMIT 2) AS r ON l.Id = r.Id AND l.Version = r.Version';
+  const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }), null, compile, ['Neo4jOASIS']);
+  app.node('ask-question').value = 'Left join two two-row Neo4j windows by ID and version, returning both IDs.';
+  await app.node('ask-generate').click();
+  const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.ok(prompt.includes(text));
+  assert.match(prompt, /Both inputs must use the same available provider/);
+  assert.equal(app.node('ask-draft').textContent, text);
+  const query = compile(text);
+  assert.equal(query.path, 'data/query-cql/join');
+  assert.equal(query.body.kind, 'Left');
+  assert.equal(query.body.maximumPairs, 4);
+  assert.deepEqual(query.body.keys.map(key => [key.left.field, key.right.field]), [['Id', 'Id'], ['Version', 'Version']]);
+  assert.equal(query.body.columns[1].allowMissing, true);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [text]);
+});

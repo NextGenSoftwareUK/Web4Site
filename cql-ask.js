@@ -39,10 +39,15 @@
 
   function queryInstructions(providers) {
     const ready = new Set(providers);
+    const joinProvider = databaseProviders.find(provider => ready.has(provider));
     return [instructions,
       'Use TIMEOUT followed by milliseconds (1–30000) only for SELECT * row queries when requested.',
       'For a federated row query, list distinct providers separated by commas after FROM. COUNT uses one provider. A federated query shares one filter across providers. Use one key field per query; HoloOASIS and public account providers with different key fields require separate queries.',
       ...(databaseProviders.some(provider => ready.has(provider)) ? databaseInstructions : []),
+      ...(joinProvider ? [
+        'For an exact same-provider INNER JOIN or LEFT JOIN on MongoDBOASIS, SQLLiteDBOASIS or Neo4jOASIS, use two aliased (SELECT * FROM provider ... LIMIT n) inputs with explicit LIMIT 1 through 10 in each. Both inputs must use the same available provider. Select qualified columns with distinct aliases. ON supports exact field equalities between inputs, joined by AND. For known typed metadata use CAST(l.metadata.path AS INT64) and the same declared type on the other side.',
+        `Example: SELECT l.Id AS LeftId, r.Id AS RightId FROM (SELECT * FROM ${joinProvider} ORDER BY Id LIMIT 2) AS l LEFT JOIN (SELECT * FROM ${joinProvider} ORDER BY Id LIMIT 2) AS r ON l.Id = r.Id AND l.Version = r.Version`
+      ] : []),
       ...providerInstructions.filter(([names]) => names.some(provider => ready.has(provider))).map(([, rule]) => rule)
     ].join('\n');
   }
