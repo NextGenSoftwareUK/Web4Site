@@ -280,3 +280,18 @@ test('Ask your data drafts a typed metadata projection with its requested alias'
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
 });
+
+test('Ask your data drafts DISTINCT typed metadata through the native grouped path', async () => {
+  const text = 'SELECT DISTINCT CAST(metadata.stock AS INT64) AS Stock FROM MongoDBOASIS ORDER BY Stock LIMIT 5';
+  const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
+  app.node('ask-question').value = 'Show five unique stock values from MongoDB. The stock metadata is Int64.';
+  await app.node('ask-generate').click();
+  const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.ok(prompt.includes(text));
+  assert.equal(app.node('ask-draft').textContent, text);
+  assert.deepEqual(compile(text).body.keys,
+    [{ metadataPath: ['stock'], valueType: 'Int64', nullable: true, alias: 'Stock' }]);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [text]);
+});
