@@ -239,7 +239,9 @@
         return;
       }
       if (!payload || !Array.isArray(payload.rows)) throw new Error('The API returned no CQL rows envelope. See the response.');
-      const columns = ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version) ? payload.columns : null;
+      const joined = payload.version === 'cql-join-v1';
+      const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version))
+        ? payload.columns : null;
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
       for (const label of columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata']) {
@@ -251,7 +253,7 @@
       for (const item of payload.rows) {
         if (columns) {
           const tr = tbody.insertRow();
-          for (const value of item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
+          for (const value of joined ? item.values : item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
           continue;
         }
         const row = item.selected ? item.selected.row : item;

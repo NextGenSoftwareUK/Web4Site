@@ -261,7 +261,105 @@
       return { ...selector, scalar, operator, value: literal() };
     }
 
+    function readJoin() {
+      const identifier = label => {
+        const value = tokens[index++];
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value ?? ''))
+          throw new Error('Expected a ' + label + ' alias.');
+        return value;
+      };
+      const qualifiedField = () => {
+        const source = identifier('source').toLowerCase();
+        expect('.');
+        const name = tokens[index++]?.toLowerCase();
+        if (!Object.hasOwn(fields, name)) throw new Error('Unknown qualified join field.');
+        return { source, field: fields[name][0] };
+      };
+      const source = () => {
+        expect('(');
+        expect('SELECT');
+        expect('*');
+        expect('FROM');
+        const provider = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].find(name => name.toUpperCase() === peek());
+        if (!provider) throw new Error('Join sources require MongoDBOASIS, SQLLiteDBOASIS, or Neo4jOASIS.');
+        index++;
+        const filters = [];
+        if (accept('WHERE')) {
+          do {
+            filters.push(...[].concat(filter(true)));
+          } while (accept('AND'));
+        }
+        const body = { filters, orderBy: 'Id' };
+        if (accept('ORDER')) {
+          expect('BY');
+          const field = fields[tokens[index++]?.toLowerCase()]?.[0];
+          if (!['Id', 'Name', 'Version'].includes(field)) throw new Error('Order join inputs by Id, Name, or Version.');
+          body.orderBy = field;
+          if (accept('DESC')) body.descending = true;
+          else accept('ASC');
+        }
+        expect('LIMIT');
+        body.take = integer(tokens[index++], 1, 10);
+        expect(')');
+        accept('AS');
+        return { alias: identifier('source').toLowerCase(), provider, body };
+      };
+
+      const fieldsToSelect = [];
+      do {
+        const field = qualifiedField();
+        fieldsToSelect.push({ ...field, alias: accept('AS') ? identifier('column') : field.field });
+      } while (accept(','));
+      if (fieldsToSelect.length > 32 || new Set(fieldsToSelect.map(field => field.alias.toLowerCase())).size !== fieldsToSelect.length)
+        throw new Error('Use up to 32 distinct joined column aliases.');
+      expect('FROM');
+      const left = source();
+      const leftJoin = accept('LEFT');
+      if (leftJoin) accept('OUTER');
+      else accept('INNER');
+      expect('JOIN');
+      const right = source();
+      if (left.alias === right.alias || left.provider !== right.provider)
+        throw new Error('Use two different aliases for one join provider.');
+      const sourceSide = alias => {
+        if (alias === left.alias) return 'Left';
+        if (alias === right.alias) return 'Right';
+        throw new Error('Unknown join source alias.');
+      };
+      expect('ON');
+      const keys = [];
+      do {
+        const first = qualifiedField();
+        expect('=');
+        const second = qualifiedField();
+        const one = sourceSide(first.source);
+        if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
+        const [l, r] = one === 'Left' ? [first, second] : [second, first];
+        if (keys.some(key => key.left.field === l.field && key.right.field === r.field))
+          throw new Error('Use each join key pair once.');
+        keys.push({ alias: 'Key' + (keys.length + 1), left: { field: l.field }, right: { field: r.field } });
+      } while (accept('AND'));
+      accept(';');
+      if (index !== tokens.length) throw new Error('Unexpected join clause.');
+      if (keys.length > 8 || left.body.filters.length + right.body.filters.length > 12)
+        throw new Error('Use up to eight join keys and twelve input filters.');
+      const columns = fieldsToSelect.map(field => {
+        const side = sourceSide(field.source);
+        const column = { alias: field.alias, source: side, selection: { field: field.field } };
+        if (leftJoin && side === 'Right') column.allowMissing = true;
+        return column;
+      });
+      const maximumPairs = left.body.take * right.body.take;
+      return { path: 'data/query-cql/join', body: {
+        provider: left.provider, kind: leftJoin ? 'Left' : 'Inner',
+        left: left.body, right: right.body, keys, columns,
+        maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
+      } };
+    }
+
     expect('SELECT');
+    if (tokens.some((token, position) => token.toUpperCase() === 'FROM' && tokens[position + 1] === '('))
+      return readJoin();
     const distinct = accept('DISTINCT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
     const hasGrouping = tokens.some((token, position) =>

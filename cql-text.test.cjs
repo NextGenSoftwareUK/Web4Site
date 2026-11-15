@@ -759,3 +759,22 @@ test('compiles exact scalar aggregates over typed metadata', () => {
   assert.throws(() => compile('SELECT SUM(CAST(metadata.value AS GUID)) FROM MongoDBOASIS'), /exact numeric metadata/);
   assert.throws(() => compile('SELECT SUM(CAST(metadata.value AS DECIMAL)) FROM MongoDBOASIS TIMEOUT 1000'), /Scalar queries use the server timeout/);
 });
+
+test('compiles bounded composite left joins without paging joined results', () => {
+  const left = '(SELECT * FROM MongoDBOASIS WHERE Version >= 2 ORDER BY Id LIMIT 3) AS l';
+  const right = '(SELECT * FROM MongoDBOASIS LIMIT 2) AS r';
+  const query = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' LEFT JOIN ' + right +
+    ' ON r.Version = l.Version AND l.Name = r.Name';
+  const { path, body } = compile(query);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Left');
+  assert.equal(body.left.filters[0].value, 2);
+  assert.deepEqual(body.keys.map(key => [key.left.field, key.right.field]), [['Version', 'Version'], ['Name', 'Name']]);
+  assert.deepEqual(body.columns, [
+    { alias: 'LeftId', source: 'Left', selection: { field: 'Id' } },
+    { alias: 'RightId', source: 'Right', selection: { field: 'Id' }, allowMissing: true }
+  ]);
+  assert.deepEqual([body.maximumLeftRows, body.maximumRightRows, body.maximumPairs, body.maximumResults], [3, 2, 6, 6]);
+  assert.throws(() => compile(query + ' LIMIT 2'), /Unexpected join clause/);
+  assert.throws(() => compile(query.replace(right, right.replace('MongoDBOASIS', 'Neo4jOASIS'))), /one join provider/);
+});
