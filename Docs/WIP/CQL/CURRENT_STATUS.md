@@ -1,5 +1,10 @@
 # CQL website current status
 
+## Grouped text filters with escaped LIKE
+
+Web4Site 80ecfac3cb77 applies the existing row LIKE and ESCAPE rules to selected text grouping keys in HAVING. A literal percent stays literal after compilation. All 225 website tests passed. Live WEB4 accepted the exact filter on MongoDB, SQLite and Neo4j on an empty exact-ID scope. The signed-in hosted walkthrough remains open. [Protected preview](https://web4-site-prykceoik-oasis-team.vercel.app/web4-sandbox.html)
+
+
 ## Public starting point for Ask your data
 
 The Ask your data tab can load an available public question directly. It uses a compatible selected example or chooses a ready public rows example from the current WEB4 catalogue. The visitor reviews the question before requesting a WEB6 draft, then reviews that draft before execution.
