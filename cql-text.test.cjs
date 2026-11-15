@@ -696,3 +696,17 @@ test('groups on hidden keys and returns only selected columns', () => {
   assert.deepEqual(hidden.body.columns, [{ alias: 'IsActive', keyAlias: 'IsActive' }, { alias: 'Total', operation: 'LongCount' }]);
   assert.throws(() => compile('SELECT COUNT(*) FROM MongoDBOASIS GROUP BY Version, Version'), /different GROUP BY fields/);
 });
+
+test('projects typed metadata with CAST while retaining exact aliases and nullability', () => {
+  const projection = compile('SELECT Id, CAST(metadata.Stock.current AS INT64) AS Stock FROM MongoDBOASIS');
+  assert.equal(projection.path, 'data/query-cql/projection');
+  assert.deepEqual(projection.body.columns, [
+    { field: 'Id', alias: 'Id' },
+    { metadataPath: ['Stock', 'current'], valueType: 'Int64', nullable: true, alias: 'Stock' }
+  ]);
+  const sorted = compile('SELECT CAST(metadata.total AS DECIMAL) AS Total FROM Neo4jOASIS ORDER BY Total DESC');
+  assert.equal(sorted.path, 'data/query-cql/composition');
+  assert.deepEqual(sorted.body.stages[0].order, [{ alias: 'Total', descending: true }]);
+  assert.throws(() => compile('SELECT DISTINCT CAST(metadata.total AS DECIMAL) AS Total FROM Neo4jOASIS'), /canonical fields/);
+  assert.throws(() => compile('SELECT CAST(metadata.total AS INTEGER) AS Total FROM Neo4jOASIS'), /exact metadata projection type/);
+});

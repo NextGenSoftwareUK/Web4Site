@@ -113,20 +113,23 @@
         throw new Error('Expected an exact decimal literal.');
       return token;
     }
+    function readMetadataPath() {
+      const path = [];
+      do {
+        expect('.');
+        const key = tokens[index++];
+        if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key ?? '') || key.length > 64)
+          throw new Error('Expected a metadata path segment of up to 64 characters.');
+        path.push(key);
+        if (path.length > 4) throw new Error('Use at most four metadata path segments.');
+      } while (peek() === '.');
+      return path;
+    }
     function filter(allowRange = false) {
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
       if (name === 'metadata') {
-        const metadataPath = [];
-        do {
-          expect('.');
-          const key = tokens[index++];
-          if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key ?? '') || key.length > 64)
-            throw new Error('Expected a metadata path segment of up to 64 characters.');
-          metadataPath.push(key);
-          if (metadataPath.length > 4) throw new Error('Use at most four metadata path segments.');
-        } while (peek() === '.');
-        selector = { metadataPath };
+        selector = { metadataPath: readMetadataPath() };
         if (accept('IS')) {
           if (accept('NULL')) return { ...selector, operator: 'IsNull' };
           if (accept('MISSING')) return { ...selector, operator: 'IsMissing' };
@@ -290,18 +293,35 @@
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
-        const name = tokens[index++]?.toLowerCase();
-        if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
-        const [field] = fields[name];
-        const alias = accept('AS') ? tokens[index++] : field;
+        let selection;
+        if (accept('CAST')) {
+          expect('(');
+          expect('METADATA');
+          const metadataPath = readMetadataPath();
+          expect('AS');
+          const types = { STRING: 'String', BOOLEAN: 'Boolean', INT32: 'Int32', INT64: 'Int64',
+            UINT64: 'UInt64', DECIMAL: 'Decimal', GUID: 'Guid', DATETIME: 'DateTime' };
+          const type = tokens[index++]?.toUpperCase();
+          if (!Object.hasOwn(types, type)) throw new Error('Choose an exact metadata projection type.');
+          expect(')');
+          expect('AS');
+          selection = { metadataPath, valueType: types[type], nullable: true };
+        } else {
+          const name = tokens[index++]?.toLowerCase();
+          if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
+          selection = { field: fields[name][0] };
+        }
+        const alias = selection.metadataPath ? tokens[index++] : accept('AS') ? tokens[index++] : selection.field;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
           throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
         if (columns.some(column => column.alias.toLowerCase() === alias.toLowerCase()))
           throw new Error('Use a distinct alias for each selected column.');
-        columns.push({ field, alias });
+        columns.push({ ...selection, alias });
       } while (accept(','));
     }
     if (operation) expect(')');
+    if ((distinct || hasGrouping) && columns.some(column => column.metadataPath))
+      throw new Error('Use canonical fields for SQL DISTINCT and GROUP BY.');
     if (distinct && (!columns.length || groupedAggregates.length || new Set(columns.map(column => column.field)).size !== columns.length))
       throw new Error('DISTINCT requires one or more different selected fields without aggregates.');
     expect('FROM');
