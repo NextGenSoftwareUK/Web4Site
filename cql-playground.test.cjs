@@ -742,3 +742,27 @@ test('typed grouped results distinguish NULL from empty strings and preserve exa
     ['', '9007199254740993', '1.0000000000000000000000000001'], ['NULL', 'NULL', 'NULL']
   ]);
 });
+
+test('SQL left join renders a matching row with a null value distinctly from an unmatched row', async () => {
+  const table = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 2)';
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/join$/);
+    const request = JSON.parse(options.body);
+    assert.equal(request.kind, 'Left');
+    assert.equal(request.columns[1].allowMissing, true);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-join-v1', provider: 'MongoDBOASIS', kind: 'Left',
+      columns: [{ alias: 'LeftName' }, { alias: 'RightDescription' }],
+      rows: [{ hasRight: true, values: ['Matched', null] }, { hasRight: false, values: ['Unmatched', null] }]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT l.Name AS LeftName, r.Description AS RightDescription FROM ' + table +
+    ' AS l LEFT JOIN ' + table + ' AS r ON l.Id = r.Id');
+  await h.elements.get('cql-run').listeners.click();
+  const [result] = h.elements.get('cql-results').children;
+  const [head, rows] = result.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['LeftName', 'RightDescription', 'Right match']);
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)),
+    [['Matched', 'NULL', 'Yes'], ['Unmatched', 'NULL', 'No']]);
+});
