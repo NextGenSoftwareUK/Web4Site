@@ -2,6 +2,17 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('scalar SUM and AVG preserve the exact floating metadata type', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    for (const [name, type, operation] of [['SUM', 'Single', 'Sum'], ['AVG', 'Double', 'Average']]) {
+      const { path, body } = compile(`SELECT ${name}(CAST(metadata.reading AS ${type.toUpperCase()})) FROM ${provider}`);
+      assert.equal(path, 'data/query-cql/scalar');
+      assert.equal(body.operation, operation);
+      assert.deepEqual(body.selection, { metadataPath: ['reading'], valueType: type, nullable: true });
+    }
+  }
+});
+
 test('SQL FETCH and OFFSET ROWS preserve the existing native row and selected windows', () => {
   const cases = [
     ['SELECT * FROM MongoDBOASIS ORDER BY Name', 'LIMIT 3 OFFSET 2', 'OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY'],

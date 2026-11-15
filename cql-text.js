@@ -448,7 +448,7 @@
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = hasSelection ? readAggregateSelection() : null;
+    const scalarSelection = hasSelection ? readAggregateSelection(true) : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection() {
       if (!accept('CAST')) {
@@ -472,9 +472,11 @@
       return { metadataPath, valueType: types[type], nullable: true };
     }
 
-    function readAggregateSelection() {
+    function readAggregateSelection(allowFloating = false) {
       const selection = readSelection();
-      if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal'].includes(selection.valueType))
+      const numericTypes = ['Int32', 'Int64', 'UInt64', 'Decimal'];
+      if (allowFloating) numericTypes.push('Single', 'Double');
+      if (selection.field !== 'Version' && !numericTypes.includes(selection.valueType))
         throw new Error('Aggregate Version or exact numeric metadata using CAST.');
       return selection;
     }
