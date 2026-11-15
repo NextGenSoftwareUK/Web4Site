@@ -50,6 +50,9 @@ test('queries the enrolled Axelar block-height catalogue without numeric roundin
   assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '9223372036854775808'"), /AxelarBlockHeight/);
   assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '0'"), /AxelarBlockHeight/);
   assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '37269326' ORDER BY Id"));
+  assert.throws(() => compile("SELECT * FROM AxelarOASIS"), /requires one AxelarBlockHeight/);
+  assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight IN ('37269326', '37269326')"), /AxelarBlockHeight/);
+  assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '37269326' OR metadata.AxelarBlockHeight = '37269327'"), /requires one AxelarBlockHeight/);
 });
 
 test('compiles inclusive ranges without rounding typed bounds', () => {

@@ -8,7 +8,7 @@
     NostrOASIS: { key: 'NostrEventId', accepts: value => /^[0-9a-f]{64}$/.test(value) },
     TRONOASIS: { key: 'TronBlockHeight', accepts: value =>
       /^[1-9][0-9]{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n },
-    AxelarOASIS: { key: 'AxelarBlockHeight', accepts: value =>
+    AxelarOASIS: { key: 'AxelarBlockHeight', requiresSingleKeyFilter: true, accepts: value =>
       /^[1-9][0-9]{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n },
     HashgraphOASIS: { key: 'HederaAccountId', accepts: value =>
       /^(?:0|[1-9][0-9]{0,19})\.(?:0|[1-9][0-9]{0,19})\.[1-9][0-9]{0,19}$/.test(value) &&
@@ -440,12 +440,15 @@
       throw new Error('HoloOASIS supports row queries with Id equality or IN filters, LIMIT, and OFFSET.');
     }
     for (const accountProvider of accountProviders) {
-      const { key, accepts, maximumKeys = 8 } = accountProfiles[accountProvider];
+      const { key, accepts, maximumKeys = 8, requiresSingleKeyFilter } = accountProfiles[accountProvider];
+      if (requiresSingleKeyFilter && (body.filters.length !== 1 || body.anyOf))
+        throw new Error(accountProvider + ' requires one ' + key + ' equality or IN filter.');
       const invalidFilter = [...body.filters, ...(body.anyOf ?? [])].some(filter => {
         if (filter.scalar !== 'String' || filter.metadataPath?.length !== 1 || filter.metadataPath[0] !== key ||
             !['Equal', 'In'].includes(filter.operator)) return true;
         const values = Array.isArray(filter.value) ? filter.value : [filter.value];
-        return values.length > maximumKeys || values.some(value => !accepts(value));
+        return values.length > maximumKeys || values.some(value => !accepts(value)) ||
+          (requiresSingleKeyFilter && new Set(values).size !== values.length);
       });
       if (operation || body.orderBy !== 'None' || relationships.length || invalidFilter) {
         throw new Error(accountProvider + ' supports row queries with ' + key +
