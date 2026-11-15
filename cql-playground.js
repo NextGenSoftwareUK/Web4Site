@@ -446,6 +446,12 @@
       } catch (error) { note(error.message, true); }
     });
 
+    function availableTextProviders() {
+      if (discovery || !getToken()) return [];
+      return root.CqlText.providers.filter(provider =>
+        sources?.some(source => source.provider === provider && source.available));
+    }
+
     function compileAvailableText(text) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
       const query = root.CqlText.compile(text);
@@ -467,7 +473,7 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, compileAvailableText, loadText, selectedPublicExample };
+    return { syncAuth, ready, availableTextProviders, compileAvailableText, loadText, selectedPublicExample };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,

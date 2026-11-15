@@ -491,7 +491,7 @@
     return text;
   }
 
-  const api = { compile, publicExample };
+  const api = { providers: Object.freeze([...providers]), compile, publicExample };
   if (typeof module !== 'undefined') module.exports = api;
   else root.CqlText = api;
 })(globalThis);

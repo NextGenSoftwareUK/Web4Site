@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const { compile } = require('./cql-text.js');
 
-function setup(reply, example = null, compileAvailableText = compile) {
+function setup(reply, example = null, compileAvailableText = compile, providers = ['MongoDBOASIS', 'Neo4jOASIS']) {
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
@@ -31,7 +31,7 @@ function setup(reply, example = null, compileAvailableText = compile) {
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
+    playground: { availableTextProviders: () => providers, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
@@ -50,6 +50,7 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   const request = JSON.parse(options.body);
   assert.deepEqual(request.tools, []);
   assert.match(request.messages[0].content, /Selected columns and all scalar queries use the server timeout/);
+  assert.match(request.messages[0].content, /currently available WEB4 providers: MongoDBOASIS, Neo4jOASIS/);
   assert.equal(request.injectAvatarContext, false);
   assert.equal(request.messages[1].content, 'Count active MongoDB holons');
   assert.equal(app.node('ask-draft').textContent, text);
@@ -61,6 +62,14 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.equal(app.node('cql-text-editor').open, true);
   assert.equal(app.node('cql-text').focused, true);
   assert.equal(app.tabOpened(), true);
+});
+
+test('waits for provider discovery without using WEB6', async () => {
+  const app = setup(() => { throw new Error('Unexpected WEB6 request'); }, null, compile, []);
+  await app.node('ask-generate').click();
+  assert.deepEqual(app.requests, []);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.match(app.node('ask-status').textContent, /Wait for WEB4 provider discovery/);
 });
 
 test('runs the current editor text only after it compiles', () => {

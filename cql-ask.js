@@ -91,12 +91,15 @@
       try {
         const token = await ensureAccessToken();
         if (!current() || !token) throw new Error('Sign in to the Development sandbox first.');
+        const providers = playground.availableTextProviders();
+        if (!providers.length) throw new Error('Wait for WEB4 provider discovery before drafting a query.');
+        const providerScope = 'Use only these currently available WEB4 providers: ' + providers.join(', ') + '.';
         requestKey = crypto.randomUUID();
         const response = await fetch('https://dev.api.web6.oasisomniverse.one/v1/complete', {
           method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
             'Idempotency-Key': requestKey },
-          body: JSON.stringify({ messages: [{ role: 'system', content: instructions },
+          body: JSON.stringify({ messages: [{ role: 'system', content: instructions + '\n' + providerScope },
             { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
         });
