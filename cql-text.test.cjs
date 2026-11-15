@@ -797,3 +797,15 @@ test('uses exact typed metadata in composite join keys and selected right output
   assert.throws(() => compile(text + ' AND CAST(l.metadata.JoinId AS INT64) = CAST(r.metadata.JoinId AS INT64)'),
     /key pair once/);
 });
+
+test('COUNT(1) uses exactly the same native scalar and grouped requests as COUNT(*)', () => {
+  const scalar = 'SELECT COUNT(1) FROM SQLLiteDBOASIS WHERE Version >= 2';
+  const grouped = 'SELECT Version, COUNT(1) AS Total FROM MongoDBOASIS GROUP BY Version HAVING Total >= 2';
+  for (const text of [scalar, grouped]) {
+    assert.deepEqual(compile(text), compile(text.replace('COUNT(1)', 'COUNT(*)')));
+  }
+  for (const text of ['SELECT COUNT(NULL) FROM MongoDBOASIS', 'SELECT COUNT(Name) FROM MongoDBOASIS',
+    'SELECT ANY(1) FROM MongoDBOASIS', 'SELECT COUNT(DISTINCT 1) FROM MongoDBOASIS']) {
+    assert.throws(() => compile(text));
+  }
+});

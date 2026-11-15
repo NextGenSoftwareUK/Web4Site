@@ -377,7 +377,7 @@
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = hasSelection ? readAggregateSelection() : null;
-    if (operation && !hasSelection) expect('*');
+    if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection() {
       if (!accept('CAST')) {
         const name = tokens[index++]?.toLowerCase();
@@ -419,7 +419,7 @@
           expect('(');
           const isCount = aggregate === 'LongCount';
           const selection = isCount ? null : readAggregateSelection();
-          if (isCount) expect('*');
+          if (isCount && !accept('1')) expect('*');
           expect(')');
           const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
