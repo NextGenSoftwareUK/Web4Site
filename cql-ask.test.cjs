@@ -51,6 +51,7 @@ test('grounds the WEB6 draft in ready discovered key names and exact set bounds'
   assert.match(system, /available WEB4 providers: NewOASIS/);
   assert.match(system, /NewOASIS:metadata\.NativeKey\(0\)/);
   assert.match(system, /IN is allowed only when the bound is positive/);
+  assert.doesNotMatch(system, /MongoDBOASIS|HederaAccountId|NostrEventId/);
   assert.deepEqual(h.opened, []);
 });
 
@@ -66,6 +67,7 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.deepEqual(request.tools, []);
   assert.match(request.messages[0].content, /Selected columns and all scalar queries use the server timeout/);
   assert.match(request.messages[0].content, /currently available WEB4 providers: MongoDBOASIS, Neo4jOASIS/);
+  assert.doesNotMatch(request.messages[0].content, /SuiObjectId|HederaAccountId|NostrEventId/);
   assert.equal(request.injectAvatarContext, false);
   assert.equal(request.messages[1].content, 'Count active MongoDB holons');
   assert.equal(app.node('ask-draft').textContent, text);
