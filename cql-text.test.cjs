@@ -128,6 +128,22 @@ test('preserves native key domains for Sui, Aptos, Starknet and Fantom', () => {
   assert.throws(() => compile("SELECT * FROM StarknetOASIS WHERE metadata.StarknetBlockHash = '0x01'"), /StarknetBlockHash/);
 });
 
+test('binds Algorand, Filecoin, Zcash and Radix to their enrolled key shapes', () => {
+  for (const [provider, key, valid, invalid] of [
+    ['AlgorandOASIS', 'AlgorandAddress', 'A'.repeat(58), 'a'.repeat(58)],
+    ['FilecoinOASIS', 'FilecoinAccountAddress', '0x' + 'a'.repeat(40), 'f1' + 'a'.repeat(40)],
+    ['ZcashOASIS', 'ZcashBlockHash', 'b'.repeat(64), 'B'.repeat(64)],
+    ['RadixOASIS', 'RadixResourceAddress', 'resource_rdx1' + 'q'.repeat(54), 'resource_tdx1' + 'q'.repeat(54)]
+  ]) {
+    const prefix = "SELECT * FROM " + provider + " WHERE metadata." + key;
+    assert.deepEqual(compile(prefix + " = '" + valid + "'").body.filters, [
+      { metadataPath: [key], scalar: 'String', operator: 'Equal', value: valid }
+    ]);
+    assert.throws(() => compile(prefix + " = '" + invalid + "'"), new RegExp(key));
+    assert.throws(() => compile("SELECT * FROM " + provider), /requires one/);
+  }
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
