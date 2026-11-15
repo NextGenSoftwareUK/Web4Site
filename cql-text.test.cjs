@@ -929,3 +929,18 @@ test('keeps each OR group inside its own bounded join input', () => {
   assert.equal(body.maximumPairs, 6);
   assert.throws(() => compile(text.replace('IsActive = TRUE','EXISTS CHILD (IsActive = TRUE)')), /Unknown filter field/);
 });
+
+test('compiles NOT BETWEEN to two strict ordered alternatives in the same scope', () => {
+  const head = 'SELECT Id FROM MongoDBOASIS WHERE ';
+  const query = compile(head + "IsActive = TRUE AND metadata.count AS INT64 NOT BETWEEN 10 AND 20");
+  assert.deepEqual(query.body.filters.map(({ field, value }) => [field, value]), [['IsActive', true]]);
+  assert.deepEqual(query.body.anyOf.map(({ operator, value }) => [operator, value]),
+    [['LessThan', '10'], ['GreaterThan', '20']]);
+  const parenthesized = compile(head + "(Version NOT BETWEEN 2 AND 5 OR Name = 'Example')");
+  assert.deepEqual(parenthesized.body.anyOf.map(({ operator, value }) => [operator, value]),
+    [['LessThan', 2], ['GreaterThan', 5], ['Equal', 'Example']]);
+  const plain = compile(head + "Version NOT BETWEEN 2 AND 5 OR Name = 'Example'");
+  assert.deepEqual(plain, parenthesized);
+  assert.throws(() => compile(head + 'Version NOT BETWEEN 2 AND 5 AND Version NOT BETWEEN 7 AND 9'), /one OR group/);
+  assert.throws(() => compile(head + "Name NOT BETWEEN 'A' AND 'B'"), /requires a numeric or UTC timestamp/);
+});

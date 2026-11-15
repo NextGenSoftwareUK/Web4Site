@@ -234,13 +234,19 @@
         scalar = type;
       }
       const literal = () => readLiteral(scalar, Boolean(selector.metadataPath));
-      if (accept('BETWEEN')) {
-        if (!allowRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
+      const negatedRange = accept('NOT');
+      if (negatedRange) expect('BETWEEN');
+      if (negatedRange || accept('BETWEEN')) {
+        if (!allowRange && !negatedRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
         if (!['Integer', 'Decimal', 'UInt64', 'DateTime'].includes(scalar))
           throw new Error('BETWEEN requires a numeric or UTC timestamp field.');
         const lower = literal();
         expect('AND');
         const upper = literal();
+        if (negatedRange) return { anyOf: [
+          { ...selector, scalar, operator: 'LessThan', value: lower },
+          { ...selector, scalar, operator: 'GreaterThan', value: upper }
+        ] };
         return [
           { ...selector, scalar, operator: 'GreaterThanOrEqual', value: lower },
           { ...selector, scalar, operator: 'LessThanOrEqual', value: upper }
@@ -469,12 +475,20 @@
 
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
+    function orPredicates(first) {
+      const alternatives = first.anyOf ?? [first];
+      while (accept('OR')) {
+        const alternative = filter();
+        alternatives.push(...(alternative.anyOf ?? [alternative]));
+      }
+      return alternatives;
+    }
+
     function predicates(target, allowChildren) {
       do {
         if (accept('(')) {
           if (target.anyOf) throw new Error('Use one parenthesized OR group per scope.');
-          target.anyOf = [filter()];
-          while (accept('OR')) target.anyOf.push(filter());
+          target.anyOf = orPredicates(filter());
           expect(')');
         } else if (allowChildren && accept('EXISTS')) {
           const descendant = accept('DESCENDANT');
@@ -491,14 +505,18 @@
           }
         } else {
           const predicate = filter(true);
-          if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && accept('OR')) {
+          if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && peek() === 'OR') {
             if (Array.isArray(predicate)) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
-            target.anyOf = [predicate, filter()];
-            while (accept('OR')) target.anyOf.push(filter());
+            target.anyOf = orPredicates(predicate);
             if (peek() === 'AND') throw new Error('Parenthesize the OR group when combining it with AND.');
             break;
           }
-          target.filters.push(...[].concat(predicate));
+          if (predicate.anyOf) {
+            if (target.anyOf) throw new Error('Use one OR group per scope.');
+            target.anyOf = predicate.anyOf;
+          } else {
+            target.filters.push(...[].concat(predicate));
+          }
         }
       } while (accept('AND'));
     }
