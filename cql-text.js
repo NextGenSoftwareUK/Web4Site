@@ -307,6 +307,7 @@
         }
         expect('LIMIT');
         body.take = integer(tokens[index++], 1, 10);
+        if (accept('OFFSET')) body.skip = integer(tokens[index++], 0, 1000);
         expect(')');
         accept('AS');
         return { alias: identifier('source').toLowerCase(), provider, body };

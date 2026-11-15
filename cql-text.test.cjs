@@ -869,3 +869,16 @@ test('HAVING null checks and inequality handle empty nullable numeric aggregates
   ]);
   assert.throws(() => compile(head + 'Total IS NULL'), /cannot be null/);
 });
+
+test('join sources have independent offsets and keep their pair-work bounds', () => {
+  const left = '(SELECT * FROM Neo4jOASIS ORDER BY Id LIMIT 3 OFFSET 2) AS l';
+  const right = '(SELECT * FROM Neo4jOASIS ORDER BY Name DESC LIMIT 2 OFFSET 1) AS r';
+  const sql = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' LEFT JOIN ' + right + ' ON l.Id = r.Id';
+  const { path, body } = compile(sql);
+  assert.equal(path, 'data/query-cql/join');
+  assert.deepEqual(body.left, { filters: [], orderBy: 'Id', take: 3, skip: 2 });
+  assert.deepEqual(body.right, { filters: [], orderBy: 'Name', descending: true, take: 2, skip: 1 });
+  assert.deepEqual([body.maximumLeftRows, body.maximumRightRows, body.maximumPairs, body.maximumResults], [3, 2, 6, 6]);
+  assert.throws(() => compile(sql.replace('OFFSET 2', 'OFFSET 1001')));
+  assert.throws(() => compile(sql + ' OFFSET 1'), /Unexpected join clause/);
+});
