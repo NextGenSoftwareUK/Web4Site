@@ -165,6 +165,42 @@
       throw new Error('Expected a ' + scalar + ' literal.');
     }
 
+    function readLike(scalar) {
+      if (scalar !== 'String') throw new Error('LIKE requires a string field.');
+      const pattern = readLiteral(scalar);
+      const escape = accept('ESCAPE') ? readLiteral(scalar) : null;
+      if (escape !== null && ([...escape].length !== 1 || '%_'.includes(escape)))
+        throw new Error('LIKE ESCAPE requires one character other than % or _.');
+      const units = [];
+      const characters = [...pattern];
+      for (let offset = 0; offset < characters.length; offset++) {
+        const character = characters[offset];
+        if (character === escape) {
+          const escaped = characters[++offset];
+          if (escaped !== escape && escaped !== '%' && escaped !== '_')
+            throw new Error('LIKE ESCAPE must precede %, _ or the escape character.');
+          units.push(escaped);
+        } else if (character === '%') {
+          units.push(null);
+        } else if (character === '_') {
+          throw new Error('LIKE requires escaping a literal underscore.');
+        } else {
+          units.push(character);
+        }
+      }
+      const leading = units[0] === null;
+      const trailing = units[units.length - 1] === null;
+      const inner = units.slice(leading ? 1 : 0, trailing ? -1 : undefined);
+      if (!inner.length || inner.includes(null))
+        throw new Error('LIKE supports nonempty text with optional % at either end.');
+      const value = inner.join('');
+      let operator = 'Equal';
+      if (leading && trailing) operator = 'Contains';
+      else if (leading) operator = 'EndsWith';
+      else if (trailing) operator = 'StartsWith';
+      return { operator, value };
+    }
+
     function filter(allowRange = false) {
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
@@ -210,41 +246,7 @@
           { ...selector, scalar, operator: 'LessThanOrEqual', value: upper }
         ];
       }
-      if (accept('LIKE')) {
-        if (scalar !== 'String') throw new Error('LIKE requires a string field.');
-        const pattern = literal();
-        const escape = accept('ESCAPE') ? literal() : null;
-        if (escape !== null && ([...escape].length !== 1 || '%_'.includes(escape)))
-          throw new Error('LIKE ESCAPE requires one character other than % or _.');
-        const units = [];
-        const characters = [...pattern];
-        for (let offset = 0; offset < characters.length; offset++) {
-          const character = characters[offset];
-          if (character === escape) {
-            const escaped = characters[++offset];
-            if (escaped !== escape && escaped !== '%' && escaped !== '_')
-              throw new Error('LIKE ESCAPE must precede %, _ or the escape character.');
-            units.push(escaped);
-          } else if (character === '%') {
-            units.push(null);
-          } else if (character === '_') {
-            throw new Error('LIKE requires escaping a literal underscore.');
-          } else {
-            units.push(character);
-          }
-        }
-        const leading = units[0] === null;
-        const trailing = units[units.length - 1] === null;
-        const inner = units.slice(leading ? 1 : 0, trailing ? -1 : undefined);
-        if (!inner.length || inner.includes(null))
-          throw new Error('LIKE supports nonempty text with optional % at either end.');
-        const value = inner.join('');
-        let operator = 'Equal';
-        if (leading && trailing) operator = 'Contains';
-        else if (leading) operator = 'EndsWith';
-        else if (trailing) operator = 'StartsWith';
-        return { ...selector, scalar, operator, value };
-      }
+      if (accept('LIKE')) return { ...selector, scalar, ...readLike(scalar) };
       if (accept('IN')) {
         expect('(');
         const value = [literal()];
@@ -583,7 +585,9 @@
               : aggregate.operation === 'Average' ? 'Decimal' : aggregate.selection.valueType ?? 'Int32'
             : key.valueType ?? fields[key.field.toLowerCase()][1];
           index++;
-          if (key && accept('IS')) {
+          if (key && accept('LIKE')) {
+            addHavingFilter({ alias, ...readLike(type) });
+          } else if (key && accept('IS')) {
             const not = accept('NOT');
             expect('NULL');
             if (!key.nullable && type !== 'String') throw new Error('This grouped key cannot be null.');

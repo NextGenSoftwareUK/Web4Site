@@ -840,3 +840,16 @@ test('HAVING filters selected grouping keys and aggregate aliases before paging'
   assert.throws(() => compile(query.replace('Enabled = TRUE', 'Enabled > TRUE')), /equality/);
   assert.throws(() => compile(query.replace('Revision BETWEEN 2 AND 4', 'Version > 2')), /selected/);
 });
+
+test('HAVING LIKE matches selected text keys using the row LIKE escape rules', () => {
+  const head = 'SELECT Description AS Label, COUNT(*) AS Total FROM Neo4jOASIS GROUP BY Description HAVING ';
+  const filters = compile(head + "Label LIKE '%100!%%' ESCAPE '!' AND Total >= 2").body.resultFilters;
+  assert.deepEqual(filters, [
+    { alias: 'Label', operator: 'Contains', value: '100%' },
+    { alias: 'Total', operator: 'GreaterThanOrEqual', value: '2' }
+  ]);
+  assert.deepEqual(compile(head + "Label LIKE 'Coffee%'").body.resultFilters,
+    [{ alias: 'Label', operator: 'StartsWith', value: 'Coffee' }]);
+  assert.throws(() => compile(head + "Label LIKE 'Tea_'"), /literal underscore/);
+  assert.throws(() => compile("SELECT Version, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Version HAVING Version LIKE 'x'"), /string field/);
+});
