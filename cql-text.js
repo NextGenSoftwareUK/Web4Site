@@ -302,13 +302,19 @@
           const aggregate = aggregates[name];
           expect('(');
           const isCount = aggregate === 'LongCount';
-          expect(isCount ? '*' : 'VERSION');
+          let selection;
+          if (isCount) expect('*');
+          else {
+            selection = readSelection();
+            if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal'].includes(selection.valueType))
+              throw new Error('Aggregate Version or exact numeric metadata using CAST.');
+          }
           expect(')');
           const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
             throw new Error('Expected a column alias for the grouped aggregate.');
           const binding = { alias, operation: aggregate };
-          if (!isCount) binding.selection = { field: 'Version' };
+          if (!isCount) binding.selection = selection;
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
@@ -435,10 +441,17 @@
           if (aggregate.binding.operation === 'LongCount') {
             if (!/^(0|[1-9][0-9]{0,18})$/.test(token ?? '') || BigInt(token) > 9223372036854775807n)
               throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
-          } else if (aggregate.binding.operation === 'Average') {
-            value = exactDecimal(token);
           } else {
-            value = integer(token, -2147483648, 2147483647);
+            const { operation, selection } = aggregate.binding;
+            const valueType = operation === 'Average' ? 'Decimal' : selection.valueType;
+            if (valueType === 'Decimal') value = exactDecimal(token);
+            else if (valueType === 'Int64' || valueType === 'UInt64') {
+              const signed = valueType === 'Int64';
+              const minimum = signed ? -9223372036854775808n : 0n;
+              const maximum = signed ? 9223372036854775807n : 18446744073709551615n;
+              if (!/^(?:0|-?[1-9][0-9]{0,19})$/.test(token ?? '') || BigInt(token) < minimum || BigInt(token) > maximum)
+                throw new Error('HAVING requires an exact ' + valueType + ' threshold.');
+            } else value = integer(token, -2147483648, 2147483647);
           }
           grouped.resultFilters.push({ alias: aggregate.binding.alias, operator: comparisons[comparison], value });
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');

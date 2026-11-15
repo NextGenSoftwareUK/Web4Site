@@ -726,3 +726,24 @@ test('groups or deduplicates exact metadata keys and resolves aliases without ex
   assert.throws(() => compile('SELECT DISTINCT ' + select + ' AS First, ' + select + ' AS Second FROM MongoDBOASIS'),
     /different selected fields/);
 });
+
+test('groups exact numeric metadata aggregates and preserves typed HAVING thresholds', () => {
+  const text = 'SELECT Name, MAX(CAST(metadata.signed AS INT64)) AS Peak, ' +
+    'MIN(CAST(metadata.unsigned AS UINT64)) AS Floor, SUM(CAST(metadata.amount AS DECIMAL)) AS Total ' +
+    'FROM MongoDBOASIS GROUP BY Name HAVING Peak >= 9007199254740993 AND ' +
+    'Floor <= 18446744073709551615 AND Total > 1.0000000000000000000000000001 ORDER BY Peak DESC';
+  const { path, body } = compile(text);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.columns.slice(1).map(({ selection }) => selection), [
+    { metadataPath: ['signed'], valueType: 'Int64', nullable: true },
+    { metadataPath: ['unsigned'], valueType: 'UInt64', nullable: true },
+    { metadataPath: ['amount'], valueType: 'Decimal', nullable: true }
+  ]);
+  assert.deepEqual(body.resultFilters.map(filter => filter.value),
+    ['9007199254740993', '18446744073709551615', '1.0000000000000000000000000001']);
+  assert.throws(() => compile(text.replace('18446744073709551615', '18446744073709551616')), /exact UInt64/);
+  assert.throws(() => compile(text.replace('9007199254740993', '9223372036854775808')), /exact Int64/);
+  assert.throws(() => compile(text.replace('AS DECIMAL)', 'AS GUID)')), /exact numeric metadata/);
+  const avg = compile('SELECT AVG(CAST(metadata.units AS INT64)) FROM Neo4jOASIS GROUP BY Name HAVING Avg >= 1.25');
+  assert.equal(avg.body.resultFilters[0].value, '1.25');
+});
