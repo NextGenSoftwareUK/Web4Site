@@ -91,6 +91,24 @@ test('compiles exact public block or ledger queries on Bitcoin, XRP, Stellar and
   }
 });
 
+test('binds BNB Chain, Avalanche, Base and Optimism to independent public account keys', () => {
+  const address = '0x' + 'aB'.repeat(20);
+  for (const [provider, key] of [
+    ['BNBChainOASIS', 'BNBChainAccountAddress'], ['AvalancheOASIS', 'AvalancheAccountAddress'],
+    ['BaseOASIS', 'BaseAccountAddress'], ['OptimismOASIS', 'OptimismAccountAddress']
+  ]) {
+    const prefix = "SELECT * FROM " + provider;
+    const query = prefix + " WHERE metadata." + key + " = '" + address + "'";
+    assert.deepEqual(compile(query).body.filters, [
+      { metadataPath: [key], scalar: 'String', operator: 'Equal', value: address }
+    ]);
+    assert.throws(() => compile(prefix), /requires one/);
+    assert.throws(() => compile(query.replace(key, 'EthereumAccountAddress')), new RegExp(key));
+    assert.throws(() => compile(query.replace(address, address.slice(1))), new RegExp(key));
+  }
+  assert.throws(() => compile("SELECT * FROM BaseOASIS, OptimismOASIS"), /different key fields/);
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +

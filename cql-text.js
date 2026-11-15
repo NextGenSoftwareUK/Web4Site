@@ -2,7 +2,7 @@
 (function (root) {
   'use strict';
 
-  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS', 'AxelarOASIS', 'BitcoinOASIS', 'XRPLOASIS', 'StellarOASIS', 'CardanoOASIS'];
+  const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS', 'AxelarOASIS', 'BitcoinOASIS', 'XRPLOASIS', 'StellarOASIS', 'CardanoOASIS', 'BNBChainOASIS', 'AvalancheOASIS', 'BaseOASIS', 'OptimismOASIS'];
   const evmAddress = /^0x[0-9a-fA-F]{40}$/;
   const accountProfiles = {
     BitcoinOASIS: { key: 'BitcoinBlockHash', requiresSingleKeyFilter: true, accepts: value => /^[0-9a-f]{64}$/.test(value) },
@@ -10,6 +10,10 @@
     StellarOASIS: { key: 'StellarLedgerSequence', requiresSingleKeyFilter: true, accepts: value =>
       /^[1-9][0-9]{0,9}$/.test(value) && BigInt(value) <= 4294967295n },
     CardanoOASIS: { key: 'CardanoBlockHash', requiresSingleKeyFilter: true, accepts: value => /^[0-9a-f]{64}$/.test(value) },
+    BNBChainOASIS: { key: 'BNBChainAccountAddress', requiresSingleKeyFilter: true, accepts: value => evmAddress.test(value) },
+    AvalancheOASIS: { key: 'AvalancheAccountAddress', requiresSingleKeyFilter: true, accepts: value => evmAddress.test(value) },
+    BaseOASIS: { key: 'BaseAccountAddress', requiresSingleKeyFilter: true, accepts: value => evmAddress.test(value) },
+    OptimismOASIS: { key: 'OptimismAccountAddress', requiresSingleKeyFilter: true, accepts: value => evmAddress.test(value) },
     NostrOASIS: { key: 'NostrEventId', accepts: value => /^[0-9a-f]{64}$/.test(value) },
     TRONOASIS: { key: 'TronBlockHeight', accepts: value =>
       /^[1-9][0-9]{0,18}$/.test(value) && BigInt(value) <= 9223372036854775807n },
