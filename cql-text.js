@@ -217,6 +217,7 @@
     }
 
     expect('SELECT');
+    const distinct = accept('DISTINCT');
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
     const startsWithAliasedAggregate = peek() !== 'ANY' && tokens[index + 4]?.toUpperCase() === 'AS';
     const operation = !startsWithAliasedAggregate && Object.hasOwn(aggregates, peek())
@@ -256,6 +257,8 @@
       } while (accept(','));
     }
     if (operation) expect(')');
+    if (distinct && (!columns.length || groupedAggregates.length || new Set(columns.map(column => column.field)).size !== columns.length))
+      throw new Error('DISTINCT requires one or more different selected fields without aggregates.');
     expect('FROM');
     const selected = [];
     do {
@@ -311,19 +314,22 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (groupedAggregates.length) {
-      expect('GROUP');
-      expect('BY');
-      const groupFields = [];
-      do {
-        const name = tokens[index++]?.toLowerCase();
-        if (!Object.hasOwn(fields, name)) throw new Error('Unknown GROUP BY field.');
-        groupFields.push(fields[name][0]);
-      } while (accept(','));
-      if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
-          !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
-        throw new Error('Select each field that matches GROUP BY once, along with an aggregate.');
-      const keys = groupFields.map(field => columns.find(column => column.field === field));
+    if (distinct || groupedAggregates.length) {
+      let keys = columns;
+      if (!distinct) {
+        expect('GROUP');
+        expect('BY');
+        const groupFields = [];
+        do {
+          const name = tokens[index++]?.toLowerCase();
+          if (!Object.hasOwn(fields, name)) throw new Error('Unknown GROUP BY field.');
+          groupFields.push(fields[name][0]);
+        } while (accept(','));
+        if (columns.length !== groupFields.length || new Set(groupFields).size !== groupFields.length ||
+            !groupFields.every(field => columns.filter(column => column.field === field).length === 1))
+          throw new Error('Select each field that matches GROUP BY once, along with an aggregate.');
+        keys = groupFields.map(field => columns.find(column => column.field === field));
+      }
       delete body.includeMetadata;
       delete body.take;
       const resultColumns = columns.map(({ alias }) => ({ alias, keyAlias: alias }));
@@ -338,6 +344,7 @@
         maximumGroups: 100
       };
       if (accept('HAVING')) {
+        if (distinct) throw new Error('DISTINCT does not accept a HAVING clause.');
         grouped.resultFilters = [];
         do {
           const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === peek());

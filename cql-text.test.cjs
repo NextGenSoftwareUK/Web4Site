@@ -55,6 +55,24 @@ test('queries the enrolled Axelar block-height catalogue without numeric roundin
   assert.throws(() => compile(prefix + "metadata.AxelarBlockHeight = '37269326' OR metadata.AxelarBlockHeight = '37269327'"), /requires one AxelarBlockHeight/);
 });
 
+test('compiles DISTINCT into native key-only grouping before ordering and paging', () => {
+  const { path, body } = compile("SELECT DISTINCT Version AS Revision, IsActive FROM SQLLiteDBOASIS " +
+    "WHERE Version >= 1 ORDER BY Revision DESC, IsActive LIMIT 5 OFFSET 2");
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.keys, [{ field: 'Version', alias: 'Revision' }, { field: 'IsActive', alias: 'IsActive' }]);
+  assert.deepEqual(body.columns, [{ alias: 'Revision', keyAlias: 'Revision' }, { alias: 'IsActive', keyAlias: 'IsActive' }]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Revision', descending: true }, { alias: 'IsActive', descending: false }]);
+  assert.equal(body.maximumGroups, 100);
+  assert.equal(body.resultTake, 5);
+  assert.equal(body.resultSkip, 2);
+  assert.equal(body.take, undefined);
+  assert.throws(() => compile("SELECT DISTINCT * FROM MongoDBOASIS"), /different selected fields/);
+  assert.throws(() => compile("SELECT DISTINCT COUNT(*) FROM MongoDBOASIS"), /without aggregates/);
+  assert.throws(() => compile("SELECT DISTINCT Version, Version AS Again FROM MongoDBOASIS"), /different selected fields/);
+  assert.throws(() => compile("SELECT DISTINCT Version FROM Neo4jOASIS HAVING Version > 1"), /HAVING/);
+  assert.throws(() => compile("SELECT DISTINCT Version FROM Neo4jOASIS LIMIT 5 OFFSET 2"), /ORDER BY/);
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
