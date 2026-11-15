@@ -540,20 +540,16 @@
       if (accept('HAVING')) {
         if (distinct) throw new Error('DISTINCT does not accept a HAVING clause.');
         grouped.resultFilters = [];
-        do {
-          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === peek());
-          if (!aggregate) throw new Error('HAVING must name a selected aggregate alias.');
-          index++;
-          const comparison = tokens[index++];
+        function addHavingComparison(aggregate, comparison) {
           const token = tokens[index++];
           if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
             throw new Error('HAVING requires a numeric comparison.');
           let value = token;
-          if (aggregate.binding.operation === 'LongCount') {
+          if (aggregate.operation === 'LongCount') {
             if (!/^(0|[1-9][0-9]{0,18})$/.test(token ?? '') || BigInt(token) > 9223372036854775807n)
               throw new Error('HAVING requires a comparison to a nonnegative 64-bit count.');
           } else {
-            const { operation, selection } = aggregate.binding;
+            const { operation, selection } = aggregate;
             const valueType = operation === 'Average' ? 'Decimal' : selection.valueType;
             if (valueType === 'Decimal') value = exactDecimal(token);
             else if (valueType === 'Int64' || valueType === 'UInt64') {
@@ -564,8 +560,20 @@
                 throw new Error('HAVING requires an exact ' + valueType + ' threshold.');
             } else value = integer(token, -2147483648, 2147483647);
           }
-          grouped.resultFilters.push({ alias: aggregate.binding.alias, operator: comparisons[comparison], value });
+          grouped.resultFilters.push({ alias: aggregate.alias, operator: comparisons[comparison], value });
           if (grouped.resultFilters.length > 32) throw new Error('Use at most 32 HAVING comparisons.');
+        }
+        do {
+          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === peek())?.binding;
+          if (!aggregate) throw new Error('HAVING must name a selected aggregate alias.');
+          index++;
+          if (accept('BETWEEN')) {
+            addHavingComparison(aggregate, '>=');
+            expect('AND');
+            addHavingComparison(aggregate, '<=');
+          } else {
+            addHavingComparison(aggregate, tokens[index++]);
+          }
         } while (accept('AND'));
       }
       if (accept('ORDER')) {

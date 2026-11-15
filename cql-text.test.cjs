@@ -809,3 +809,14 @@ test('COUNT(1) uses exactly the same native scalar and grouped requests as COUNT
     assert.throws(() => compile(text));
   }
 });
+
+test('HAVING BETWEEN preserves exact count and Decimal thresholds before paging', () => {
+  const head = 'SELECT Version, COUNT(*) AS Total, AVG(Version) AS Mean FROM MongoDBOASIS GROUP BY Version HAVING ';
+  const order = ' ORDER BY Mean DESC LIMIT 5';
+  const range = 'Total BETWEEN 9007199254740993 AND 9223372036854775807 AND Mean BETWEEN 0.10 AND 2.5';
+  const expanded = 'Total >= 9007199254740993 AND Total <= 9223372036854775807 AND Mean >= 0.10 AND Mean <= 2.5';
+  assert.deepEqual(compile(head + range + order), compile(head + expanded + order));
+  assert.throws(() => compile(head + 'Total BETWEEN 1 OR 2'), /Expected AND/);
+  assert.throws(() => compile(head + 'Total BETWEEN 1 AND 9223372036854775808'), /64-bit count/);
+  assert.throws(() => compile(head + Array(17).fill('Total BETWEEN 1 AND 2').join(' AND ')), /32 HAVING comparisons/);
+});
