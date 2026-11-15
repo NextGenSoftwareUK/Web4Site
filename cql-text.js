@@ -69,7 +69,7 @@
         throw new Error('Expected an exact decimal literal.');
       return token;
     }
-    function filter() {
+    function filter(allowRange = false) {
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
       if (name === 'metadata') {
@@ -136,6 +136,18 @@
           return value;
         }
         throw new Error('Expected a ' + scalar + ' literal.');
+      }
+      if (accept('BETWEEN')) {
+        if (!allowRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
+        if (!['Integer', 'Decimal', 'UInt64', 'DateTime'].includes(scalar))
+          throw new Error('BETWEEN requires a numeric or UTC timestamp field.');
+        const lower = literal();
+        expect('AND');
+        const upper = literal();
+        return [
+          { ...selector, scalar, operator: 'GreaterThanOrEqual', value: lower },
+          { ...selector, scalar, operator: 'LessThanOrEqual', value: upper }
+        ];
       }
       if (accept('LIKE')) {
         if (scalar !== 'String') throw new Error('LIKE requires a string field.');
@@ -272,13 +284,14 @@
             (target.anyChildren ??= []).push(relationship);
           }
         } else {
-          const predicate = filter();
+          const predicate = filter(true);
           if (!allowChildren && !target.filters.length && !target.anyOf && accept('OR')) {
+            if (Array.isArray(predicate)) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
             target.anyOf = [predicate, filter()];
             while (accept('OR')) target.anyOf.push(filter());
             break;
           }
-          target.filters.push(predicate);
+          target.filters.push(...[].concat(predicate));
         }
       } while (accept('AND'));
     }

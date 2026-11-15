@@ -17,6 +17,23 @@ test('compiles typed filters, grouped alternatives and ordered pagination', () =
   assert.deepEqual([body.orderBy, body.descending, body.take, body.skip], ['Version', true, 5, 2]);
 });
 
+test('compiles inclusive ranges without rounding typed bounds', () => {
+  const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
+    "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
+    "AND IsActive = TRUE");
+  assert.deepEqual(body.filters.map(({ operator, value }) => [operator, value]), [
+    ['GreaterThanOrEqual', 2], ['LessThanOrEqual', 5],
+    ['GreaterThanOrEqual', '9007199254740993'], ['LessThanOrEqual', '18446744073709551615'],
+    ['Equal', true]
+  ]);
+  const date = compile("SELECT * FROM Neo4jOASIS WHERE metadata.observedAt AS DATETIME " +
+    "BETWEEN '2026-11-13T12:00:00.0000001Z' AND '2026-11-13T12:00:00.0000002Z'");
+  assert.equal(date.body.filters[0].value, '2026-11-13T12:00:00.0000001Z');
+  assert.equal(date.body.filters[1].value, '2026-11-13T12:00:00.0000002Z');
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE (Version BETWEEN 2 AND 5 OR IsActive = TRUE)"), /outside OR/);
+  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name BETWEEN 'a' AND 'b'"), /numeric or UTC timestamp/);
+});
+
 test('compiles native counts and applies pagination only to federated results', () => {
   const count = compile('SELECT COUNT(*) FROM Neo4jOASIS WHERE IsActive = FALSE');
   assert.equal(count.path, 'data/query-cql/scalar');
