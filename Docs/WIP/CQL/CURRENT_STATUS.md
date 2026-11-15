@@ -1,5 +1,9 @@
 # CQL website current status
 
+## Exact signed 64-bit metadata filters
+
+AS INT64 keeps signed metadata comparison and BETWEEN operands as exact decimal text, including values outside the JavaScript safe integer range. The matching WEB4 compiler must be deployed before this syntax is available on Development.
+
 ## SQL-like inclusive ranges
 
 The CQL editor and WEB6 drafting instructions support BETWEEN in AND clauses for typed numeric and UTC timestamp fields. The editor compiles each range into two native inclusive comparisons and preserves exact UInt64 and UTC bounds. Hosted browser acceptance remains open.

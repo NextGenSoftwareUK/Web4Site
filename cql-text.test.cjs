@@ -34,6 +34,18 @@ test('compiles inclusive ranges without rounding typed bounds', () => {
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name BETWEEN 'a' AND 'b'"), /numeric or UTC timestamp/);
 });
 
+test('keeps signed Int64 comparison and range bounds exact', () => {
+  const { body } = compile('SELECT * FROM Neo4jOASIS WHERE metadata.sequence AS INT64 ' +
+    'BETWEEN -9223372036854775808 AND 9223372036854775807 AND Version >= 1');
+  assert.deepEqual(body.filters.map(({ scalar, value }) => [scalar, value]), [
+    ['Integer', '-9223372036854775808'], ['Integer', '9223372036854775807'], ['Integer', 1]
+  ]);
+  for (const invalid of ['9223372036854775808', '-9223372036854775809', '1.0', '-0', '01']) {
+    assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata.sequence AS INT64 = ' +
+      invalid), /signed 64-bit/);
+  }
+});
+
 test('compiles native counts and applies pagination only to federated results', () => {
   const count = compile('SELECT COUNT(*) FROM Neo4jOASIS WHERE IsActive = FALSE');
   assert.equal(count.path, 'data/query-cql/scalar');

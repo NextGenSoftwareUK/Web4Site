@@ -90,7 +90,8 @@
         }
         scalar = 'String';
         if (accept('AS')) {
-          if (accept('BOOLEAN')) scalar = 'Boolean';
+          if (accept('INT64')) scalar = 'Integer';
+          else if (accept('BOOLEAN')) scalar = 'Boolean';
           else if (accept('DECIMAL')) scalar = 'Decimal';
           else if (accept('DATETIME')) scalar = 'DateTime';
           else {
@@ -106,7 +107,13 @@
       }
       function literal() {
         const token = tokens[index++];
-        if (scalar === 'Integer') return integer(token, -2147483648, 2147483647);
+        if (scalar === 'Integer') {
+            if (!selector.metadataPath) return integer(token, -2147483648, 2147483647);
+            if (!/^(?:0|-?[1-9][0-9]{0,18})$/.test(token ?? '') ||
+                BigInt(token) < -9223372036854775808n || BigInt(token) > 9223372036854775807n)
+              throw new Error('Expected a signed 64-bit integer.');
+            return token;
+          }
         if (scalar === 'DateTime') {
           const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,7})?Z'$/.exec(token ?? '');
           const utcSeconds = match && new Date(match[1] + 'Z');
@@ -196,7 +203,7 @@
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
       if (!['Integer', 'UInt64', 'Decimal', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require Version or metadata typed AS UINT64, AS DECIMAL, or AS DATETIME.');
+        throw new Error('Ordered comparisons require Version or metadata typed AS INT64, AS UINT64, AS DECIMAL, or AS DATETIME.');
       if (['Contains', 'StartsWith', 'EndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
