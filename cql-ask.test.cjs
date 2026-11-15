@@ -295,3 +295,20 @@ test('Ask your data drafts DISTINCT typed metadata through the native grouped pa
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
 });
+
+test('Ask your data drafts a scalar Decimal aggregate for review', async () => {
+  const text = 'SELECT SUM(CAST(metadata.amount AS DECIMAL)) FROM MongoDBOASIS';
+  const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
+  app.node('ask-question').value = 'Sum MongoDB metadata.amount, which is a Decimal.';
+  await app.node('ask-generate').click();
+  const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.ok(prompt.includes(text));
+  assert.equal(app.node('ask-draft').textContent, text);
+  const query = compile(text);
+  assert.equal(query.path, 'data/query-cql/scalar');
+  assert.equal(query.body.operation, 'Sum');
+  assert.deepEqual(query.body.selection, { metadataPath: ['amount'], valueType: 'Decimal', nullable: true });
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [text]);
+});
