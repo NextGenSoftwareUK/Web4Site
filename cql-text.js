@@ -79,13 +79,14 @@
     const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
     const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
-    const lexer = /\s+|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
       const match = lexer.exec(text);
       if (!match) throw new Error('Unexpected character at position ' + (position + 1) + '.');
-      if (match[0].trim()) tokens.push(match[0]);
+      const token = match[0];
+      if (token.trim() && !token.startsWith('--') && !token.startsWith('/*')) tokens.push(token);
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();

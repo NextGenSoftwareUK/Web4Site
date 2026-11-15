@@ -676,3 +676,12 @@ test('uses default aliases for grouped aggregates in either SELECT order', () =>
   assert.throws(() => compile('SELECT Version AS Count, COUNT(*) FROM MongoDBOASIS GROUP BY Version'),
     /distinct alias/);
 });
+
+test('compiles SQL with inline and block comments while preserving string literals', () => {
+  const query = "SELECT Name FROM MongoDBOASIS WHERE Name = 'a--b /* c */' ORDER BY Name";
+  const withComments = "-- demo\r\n SELECT Name /* selected */ FROM MongoDBOASIS\n" +
+    "WHERE Name = 'a--b /* c */' -- literal above\n ORDER BY /* direction */ Name; -- done";
+  assert.deepEqual(compile(withComments), compile(query));
+  assert.throws(() => compile(query + ' /* unfinished'), /Unexpected character/);
+  assert.throws(() => compile(query + '; /* comment */ SELECT * FROM MongoDBOASIS'), /Unexpected clause/);
+});
