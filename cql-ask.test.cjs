@@ -31,7 +31,7 @@ function setup(reply, example = null, compileAvailableText = compile) {
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { compileAvailableText, loadText(text) { opened.push(text); }, selectedPublicExample: () => example },
+    playground: { compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
@@ -61,6 +61,29 @@ test('WEB6 drafts a typed query and opens it only after review', async () => {
   assert.equal(app.node('cql-text-editor').open, true);
   assert.equal(app.node('cql-text').focused, true);
   assert.equal(app.tabOpened(), true);
+});
+
+test('runs the current editor text only after it compiles', () => {
+  const app = setup(() => { throw new Error('Unexpected WEB6 request'); });
+  const actions = [];
+  app.node('cql-run').click = () => actions.push('run');
+  const query = 'SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5';
+  app.node('cql-text').value = query;
+  app.node('cql-run-text').click();
+  assert.deepEqual(app.opened, [query]);
+  assert.deepEqual(actions, ['run']);
+});
+
+test('an invalid editor query never runs the previous prepared request', () => {
+  const app = setup(() => { throw new Error('Unexpected WEB6 request'); }, null, t => compile(t));
+  let ran = false;
+  app.node('cql-run').click = () => { ran = true; };
+  const load = app.node('cql-compile').click;
+  app.node('cql-text').value = 'DELETE FROM MongoDBOASIS';
+  load();
+  app.node('cql-run-text').click();
+  assert.equal(ran, false);
+  assert.match(app.node('cql-note').textContent, /Expected SELECT/);
 });
 
 test('rejects a destructive model response and expires a valid draft on session change', async () => {

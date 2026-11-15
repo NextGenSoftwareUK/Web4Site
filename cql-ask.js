@@ -49,6 +49,12 @@
       try { playground.loadText($('cql-text').value); }
       catch (error) { $('cql-note').textContent = error.message; }
     });
+    $('cql-run-text').addEventListener('click', () => {
+      try {
+        playground.loadText($('cql-text').value);
+        $('cql-run').click();
+      } catch (error) { $('cql-note').textContent = error.message; }
+    });
     $('ask-use-example').addEventListener('click', () => {
       try {
         const example = isSandbox() && playground.selectedPublicExample();
