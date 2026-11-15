@@ -768,7 +768,7 @@ test('SQL left join renders a matching row with a null value distinctly from an 
   await h.elements.get('cql-run').listeners.click();
   const [result] = h.elements.get('cql-results').children;
   const [head, rows] = result.children;
-  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['LeftName', 'RightDescription', 'Right match']);
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['LeftName', 'RightDescription', 'Matched']);
   assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)),
     [['Matched', 'NULL', 'Yes'], ['Unmatched', 'NULL', 'No']]);
 });

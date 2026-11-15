@@ -882,3 +882,21 @@ test('join sources have independent offsets and keep their pair-work bounds', ()
   assert.throws(() => compile(sql.replace('OFFSET 2', 'OFFSET 1001')));
   assert.throws(() => compile(sql + ' OFFSET 1'), /Unexpected join clause/);
 });
+
+test('RIGHT OUTER JOIN preserves the original right input and selected output order', () => {
+  const left = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 2 OFFSET 1) AS l';
+  const right = '(SELECT * FROM MongoDBOASIS ORDER BY Name LIMIT 4) AS r';
+  const sql = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + left + ' RIGHT OUTER JOIN ' + right +
+    ' ON l.ParentHolonId = r.Id';
+  const query = compile(sql);
+  assert.equal(query.path, 'data/query-cql/join');
+  assert.equal(query.body.kind, 'Left');
+  assert.deepEqual(query.body.left, { filters: [], orderBy: 'Name', take: 4 });
+  assert.deepEqual(query.body.right, { filters: [], orderBy: 'Id', take: 2, skip: 1 });
+  assert.deepEqual(query.body.keys, [{ alias: 'Key1', left: { field: 'Id' }, right: { field: 'ParentHolonId' } }]);
+  assert.deepEqual(query.body.columns, [
+    { alias: 'LeftId', source: 'Right', selection: { field: 'Id' }, allowMissing: true },
+    { alias: 'RightId', source: 'Left', selection: { field: 'Id' } }
+  ]);
+  assert.deepEqual([query.body.maximumLeftRows, query.body.maximumRightRows, query.body.maximumPairs], [4, 2, 8]);
+});

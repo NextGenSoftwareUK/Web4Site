@@ -323,12 +323,15 @@
       if (fieldsToSelect.length > 32 || new Set(fieldsToSelect.map(field => field.alias.toLowerCase())).size !== fieldsToSelect.length)
         throw new Error('Use up to 32 distinct joined column aliases.');
       expect('FROM');
-      const left = source();
+      const firstSource = source();
       const leftJoin = accept('LEFT');
-      if (leftJoin) accept('OUTER');
+      const rightJoin = !leftJoin && accept('RIGHT');
+      const outerJoin = leftJoin || rightJoin;
+      if (outerJoin) accept('OUTER');
       else accept('INNER');
       expect('JOIN');
-      const right = source();
+      const secondSource = source();
+      const [left, right] = rightJoin ? [secondSource, firstSource] : [firstSource, secondSource];
       if (left.alias === right.alias || left.provider !== right.provider)
         throw new Error('Use two different aliases for one join provider.');
       const sourceSide = alias => {
@@ -357,12 +360,12 @@
       const columns = fieldsToSelect.map(field => {
         const side = sourceSide(field.source);
         const column = { alias: field.alias, source: side, selection: field.selection };
-        if (leftJoin && side === 'Right') column.allowMissing = true;
+        if (outerJoin && side === 'Right') column.allowMissing = true;
         return column;
       });
       const maximumPairs = left.body.take * right.body.take;
       return { path: 'data/query-cql/join', body: {
-        provider: left.provider, kind: leftJoin ? 'Left' : 'Inner',
+        provider: left.provider, kind: outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns,
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
       } };

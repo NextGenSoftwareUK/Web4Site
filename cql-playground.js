@@ -246,7 +246,7 @@
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
       const labels = columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata'];
-      if (showRightMatch) labels.push('Right match');
+      if (showRightMatch) labels.push('Matched');
       for (const label of labels) {
         const th = document.createElement('th');
         th.textContent = label;
