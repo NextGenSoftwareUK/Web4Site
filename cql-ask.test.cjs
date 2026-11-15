@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const { compile } = require('./cql-text.js');
 
-function setup(reply, example = null, compileAvailableText = compile, providers = ['MongoDBOASIS', 'Neo4jOASIS']) {
+function setup(reply, example = null, compileAvailableText = compile, providers = ['MongoDBOASIS', 'Neo4jOASIS'], textProfiles = {}) {
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
@@ -31,13 +31,28 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   context.CqlAsk.init({
-    playground: { availableTextProviders: () => providers, availableTextProfiles: () => ({}), compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
+    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, selectedPublicExample: () => example },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
   return { node, requests, opened, changeIdentity: () => { identity = 'another'; },
     tabOpened: () => tabOpened };
 }
+
+test('grounds the WEB6 draft in ready discovered key names and exact set bounds', async () => {
+  const text = "SELECT * FROM NewOASIS WHERE metadata.NativeKey = 'abc'";
+  const profiles = { NewOASIS: { key: 'NativeKey', maximumKeys: 0, requiresSingleKeyFilter: true,
+    accepts: value => value.length <= 8 } };
+  const h = setup(() => ({ ok: true, status: 200, json: async () => ({ content: text }) }),
+    null, sql => compile(sql, profiles), ['NewOASIS'], profiles);
+  h.node('ask-question').value = 'Show the public record with native key abc';
+  await h.node('ask-generate').click();
+  const system = JSON.parse(h.requests[0].options.body).messages[0].content;
+  assert.match(system, /available WEB4 providers: NewOASIS/);
+  assert.match(system, /NewOASIS:metadata\.NativeKey\(0\)/);
+  assert.match(system, /IN is allowed only when the bound is positive/);
+  assert.deepEqual(h.opened, []);
+});
 
 test('WEB6 drafts a typed query and opens it only after review', async () => {
   const text = 'SELECT COUNT(*) FROM MongoDBOASIS WHERE IsActive = TRUE';

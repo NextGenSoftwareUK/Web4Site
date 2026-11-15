@@ -136,6 +136,27 @@ test('draft provider scope only includes available supported identities from the
   assert.deepEqual(Array.from(h.ui.availableTextProviders()), []);
 });
 
+test('uses discovered native key profiles only for the active signed-in visitor', async () => {
+  const h = harness(() => { throw new Error('Unexpected query'); }, async () => ({
+    ok: true, status: 200, json: async () => ({ isError: false, result: [
+      { provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true },
+      { provider: 'NewOASIS', available: true, queryOnly: true, federationAvailable: true,
+        textKeyProfile: { metadataKey: 'NativeKey', maximumKeyCharacters: 6, maximumSetKeys: 2 } },
+      { provider: 'OfflineOASIS', available: false, queryOnly: true, federationAvailable: false,
+        textKeyProfile: { metadataKey: 'NativeKey', maximumKeyCharacters: 6, maximumSetKeys: 2 } }
+    ] })
+  }));
+  await h.ui.ready;
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), ['MongoDBOASIS', 'NewOASIS']);
+  const query = h.ui.compileAvailableText("SELECT * FROM NewOASIS WHERE metadata.NativeKey IN ('a', 'b')");
+  assert.equal(query.body.provider, 'NewOASIS');
+  assert.throws(() => h.ui.compileAvailableText("SELECT * FROM OfflineOASIS WHERE metadata.NativeKey = 'a'"));
+  assert.equal(h.ui.availableTextProfiles().NewOASIS.maximumKeys, 2);
+  h.signOut();
+  assert.deepEqual(Object.keys(h.ui.availableTextProfiles()), []);
+  assert.throws(() => h.ui.compileAvailableText("SELECT * FROM NewOASIS WHERE metadata.NativeKey = 'a'"));
+});
+
 test('API failures display their status/code and never render success rows', async () => {
   const h = harness(async () => ({ ok: false, status: 503,
     json: async () => ({ isError: true, errorCode: 'CQL_ADMISSION_REQUIRED', message: 'Admission required' }) }));
