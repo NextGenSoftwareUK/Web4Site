@@ -121,6 +121,21 @@ function harness(fetcher, discover, setup = {}) {
   return { elements, ui, signOut() { token = null; ui.syncAuth(); } };
 }
 
+test('draft provider scope only includes available supported identities from the current session', async () => {
+  const h = harness(() => { throw new Error('Unexpected query'); }, async () => ({
+    ok: true, status: 200, json: async () => ({ isError: false, result: [
+      { provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true },
+      { provider: 'Neo4jOASIS', available: false, queryOnly: false, federationAvailable: false },
+      { provider: 'NostrOASIS', available: true, queryOnly: true, federationAvailable: true },
+      { provider: 'DuckDBOASIS', available: true, queryOnly: true, federationAvailable: true }
+    ] })
+  }));
+  await h.ui.ready;
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), ['MongoDBOASIS', 'NostrOASIS']);
+  h.signOut();
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), []);
+});
+
 test('API failures display their status/code and never render success rows', async () => {
   const h = harness(async () => ({ ok: false, status: 503,
     json: async () => ({ isError: true, errorCode: 'CQL_ADMISSION_REQUIRED', message: 'Admission required' }) }));

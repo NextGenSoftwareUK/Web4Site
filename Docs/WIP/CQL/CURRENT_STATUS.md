@@ -1,5 +1,9 @@
 # CQL website current status
 
+## Live provider scope for Ask Your Data
+
+The SQL-like editor runs current text directly or previews the compiled request. WEB6 drafting waits for successful WEB4 discovery and receives only current supported providers. Drafts require explicit review before running. The 192 committed-file tests passed. Hosted signed-in browser verification and the signed Int64 backend rollout remain open.
+
 ## Exact signed 64-bit metadata filters
 
 AS INT64 keeps signed metadata comparison and BETWEEN operands as exact decimal text, including values outside the JavaScript safe integer range. The matching WEB4 compiler must be deployed before this syntax is available on Development.
