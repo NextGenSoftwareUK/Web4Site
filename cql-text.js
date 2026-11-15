@@ -272,8 +272,8 @@
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
-    if (hasSelection) expect('VERSION');
-    else if (operation) expect('*');
+    const scalarSelection = hasSelection ? readAggregateSelection() : null;
+    if (operation && !hasSelection) expect('*');
     function readSelection() {
       if (!accept('CAST')) {
         const name = tokens[index++]?.toLowerCase();
@@ -292,6 +292,12 @@
       return { metadataPath, valueType: types[type], nullable: true };
     }
 
+    function readAggregateSelection() {
+      const selection = readSelection();
+      if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal'].includes(selection.valueType))
+        throw new Error('Aggregate Version or exact numeric metadata using CAST.');
+      return selection;
+    }
     const selectionKey = column => column.field ?? [column.valueType, ...column.metadataPath].join('.');
     const columns = [];
     const groupedAggregates = [];
@@ -302,13 +308,8 @@
           const aggregate = aggregates[name];
           expect('(');
           const isCount = aggregate === 'LongCount';
-          let selection;
+          const selection = isCount ? null : readAggregateSelection();
           if (isCount) expect('*');
-          else {
-            selection = readSelection();
-            if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal'].includes(selection.valueType))
-              throw new Error('Aggregate Version or exact numeric metadata using CAST.');
-          }
           expect(')');
           const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
@@ -565,7 +566,7 @@
       return { path: 'data/query-cql/projection', body: { ...body, columns } };
     }
     if (operation) body.operation = operation;
-    if (hasSelection) body.selection = { field: 'Version' };
+    if (scalarSelection) body.selection = scalarSelection;
     if (selected.length > 1) {
       const { provider: _, skip, take, maximumDurationMilliseconds, ...source } = body;
       return { path: 'data/query-cql/federation', body: {

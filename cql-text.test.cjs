@@ -747,3 +747,15 @@ test('groups exact numeric metadata aggregates and preserves typed HAVING thresh
   const avg = compile('SELECT AVG(CAST(metadata.units AS INT64)) FROM Neo4jOASIS GROUP BY Name HAVING Avg >= 1.25');
   assert.equal(avg.body.resultFilters[0].value, '1.25');
 });
+
+test('compiles exact scalar aggregates over typed metadata', () => {
+  for (const [fn, operation] of [['MIN', 'Min'], ['MAX', 'Max'], ['SUM', 'Sum'], ['AVG', 'Average']]) {
+    const query = 'SELECT ' + fn + '(CAST(metadata.finance.amount AS DECIMAL)) FROM MongoDBOASIS';
+    const { path, body } = compile(query);
+    assert.equal(path, 'data/query-cql/scalar');
+    assert.equal(body.operation, operation);
+    assert.deepEqual(body.selection, { metadataPath: ['finance', 'amount'], valueType: 'Decimal', nullable: true });
+  }
+  assert.throws(() => compile('SELECT SUM(CAST(metadata.value AS GUID)) FROM MongoDBOASIS'), /exact numeric metadata/);
+  assert.throws(() => compile('SELECT SUM(CAST(metadata.value AS DECIMAL)) FROM MongoDBOASIS TIMEOUT 1000'), /Scalar queries use the server timeout/);
+});
