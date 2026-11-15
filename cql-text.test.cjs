@@ -778,3 +778,22 @@ test('compiles bounded composite left joins without paging joined results', () =
   assert.throws(() => compile(query + ' LIMIT 2'), /Unexpected join clause/);
   assert.throws(() => compile(query.replace(right, right.replace('MongoDBOASIS', 'Neo4jOASIS'))), /one join provider/);
 });
+
+test('uses exact typed metadata in composite join keys and selected right output', () => {
+  const source = '(SELECT * FROM SQLLiteDBOASIS LIMIT 3)';
+  const text = 'SELECT l.Id, CAST(r.metadata.Amount AS DECIMAL) AS Amount FROM ' + source +
+    ' AS l LEFT JOIN ' + source + ' AS r ON l.Version = r.Version AND ' +
+    'CAST(l.metadata.JoinId AS INT64) = CAST(r.metadata.JoinId AS INT64)';
+  const { path, body } = compile(text);
+  assert.equal(path, 'data/query-cql/join');
+  assert.deepEqual(body.keys[1], {
+    alias: 'Key2',
+    left: { metadataPath: ['JoinId'], valueType: 'Int64', nullable: true },
+    right: { metadataPath: ['JoinId'], valueType: 'Int64', nullable: true }
+  });
+  assert.deepEqual(body.columns[1], { alias: 'Amount', source: 'Right', allowMissing: true,
+    selection: { metadataPath: ['Amount'], valueType: 'Decimal', nullable: true } });
+  assert.throws(() => compile(text.replace(' AS Amount FROM', ' FROM')), /name a joined metadata column/);
+  assert.throws(() => compile(text + ' AND CAST(l.metadata.JoinId AS INT64) = CAST(r.metadata.JoinId AS INT64)'),
+    /key pair once/);
+});

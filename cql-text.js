@@ -269,11 +269,14 @@
         return value;
       };
       const qualifiedField = () => {
+        const cast = accept('CAST');
+        if (cast) expect('(');
         const source = identifier('source').toLowerCase();
         expect('.');
+        if (cast) return { source, selection: readMetadataCast() };
         const name = tokens[index++]?.toLowerCase();
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown qualified join field.');
-        return { source, field: fields[name][0] };
+        return { source, selection: { field: fields[name][0] } };
       };
       const source = () => {
         expect('(');
@@ -308,7 +311,9 @@
       const fieldsToSelect = [];
       do {
         const field = qualifiedField();
-        fieldsToSelect.push({ ...field, alias: accept('AS') ? identifier('column') : field.field });
+        const alias = accept('AS') ? identifier('column') : field.selection.field;
+        if (!alias) throw new Error('Use AS to name a joined metadata column.');
+        fieldsToSelect.push({ ...field, alias });
       } while (accept(','));
       if (fieldsToSelect.length > 32 || new Set(fieldsToSelect.map(field => field.alias.toLowerCase())).size !== fieldsToSelect.length)
         throw new Error('Use up to 32 distinct joined column aliases.');
@@ -335,9 +340,10 @@
         const one = sourceSide(first.source);
         if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
         const [l, r] = one === 'Left' ? [first, second] : [second, first];
-        if (keys.some(key => key.left.field === l.field && key.right.field === r.field))
+        if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
+            selectionKey(key.right) === selectionKey(r.selection)))
           throw new Error('Use each join key pair once.');
-        keys.push({ alias: 'Key' + (keys.length + 1), left: { field: l.field }, right: { field: r.field } });
+        keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection });
       } while (accept('AND'));
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
@@ -345,7 +351,7 @@
         throw new Error('Use up to eight join keys and twelve input filters.');
       const columns = fieldsToSelect.map(field => {
         const side = sourceSide(field.source);
-        const column = { alias: field.alias, source: side, selection: { field: field.field } };
+        const column = { alias: field.alias, source: side, selection: field.selection };
         if (leftJoin && side === 'Right') column.allowMissing = true;
         return column;
       });
@@ -379,6 +385,10 @@
         return { field: fields[name][0] };
       }
       expect('(');
+      return readMetadataCast();
+    }
+
+    function readMetadataCast() {
       expect('METADATA');
       const metadataPath = readMetadataPath();
       expect('AS');
@@ -396,7 +406,9 @@
         throw new Error('Aggregate Version or exact numeric metadata using CAST.');
       return selection;
     }
-    const selectionKey = column => column.field ?? [column.valueType, ...column.metadataPath].join('.');
+    function selectionKey(column) {
+      return column.field ?? [column.valueType, ...column.metadataPath].join('.');
+    }
     const columns = [];
     const groupedAggregates = [];
     if (!operation && !accept('*')) {
