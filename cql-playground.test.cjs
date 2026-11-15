@@ -581,7 +581,7 @@ test('shipped query runner gives a 30-second preset 35 seconds and dispatches on
   const timers = [], cleared = [], errors = [];
   let dispatched = 0;
   const context = vm.createContext({
-    controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0,
+    controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0, namedScalar: null,
     getToken: () => 'controlled', getIdentity: () => 'same-avatar', getBase: () => 'https://example.invalid',
     ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout,
     unwrap: cql.unwrap, $: element, crypto: { randomUUID: () => 'one-operation' }, AbortController,
@@ -695,6 +695,26 @@ test('the displayed relationship example compiles to a bounded projection', () =
   assert.equal(body.anyChildren[0].filters[0].field, 'Version');
   assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
   assert.equal(body.take, 5);
+});
+
+test('the SQL scalar alias labels only the matching prepared request', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    const body = JSON.parse(options.body);
+    assert.equal(body.operation, 'LongCount');
+    assert.equal(Object.hasOwn(body, 'scalarAlias'), false);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-scalar-v1', provider: 'Neo4jOASIS', operation: 'LongCount', valueType: 'Int64', value: '6'
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT COUNT(*) AS Total FROM Neo4jOASIS');
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /Total: 6/);
+  const request = h.elements.get('cql-request');
+  request.value = JSON.stringify({ ...JSON.parse(request.value), filters: [{ field: 'Version', operator: 'Equal', value: 1 }] });
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /LongCount: 6/);
 });
 
 test('a false ANY result is displayed as a Boolean outcome', async () => {

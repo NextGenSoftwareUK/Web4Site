@@ -2,6 +2,16 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('scalar aggregate aliases stay in the editor and do not change the native request', () => {
+  const count = compile('SELECT COUNT(*) AS Total FROM MongoDBOASIS');
+  const average = compile('SELECT AVG(CAST(metadata.rank AS SINGLE)) AS Mean FROM Neo4jOASIS');
+  assert.equal(count.scalarAlias, 'Total');
+  assert.equal(average.scalarAlias, 'Mean');
+  assert.deepEqual(count.body, compile('SELECT COUNT(*) FROM MongoDBOASIS').body);
+  assert.deepEqual(average.body, compile('SELECT AVG(CAST(metadata.rank AS SINGLE)) FROM Neo4jOASIS').body);
+  assert.throws(() => compile('SELECT COUNT(*) AS 7 FROM MongoDBOASIS'), /scalar result alias/);
+});
+
 test('scalar SUM and AVG preserve the exact floating metadata type', () => {
   for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
     for (const [name, type, operation] of [['SUM', 'Single', 'Sum'], ['AVG', 'Double', 'Average']]) {

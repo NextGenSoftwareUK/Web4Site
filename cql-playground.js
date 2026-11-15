@@ -171,6 +171,7 @@
     let controller = null;
     let generation = 0;
     let endpoint = '';
+    let namedScalar = null;
     let sessionIdentity = null;
     let sessionBase = null;
     let sources = null;
@@ -201,6 +202,7 @@
     }
 
     function loadPreset() {
+      namedScalar = null;
       const selected = sources?.find(row => row.provider === $('cql-provider').value);
       if (!selected || !profileChoices(selected, sources).some(choice => !choice.disabled)) {
         preparation = null;
@@ -231,11 +233,11 @@
       loadPreset();
     }
 
-    function render(result) {
+    function render(result, scalarAlias) {
       const payload = result.result;
       $('cql-response').textContent = JSON.stringify(result, null, 2);
       if (payload && Object.hasOwn(payload, 'value')) {
-        note(`${payload.provider} · ${payload.operation}: ${payload.value}`);
+        note(`${payload.provider} · ${scalarAlias ?? payload.operation}: ${payload.value}`);
         return;
       }
       if (!payload || !Array.isArray(payload.rows)) throw new Error('The API returned no CQL rows envelope. See the response.');
@@ -286,6 +288,7 @@
       }
       catch (error) { note(error.message, true); return; }
 
+      const scalarAlias = namedScalar?.request === $('cql-request').value ? namedScalar.alias : undefined;
       const identity = getIdentity();
       const base = getBase();
       const current = ++generation;
@@ -324,7 +327,7 @@
           throw new Error(`HTTP ${response.status}${result?.errorCode ? ' · ' + result.errorCode : ''}: ` +
             (result?.message || data?.message || 'The API rejected this query.'));
         }
-        render(result);
+        render(result, scalarAlias);
       } catch (error) {
         if (current === generation) note(pending.signal.aborted
           ? (timedOut ? 'Request timed out. No automatic retry was made.' : 'Request cancelled. Server work may already have executed.')
@@ -348,6 +351,7 @@
         $('cql-operation').textContent = '';
       }
       sessionIdentity = identity; sessionBase = base; sources = null; discoveredTextProfiles = {}; endpoint = '';
+      namedScalar = null;
       $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
       $('cql-sources').textContent = '';
@@ -503,6 +507,7 @@
       endpoint = query.path;
       $('cql-endpoint').textContent = 'POST /api/' + endpoint;
       $('cql-request').value = JSON.stringify(query.body, null, 2);
+      namedScalar = query.scalarAlias ? { request: $('cql-request').value, alias: query.scalarAlias } : null;
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }

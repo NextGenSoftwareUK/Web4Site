@@ -442,9 +442,7 @@
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
     const hasGrouping = tokens.some((token, position) =>
       token.toUpperCase() === 'GROUP' && tokens[position + 1]?.toUpperCase() === 'BY');
-    const startsWithGroupedAggregate = peek() !== 'ANY' &&
-      (hasGrouping || ['AS', ','].includes(tokens[index + 4]?.toUpperCase()));
-    const operation = !startsWithGroupedAggregate && Object.hasOwn(aggregates, peek())
+    const operation = !hasGrouping && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
@@ -513,7 +511,15 @@
         columns.push({ ...selection, alias });
       } while (accept(','));
     }
-    if (operation) expect(')');
+    let scalarAlias;
+    if (operation) {
+      expect(')');
+      if (accept('AS')) {
+        scalarAlias = tokens[index++];
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(scalarAlias ?? ''))
+          throw new Error('Expected a scalar result alias of up to 64 letters, digits or underscores.');
+      }
+    }
     if (distinct && (!columns.length || groupedAggregates.length || new Set(columns.map(selectionKey)).size !== columns.length))
       throw new Error('DISTINCT requires one or more different selected fields without aggregates.');
     expect('FROM');
@@ -806,7 +812,7 @@
         maximumProviderAttempts: selected.length, maximumDurationMilliseconds: maximumDurationMilliseconds ?? 5000
       } };
     }
-    return { path: operation ? 'data/query-cql/scalar' : 'data/query-cql', body };
+    return { path: operation ? 'data/query-cql/scalar' : 'data/query-cql', body, ...(scalarAlias ? { scalarAlias } : {}) };
   }
 
   function publicExample(provider, request, discoveredProfiles = {}) {
