@@ -73,6 +73,24 @@ test('compiles DISTINCT into native key-only grouping before ordering and paging
   assert.throws(() => compile("SELECT DISTINCT Version FROM Neo4jOASIS LIMIT 5 OFFSET 2"), /ORDER BY/);
 });
 
+test('compiles exact public block or ledger queries on Bitcoin, XRP, Stellar and Cardano', () => {
+  for (const [provider, field, valid, invalid] of [
+    ['BitcoinOASIS', 'BitcoinBlockHash', 'a'.repeat(64), 'A'.repeat(64)],
+    ['XRPLOASIS', 'XRPLLedgerHash', 'A'.repeat(64), 'a'.repeat(64)],
+    ['StellarOASIS', 'StellarLedgerSequence', '4294967295', '4294967296'],
+    ['CardanoOASIS', 'CardanoBlockHash', 'c'.repeat(64), 'c'.repeat(63)]
+  ]) {
+    const prefix = "SELECT * FROM " + provider + " WHERE metadata." + field;
+    const { path, body } = compile(prefix + " = '" + valid + "' LIMIT 1");
+    assert.equal(path, 'data/query-cql');
+    assert.equal(body.orderBy, 'None');
+    assert.deepEqual(body.filters, [{ metadataPath: [field], scalar: 'String', operator: 'Equal', value: valid }]);
+    assert.throws(() => compile(prefix + " = '" + invalid + "'"), new RegExp(field));
+    assert.throws(() => compile("SELECT * FROM " + provider), /requires one/);
+    assert.throws(() => compile(prefix + " IN ('" + valid + "','" + valid + "')"), new RegExp(field));
+  }
+});
+
 test('compiles inclusive ranges without rounding typed bounds', () => {
   const { body } = compile("SELECT * FROM MongoDBOASIS WHERE Version BETWEEN 2 AND 5 " +
     "AND metadata.sequence AS UINT64 BETWEEN 9007199254740993 AND 18446744073709551615 " +
