@@ -1271,3 +1271,17 @@ test('compiles a bounded child join with canonical relationship keys', () => {
   assert.throws(() => compile(query + ' ON p.Id = c.ParentHolonId'));
   assert.throws(() => compile(query.replace('FROM Neo4jOASIS WHERE', 'FROM MongoDBOASIS WHERE')), /one join provider/);
 });
+
+test('orders detached child and ordinary join rows by a selected alias or position', () => {
+  const table = '(SELECT * FROM Neo4jOASIS LIMIT 2)';
+  const child = 'SELECT p.Id AS Parent, c.Name AS ChildName FROM ' + table + ' p CHILD JOIN ' + table + ' c';
+  const regular = 'SELECT p.Id AS Parent, c.Name AS ChildName FROM ' + table + ' p LEFT JOIN ' + table + ' c ON p.Id = c.Id';
+  for (const query of [child, regular]) {
+    assert.equal(compile(query + ' ORDER BY childname DESC').body.outputOrderBy, 'ChildName');
+    assert.equal(compile(query + ' ORDER BY 2 DESC').body.outputDescending, true);
+    assert.deepEqual(compile(query + ' ORDER BY 2 DESC'), compile(query + ' ORDER BY ChildName DESC'));
+    assert.equal(Object.hasOwn(compile(query).body, 'outputOrderBy'), false);
+    assert.throws(() => compile(query + ' ORDER BY Name'), /selected column alias/);
+    assert.throws(() => compile(query + ' ORDER BY ChildName, Parent'), /Unexpected join clause/);
+  }
+});

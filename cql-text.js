@@ -459,6 +459,16 @@
           keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection });
         } while (accept('AND'));
       }
+      let outputOrder;
+      if (accept('ORDER')) {
+        expect('BY');
+        const name = readOrderColumn(fieldsToSelect)?.toLowerCase();
+        const selected = fieldsToSelect.find(field => field.alias.toLowerCase() === name);
+        if (!selected) throw new Error('Order joined results by a selected column alias.');
+        const descending = accept('DESC');
+        if (!descending) accept('ASC');
+        outputOrder = { outputOrderBy: selected.alias, outputDescending: descending };
+      }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
       const filterCount = left.body.filters.length + right.body.filters.length +
@@ -476,7 +486,7 @@
         fullJoin ? Math.max(product, left.body.take + right.body.take) : product;
       return { path: 'data/query-cql/join', body: {
         provider: left.provider, kind: childJoin ? 'Child' : crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
-        left: left.body, right: right.body, keys, columns,
+        left: left.body, right: right.body, keys, columns, ...outputOrder,
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
       } };
     }
