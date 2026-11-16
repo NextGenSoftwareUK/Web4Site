@@ -784,6 +784,22 @@ test('lowers bounded NOT IN with SQL null exclusion and typed literals', () => {
   assert.throws(() => compile(prefix + 'Version NOT IN (' + numbers.join(',') + ')'), /filter budget/);
 });
 
+test('compiles NOT LIKE patterns as native negation and excludes null exact matches', () => {
+  const prefix = 'SELECT * FROM MongoDBOASIS WHERE ';
+  assert.deepEqual(compile(prefix + "Description NOT LIKE '%secret%'").body.filters,
+    [{ field: 'Description', scalar: 'String', operator: 'NotContains', value: 'secret' }]);
+  assert.deepEqual(compile(prefix + "Name NOT LIKE 'A%'").body.filters,
+    [{ field: 'Name', scalar: 'String', operator: 'NotStartsWith', value: 'A' }]);
+  assert.deepEqual(compile(prefix + "metadata.category NOT LIKE '%!_' ESCAPE '!'").body.filters,
+    [{ metadataPath: ['category'], scalar: 'String', operator: 'NotEndsWith', value: '_' }]);
+  assert.deepEqual(compile(prefix + "Name NOT LIKE '%'").body.filters,
+    [{ field: 'Name', scalar: 'String', operator: 'NotContains', value: '' }]);
+  assert.deepEqual(compile(prefix + "Description NOT LIKE 'secret'").body.filters, [
+    { field: 'Description', operator: 'IsNotNull' },
+    { field: 'Description', scalar: 'String', operator: 'NotEqual', value: 'secret' }
+  ]);
+});
+
 test('escapes literal LIKE wildcard characters before native compilation', () => {
   const filter = pattern => compile('SELECT * FROM Neo4jOASIS WHERE Name LIKE ' + pattern).body.filters[0];
   assert.deepEqual(filter("'%100!%!_!!%' ESCAPE '!'"),

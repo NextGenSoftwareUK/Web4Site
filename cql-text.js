@@ -324,6 +324,15 @@
         if (predicates.length > 12) throw new Error('NOT IN exceeds the twelve-filter budget.');
         return predicates;
       }
+      if (accept('LIKE')) {
+        const match = readLike(scalar, negated || Boolean(selector.field));
+        if (!negated) return match.operator === 'IsNotNull' ? { ...selector, operator: match.operator }
+          : { ...selector, scalar, ...match };
+        if (match.operator === 'IsNotNull') return { ...selector, scalar, operator: 'NotContains', value: '' };
+        if (match.operator !== 'Equal') return { ...selector, scalar, operator: 'Not' + match.operator, value: match.value };
+        if (!allowRange) throw new Error('Exact NOT LIKE needs an AND clause outside OR alternatives.');
+        return [{ ...selector, operator: 'IsNotNull' }, { ...selector, scalar, operator: 'NotEqual', value: match.value }];
+      }
       if (negated) expect('BETWEEN');
       if (negated || accept('BETWEEN')) {
         if (!allowRange && !negated) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
@@ -340,11 +349,6 @@
           { ...selector, scalar, operator: 'GreaterThanOrEqual', value: lower },
           { ...selector, scalar, operator: 'LessThanOrEqual', value: upper }
         ];
-      }
-      if (accept('LIKE')) {
-        const match = readLike(scalar, Boolean(selector.field));
-        if (match.operator === 'IsNotNull') return { ...selector, operator: match.operator };
-        return { ...selector, scalar, ...match };
       }
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
@@ -604,7 +608,7 @@
         } else {
           const predicate = filter(true);
           if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && peek() === 'OR') {
-            if (Array.isArray(predicate)) throw new Error('BETWEEN and NOT IN need an AND clause outside OR alternatives.');
+            if (Array.isArray(predicate)) throw new Error('BETWEEN, NOT IN and exact NOT LIKE need an AND clause outside OR alternatives.');
             target.anyOf = orPredicates(predicate);
             if (peek() === 'AND') throw new Error('Parenthesize the OR group when combining it with AND.');
             break;
