@@ -52,6 +52,10 @@
   const fields = { id: ['Id', 'Guid'], name: ['Name', 'String'],
     parentholonid: ['ParentHolonId', 'Guid'], description: ['Description', 'String'], version: ['Version', 'Integer'],
     isactive: ['IsActive', 'Boolean'] };
+  const projectionFields = { ...fields, holontype: ['HolonType', 'HolonType'],
+    ispublic: ['IsPublic', 'Boolean'], versionid: ['VersionId', 'Guid'],
+    previousversionid: ['PreviousVersionId', 'Guid'], createdbyavatarid: ['CreatedByAvatarId', 'Guid'],
+    modifiedbyavatarid: ['ModifiedByAvatarId', 'Guid'] };
   const comparisons = { '=': 'Equal', '<>': 'NotEqual', '!=': 'NotEqual',
     '<': 'LessThan', '<=': 'LessThanOrEqual', '>': 'GreaterThan',
     '>=': 'GreaterThanOrEqual', CONTAINS: 'Contains',
@@ -209,6 +213,11 @@
         if (!token?.startsWith("'") || !/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value))
           throw new Error('Expected a quoted GUID for the selected field.');
         return value;
+      }
+      if (scalar === 'HolonType') {
+        if (!/^'[A-Za-z][A-Za-z0-9_]{0,39}'$/.test(token ?? ''))
+          throw new Error('Expected a quoted HolonType member.');
+        return token.slice(1, -1);
       }
       if (scalar === 'String' && token?.startsWith("'")) {
         const value = token.slice(1, -1).replace(/''/g, "'");
@@ -451,8 +460,8 @@
     function readSelection() {
       if (!accept('CAST')) {
         const name = tokens[index++]?.toLowerCase();
-        if (!Object.hasOwn(fields, name)) throw new Error('Unknown selected field.');
-        return { field: fields[name][0] };
+        if (!Object.hasOwn(projectionFields, name)) throw new Error('Unknown selected field.');
+        return { field: projectionFields[name][0] };
       }
       expect('(');
       return readMetadataCast();
@@ -637,7 +646,7 @@
         function addHavingComparison(alias, type, comparison, nullable = false) {
           if (!['=', '<>', '!=', '<', '<=', '>', '>='].includes(comparison))
             throw new Error('HAVING requires a scalar comparison.');
-          if (['String', 'Boolean', 'Guid'].includes(type) && !['=', '<>', '!='].includes(comparison))
+          if (['String', 'Boolean', 'Guid', 'HolonType'].includes(type) && !['=', '<>', '!='].includes(comparison))
             throw new Error('This grouped key supports equality and inequality in HAVING.');
           let value;
           if (type === 'Count') {
@@ -666,7 +675,7 @@
           const key = columns.find(column => column.alias.toUpperCase() === aliasToken);
           if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate alias or a selected grouping key alias.');
           const alias = (aggregate ?? key).alias;
-          let type = key?.valueType ?? (key && fields[key.field.toLowerCase()][1]);
+          let type = key?.valueType ?? (key && projectionFields[key.field.toLowerCase()][1]);
           if (aggregate) {
             const inputType = aggregate.selection?.valueType ?? 'Int32';
             if (aggregate.operation === 'LongCount') type = 'Count';

@@ -2,6 +2,21 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('projects and groups the additional canonical WEB4 columns without expanding WHERE filters', () => {
+  const columns = compile('SELECT IsPublic, HolonType, VersionId, PreviousVersionId, ' +
+    'CreatedByAvatarId, ModifiedByAvatarId FROM MongoDBOASIS').body.columns;
+  assert.deepEqual(columns.map(column => column.field),
+    ['IsPublic', 'HolonType', 'VersionId', 'PreviousVersionId', 'CreatedByAvatarId', 'ModifiedByAvatarId']);
+  const query = compile("SELECT IsPublic, HolonType AS Kind, COUNT(*) AS Total FROM Neo4jOASIS " +
+    "GROUP BY IsPublic, HolonType HAVING IsPublic = TRUE AND Kind = 'Avatar'");
+  assert.equal(query.path, 'data/query-cql/grouped');
+  assert.deepEqual(query.body.resultFilters, [
+    { alias: 'IsPublic', operator: 'Equal', value: true },
+    { alias: 'Kind', operator: 'Equal', value: 'Avatar' }
+  ]);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE IsPublic = TRUE'), /Unknown filter field/);
+});
+
 test('floating aggregate SQL retains the exact selection and HAVING wire types', () => {
   for (const type of ['SINGLE', 'DOUBLE']) {
     const valueType = type === 'SINGLE' ? 'Single' : 'Double';
