@@ -56,7 +56,7 @@
     ].join('\n');
   }
 
-  function init({ playground, isSandbox, getIdentity, ensureAccessToken }) {
+  function init({ playground, isSandbox, getIdentity, ensureAccessToken, isDemoSession = () => false }) {
     const $ = id => document.getElementById(id);
     const status = $('ask-status');
     const generate = $('ask-generate');
@@ -151,7 +151,8 @@
             'Idempotency-Key': requestKey },
           body: JSON.stringify({ messages: [{ role: 'system', content: queryInstructions(providers) + '\n' + providerScope + keyScope },
             { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
-            useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false })
+            useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false,
+            ...(isDemoSession() ? { freeOnly: true } : {}) })
         });
         const result = await response.json().catch(error => {
           if (error.name !== 'SyntaxError') throw error;

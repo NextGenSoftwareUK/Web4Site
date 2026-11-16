@@ -1791,6 +1791,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
 <script>
 const $ = id => document.getElementById(id);
 let jwt = null;
+let demoSessionIdentity = null;
 let timer = null;
 
 function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
@@ -1855,6 +1856,7 @@ async function startDemo(){
   setNote($('auth-note'), 'Creating your demo avatar…');
   try {
     const avatar = await session.startDemo();
+    demoSessionIdentity = session.identity();
     onSignedIn(`${avatar.username} (demo avatar)`);
   } catch (e) {
     setNote($('auth-note'), 'Could not start a demo session: ' + e.message, 'err');
@@ -2282,11 +2284,12 @@ function renderMetrics(metrics, connections, best){
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-text.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-exact-metadata-path-v1-count-distinct-v1-quoted-metadata-v1-canonical-fields-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-21-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-not-exists-v1-child-join-v1-join-output-order-v2"></script>
 <script src="cql-playground.js?v=distinct-example-v1-scalar-alias-v1-cql-text-v6-typed-joins-example-chooser-v1-child-join-v1"></script>
-<script src="cql-ask.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-draft-envelope-v1-ready-examples-v1-count-distinct-v1-quoted-metadata-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-session-reset-v1-27-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-compact-prompt-v1-not-exists-v1-example-chooser-v1-child-join-v1"></script>
+<script src="cql-ask.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-draft-envelope-v1-ready-examples-v1-count-distinct-v1-quoted-metadata-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-session-reset-v1-27-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-compact-prompt-v1-not-exists-v1-example-chooser-v1-child-join-v1-free-routes-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });
-window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken });
+window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken,
+  isDemoSession: () => demoSessionIdentity !== null && demoSessionIdentity === session.identity() });
 </script>
 </body>
 </html>
