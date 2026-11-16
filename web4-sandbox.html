@@ -217,6 +217,16 @@ ON l.Id = r.Id</code></pre>
           <button type="button" id="cql-load-join-example">Load join example</button>
         </details>
         <details>
+          <summary>Example comparing record versions</summary>
+          <pre><code id="cql-version-join-example">SELECT l.Name AS EarlierRecord, l.Version AS EarlierVersion,
+       r.Name AS LaterRecord, r.Version AS LaterVersion
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
+INNER JOIN (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS r
+ON r.Version &gt; l.Version
+ORDER BY LaterVersion DESC, EarlierVersion ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-version-join-example">Load version comparison</button>
+        </details>
+        <details>
           <summary>Example listing active children of selected records</summary>
           <pre><code id="cql-child-join-example">SELECT p.Name AS ParentName, c.Name AS ChildName
 FROM (SELECT * FROM MongoDBOASIS ORDER BY Name LIMIT 5) AS p

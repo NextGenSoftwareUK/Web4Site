@@ -874,3 +874,23 @@ test('loads a child join example without running it', async () => {
   assert.equal(body.outputLimit, 3);
   assert.deepEqual(body.outputOrdering, [{ alias: 'ParentName', descending: false }, { alias: 'ChildName', descending: false }]);
 });
+
+test('loads the signed version comparison and previews the bounded native request without querying WEB4', async () => {
+  const h = harness(async () => assert.fail('Loading the version comparison must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-version-join-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-version-join-example', { textContent: sql });
+  h.elements.get('cql-load-version-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Inner');
+  assert.equal(body.keys[0].operator, 'LessThan');
+  assert.equal(body.maximumPairs, 25);
+  assert.equal(body.outputLimit, 5);
+  assert.deepEqual(body.outputOrdering, [{ alias: 'LaterVersion', descending: true },
+    { alias: 'EarlierVersion', descending: false }]);
+});
