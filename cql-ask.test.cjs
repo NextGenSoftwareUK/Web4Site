@@ -55,6 +55,19 @@ test('grounds the WEB6 draft in ready discovered key names and exact set bounds'
   assert.deepEqual(h.opened, []);
 });
 
+test('uses only ready databases in executable WEB6 examples', async () => {
+  const text = 'SELECT COUNT(DISTINCT Description) FROM Neo4jOASIS';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }),
+    null, compile, ['Neo4jOASIS']);
+  app.node('ask-question').value = 'Count unique descriptions in Neo4j';
+  await app.node('ask-generate').click();
+  const system = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.match(system, /FROM Neo4jOASIS/);
+  assert.doesNotMatch(system, /FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+  assert.equal(app.node('ask-draft').textContent, text);
+  assert.deepEqual(app.opened, []);
+});
+
 test('WEB6 drafts a typed query and opens it only after review', async () => {
   const text = 'SELECT COUNT(*) FROM MongoDBOASIS WHERE IsActive = TRUE';
   const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
