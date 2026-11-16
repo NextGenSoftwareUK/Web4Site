@@ -711,7 +711,18 @@
           }
           const nullable = aggregate ? aggregate.selection?.nullable === true : key.nullable || type === 'String';
           index++;
-          if (key && accept('LIKE')) {
+          if (key && accept('NOT')) {
+            expect('LIKE');
+            const match = readLike(type, true);
+            if (match.operator === 'IsNotNull') {
+              addHavingFilter({ alias, operator: 'NotContains', value: '' });
+            } else if (match.operator === 'Equal') {
+              addHavingFilter({ alias, operator: 'NotEqual', value: null });
+              addHavingFilter({ alias, operator: 'NotEqual', value: match.value });
+            } else {
+              addHavingFilter({ alias, operator: 'Not' + match.operator, value: match.value });
+            }
+          } else if (key && accept('LIKE')) {
             addHavingFilter({ alias, ...readLike(type) });
           } else if (accept('IS')) {
             const not = accept('NOT');
@@ -829,12 +840,8 @@
     if (columns.length) {
       delete body.includeMetadata;
       if (selectedOrder) {
-        const { provider, take, skip, ...source } = body;
-        const stages = [{ operation: 'OrderBy', order: selectedOrder }];
-        if (skip) stages.push({ operation: 'Skip', count: skip });
-        stages.push({ operation: 'Take', count: take });
-        return { path: 'data/query-cql/composition',
-          body: { provider, source: { ...source, orderBy: 'Id', take: 100, columns }, stages } };
+        return { path: 'data/query-cql/projection',
+          body: { ...body, orderBy: 'None', columns, selectedOrder } };
       }
       return { path: 'data/query-cql/projection', body: { ...body, columns } };
     }

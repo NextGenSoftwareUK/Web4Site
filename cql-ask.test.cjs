@@ -342,7 +342,10 @@ test('Ask your data drafts a typed metadata projection with its requested alias'
   const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
   assert.ok(prompt.includes(text));
   assert.equal(app.node('ask-draft').textContent, text);
-  assert.deepEqual(compile(text).body.source.columns,
+  const compiled = compile(text);
+  assert.equal(compiled.path, 'data/query-cql/projection');
+  assert.deepEqual(compiled.body.selectedOrder, [{ alias: 'Stock', descending: true }]);
+  assert.deepEqual(compiled.body.columns,
     [{ metadataPath: ['stock'], valueType: 'Int64', nullable: true, alias: 'Stock' }]);
   assert.deepEqual(app.opened, []);
   app.node('ask-preview').click();

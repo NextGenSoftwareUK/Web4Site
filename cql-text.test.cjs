@@ -829,15 +829,13 @@ test('compiles bounded Nostr event queries using the exact event metadata key', 
 
 test('compiles selected multi-column sorting before result pagination', () => {
   const { path, body } = compile('SELECT Id, Version AS Revision FROM Neo4jOASIS ORDER BY revision DESC, Id ASC LIMIT 5 OFFSET 1');
-  assert.equal(path, 'data/query-cql/composition');
-  assert.equal(body.source.provider, undefined);
-  assert.equal(body.source.orderBy, 'Id');
-  assert.equal(body.source.take, 100);
-  assert.deepEqual(body.stages, [
-    { operation: 'OrderBy', order: [{ alias: 'Revision', descending: true }, { alias: 'Id', descending: false }] },
-    { operation: 'Skip', count: 1 },
-    { operation: 'Take', count: 5 }
-  ]);
+  assert.equal(path, 'data/query-cql/projection');
+  assert.equal(body.provider, 'Neo4jOASIS');
+  assert.equal(body.orderBy, 'None');
+  assert.equal(body.skip, 1);
+  assert.equal(body.take, 5);
+  assert.deepEqual(body.selectedOrder, [{ alias: 'Revision', descending: true }, { alias: 'Id', descending: false }]);
+  assert.equal(compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Version DESC, Id ASC LIMIT 5 OFFSET 125').body.skip, 125);
   assert.throws(() => compile('SELECT * FROM Neo4jOASIS ORDER BY Name, Id'), /selected columns/);
   assert.throws(() => compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Name, Id'), /selected column aliases/);
 });
@@ -849,14 +847,11 @@ test('orders a single projected alias by its selected source field', () => {
   assert.equal(body.descending, true);
 });
 
-test('orders a selected description alias through bounded composition', () => {
+test('orders a selected description alias natively before paging', () => {
   const { path, body } = compile('SELECT Id, Description AS Detail FROM SQLLiteDBOASIS ORDER BY Detail DESC LIMIT 3');
-  assert.equal(path, 'data/query-cql/composition');
-  assert.equal(body.source.take, 100);
-  assert.deepEqual(body.stages, [
-    { operation: 'OrderBy', order: [{ alias: 'Detail', descending: true }] },
-    { operation: 'Take', count: 3 }
-  ]);
+  assert.equal(path, 'data/query-cql/projection');
+  assert.equal(body.take, 3);
+  assert.deepEqual(body.selectedOrder, [{ alias: 'Detail', descending: true }]);
 });
 
 test('uses default aliases for grouped aggregates in either SELECT order', () => {
@@ -899,8 +894,8 @@ test('projects typed metadata with CAST while retaining exact aliases and nullab
     { metadataPath: ['Stock', 'current'], valueType: 'Int64', nullable: true, alias: 'Stock' }
   ]);
   const sorted = compile('SELECT CAST(metadata.total AS DECIMAL) AS Total FROM Neo4jOASIS ORDER BY Total DESC');
-  assert.equal(sorted.path, 'data/query-cql/composition');
-  assert.deepEqual(sorted.body.stages[0].order, [{ alias: 'Total', descending: true }]);
+  assert.equal(sorted.path, 'data/query-cql/projection');
+  assert.deepEqual(sorted.body.selectedOrder, [{ alias: 'Total', descending: true }]);
   assert.throws(() => compile('SELECT CAST(metadata.total AS INTEGER) AS Total FROM Neo4jOASIS'), /exact metadata projection type/);
 });
 
@@ -1175,4 +1170,21 @@ test('FULL OUTER JOIN lifts both projections and reserves each unmatched input',
   assert.equal(body.maximumResults, 2);
   assert.deepEqual(body.columns.map(column => column.allowMissing), [true, true]);
   assert.throws(() => compile(text.split(' ON ')[0]), /Expected ON/);
+});
+
+
+test('compiles negated HAVING patterns on selected text keys', () => {
+  const head = 'SELECT Name AS Label, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Name HAVING ';
+  assert.deepEqual(compile(head + "Label NOT LIKE '%tea%' AND Total > 1").body.resultFilters, [
+    { alias: 'Label', operator: 'NotContains', value: 'tea' },
+    { alias: 'Total', operator: 'GreaterThan', value: '1' }
+  ]);
+  assert.deepEqual(compile(head + "Label NOT LIKE 'tea'").body.resultFilters, [
+    { alias: 'Label', operator: 'NotEqual', value: null },
+    { alias: 'Label', operator: 'NotEqual', value: 'tea' }
+  ]);
+  assert.deepEqual(compile(head + "Label NOT LIKE '%'").body.resultFilters, [
+    { alias: 'Label', operator: 'NotContains', value: '' }
+  ]);
+  assert.throws(() => compile(head + "Total NOT LIKE '%1%'"));
 });
