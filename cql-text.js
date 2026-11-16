@@ -94,6 +94,14 @@
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();
+    function readOrderColumn(columns) {
+      const name = tokens[index++];
+      if (!/^\d+$/.test(name ?? '')) return name;
+      const position = Number(name);
+      if (!Number.isSafeInteger(position) || position < 1 || position > columns.length)
+        throw new Error('ORDER BY position must refer to an explicit SELECT column.');
+      return columns[position - 1].alias;
+    }
     function accept(token) {
       if (peek() !== token) return false;
       index++;
@@ -746,11 +754,11 @@
         expect('BY');
         grouped.resultOrder = [];
         do {
-          const alias = resultColumns.find(column => column.alias.toUpperCase() === peek())?.alias;
+          const name = readOrderColumn(resultColumns)?.toLowerCase();
+          const alias = resultColumns.find(column => column.alias.toLowerCase() === name)?.alias;
           if (!alias) throw new Error('Order grouped results by a selected column alias.');
           if (grouped.resultOrder.some(item => item.alias === alias))
             throw new Error('Use each grouped ordering alias only once.');
-          index++;
           const descending = accept('DESC');
           if (!descending) accept('ASC');
           grouped.resultOrder.push({ alias, descending });
@@ -788,7 +796,7 @@
       expect('BY');
       const order = [];
       do {
-        const name = tokens[index++];
+        const name = readOrderColumn(columns);
         const descending = accept('DESC');
         if (!descending) accept('ASC');
         order.push({ name, descending });

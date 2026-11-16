@@ -1216,3 +1216,21 @@ test('compiles native negative child and descendant existence without inverting 
   assert.equal(query.body.anyDescendants[0].maximumDepth, 8);
   assert.throws(() => compile("SELECT * FROM Neo4jOASIS WHERE NOT EXISTS CHILD (NOT EXISTS CHILD (Version = 1))"));
 });
+
+test('orders explicit SELECT columns by their one-based positions', () => {
+  const selected = 'SELECT Id, Version AS Revision FROM Neo4jOASIS ORDER BY ';
+  const grouped = 'SELECT COUNT(*) AS Total, Version FROM Neo4jOASIS GROUP BY Version ORDER BY ';
+  const distinct = 'SELECT DISTINCT Version FROM Neo4jOASIS ORDER BY ';
+  assert.deepEqual(compile(selected + '2 DESC, 1 LIMIT 5').body,
+    compile(selected + 'Revision DESC, Id LIMIT 5').body);
+  assert.deepEqual(compile(grouped + '1 DESC, 2 LIMIT 5').body,
+    compile(grouped + 'Total DESC, Version LIMIT 5').body);
+  assert.deepEqual(compile(distinct + '1 DESC LIMIT 5').body,
+    compile(distinct + 'Version DESC LIMIT 5').body);
+  assert.throws(() => compile(selected + '2, Revision'), /only once/);
+  assert.throws(() => compile(grouped + '1, Total'), /only once/);
+  for (const query of [selected + '0', grouped + '3', selected + '999999999999999999999',
+    'SELECT * FROM Neo4jOASIS ORDER BY 1']) {
+    assert.throws(() => compile(query), /explicit SELECT column/);
+  }
+});
