@@ -308,16 +308,31 @@
         }
       }
       const literal = () => readLiteral(scalar, Boolean(selector.metadataPath));
-      const negatedRange = accept('NOT');
-      if (negatedRange) expect('BETWEEN');
-      if (negatedRange || accept('BETWEEN')) {
-        if (!allowRange && !negatedRange) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
+      const negated = accept('NOT');
+      if (accept('IN')) {
+        expect('(');
+        const values = [literal()];
+        while (accept(',')) values.push(literal());
+        expect(')');
+        if (values.length > 100) throw new Error('IN accepts up to 100 values.');
+        if (!negated) return { ...selector, scalar, operator: 'In', value: values };
+        if (!allowRange) throw new Error('NOT IN needs an AND clause outside OR alternatives.');
+        if (!['Id', 'Version', 'Name', 'Description'].includes(selector.field))
+          throw new Error('NOT IN requires Id, Version, Name, or Description.');
+        const predicates = [...new Set(values)].map(value => ({ ...selector, scalar, operator: 'NotEqual', value }));
+        if (scalar === 'String') predicates.unshift({ ...selector, operator: 'IsNotNull' });
+        if (predicates.length > 12) throw new Error('NOT IN exceeds the twelve-filter budget.');
+        return predicates;
+      }
+      if (negated) expect('BETWEEN');
+      if (negated || accept('BETWEEN')) {
+        if (!allowRange && !negated) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
         if (!['Integer', 'Decimal', 'UInt64', 'Double', 'Single', 'DateTime'].includes(scalar))
           throw new Error('BETWEEN requires a numeric or UTC timestamp field.');
         const lower = literal();
         expect('AND');
         const upper = literal();
-        if (negatedRange) return { anyOf: [
+        if (negated) return { anyOf: [
           { ...selector, scalar, operator: 'LessThan', value: lower },
           { ...selector, scalar, operator: 'GreaterThan', value: upper }
         ] };
@@ -330,14 +345,6 @@
         const match = readLike(scalar, Boolean(selector.field));
         if (match.operator === 'IsNotNull') return { ...selector, operator: match.operator };
         return { ...selector, scalar, ...match };
-      }
-      if (accept('IN')) {
-        expect('(');
-        const value = [literal()];
-        while (accept(',')) value.push(literal());
-        expect(')');
-        if (value.length > 100) throw new Error('IN accepts up to 100 values.');
-        return { ...selector, scalar, operator: 'In', value };
       }
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
@@ -597,7 +604,7 @@
         } else {
           const predicate = filter(true);
           if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && peek() === 'OR') {
-            if (Array.isArray(predicate)) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
+            if (Array.isArray(predicate)) throw new Error('BETWEEN and NOT IN need an AND clause outside OR alternatives.');
             target.anyOf = orPredicates(predicate);
             if (peek() === 'AND') throw new Error('Parenthesize the OR group when combining it with AND.');
             break;

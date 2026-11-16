@@ -758,6 +758,24 @@ test('compiles bounded SQL LIKE patterns and rejects unsupported wildcards', () 
   }
 });
 
+test('lowers bounded NOT IN with SQL null exclusion and typed literals', () => {
+  const prefix = 'SELECT * FROM MongoDBOASIS WHERE ';
+  assert.deepEqual(compile(prefix + "Description NOT IN ('a', 'b', 'a')").body.filters, [
+    { field: 'Description', operator: 'IsNotNull' },
+    { field: 'Description', scalar: 'String', operator: 'NotEqual', value: 'a' },
+    { field: 'Description', scalar: 'String', operator: 'NotEqual', value: 'b' }
+  ]);
+  assert.deepEqual(compile(prefix + 'Version NOT IN (1, 2)').body.filters, [
+    { field: 'Version', scalar: 'Integer', operator: 'NotEqual', value: 1 },
+    { field: 'Version', scalar: 'Integer', operator: 'NotEqual', value: 2 }
+  ]);
+  assert.throws(() => compile(prefix + "Description NOT IN ('a') OR Version = 1"), /outside OR/);
+  assert.throws(() => compile(prefix + "metadata.category NOT IN ('a')"), /NOT IN requires/);
+  assert.throws(() => compile(prefix + "Description NOT IN ('a', NULL)"), /literal/);
+  const numbers = Array.from({ length: 13 }, (_, index) => index + 1);
+  assert.throws(() => compile(prefix + 'Version NOT IN (' + numbers.join(',') + ')'), /filter budget/);
+});
+
 test('escapes literal LIKE wildcard characters before native compilation', () => {
   const filter = pattern => compile('SELECT * FROM Neo4jOASIS WHERE Name LIKE ' + pattern).body.filters[0];
   assert.deepEqual(filter("'%100!%!_!!%' ESCAPE '!'"),
