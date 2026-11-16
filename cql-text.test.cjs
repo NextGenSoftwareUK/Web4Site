@@ -1282,6 +1282,9 @@ test('orders detached child and ordinary join rows by a selected alias or positi
     assert.deepEqual(compile(query + ' ORDER BY 2 DESC'), compile(query + ' ORDER BY ChildName DESC'));
     assert.equal(Object.hasOwn(compile(query).body, 'outputOrderBy'), false);
     assert.throws(() => compile(query + ' ORDER BY Name'), /selected column alias/);
-    assert.throws(() => compile(query + ' ORDER BY ChildName, Parent'), /Unexpected join clause/);
+    assert.deepEqual(compile(query + ' ORDER BY ChildName DESC, 1 ASC').body.outputOrdering, [
+      { alias: 'ChildName', descending: true }, { alias: 'Parent', descending: false }
+    ]);
+    assert.throws(() => compile(query + ' ORDER BY ' + Array(9).fill('Parent').join(', ')), /eight joined ordering terms/);
   }
 });

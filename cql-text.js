@@ -462,12 +462,19 @@
       let outputOrder;
       if (accept('ORDER')) {
         expect('BY');
-        const name = readOrderColumn(fieldsToSelect)?.toLowerCase();
-        const selected = fieldsToSelect.find(field => field.alias.toLowerCase() === name);
-        if (!selected) throw new Error('Order joined results by a selected column alias.');
-        const descending = accept('DESC');
-        if (!descending) accept('ASC');
-        outputOrder = { outputOrderBy: selected.alias, outputDescending: descending };
+        const terms = [];
+        do {
+          const name = readOrderColumn(fieldsToSelect)?.toLowerCase();
+          const selected = fieldsToSelect.find(field => field.alias.toLowerCase() === name);
+          if (!selected) throw new Error('Order joined results by a selected column alias.');
+          const descending = accept('DESC');
+          if (!descending) accept('ASC');
+          terms.push({ alias: selected.alias, descending });
+          if (terms.length > 8) throw new Error('Use up to eight joined ordering terms.');
+        } while (accept(','));
+        outputOrder = terms.length === 1
+          ? { outputOrderBy: terms[0].alias, outputDescending: terms[0].descending }
+          : { outputOrdering: terms };
       }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
