@@ -1234,3 +1234,12 @@ test('orders explicit SELECT columns by their one-based positions', () => {
     assert.throws(() => compile(query), /explicit SELECT column/);
   }
 });
+
+test('accepts predicate-free child and descendant existence without changing following clauses', () => {
+  const query = compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD AND NOT EXISTS DESCENDANT ORDER BY Name LIMIT 5');
+  assert.deepEqual(query.body.anyChildren, [{ filters: [] }]);
+  assert.deepEqual(query.body.anyDescendants, [{ filters: [], negated: true, maximumDepth: 8, maximumNodes: 1000 }]);
+  assert.equal(query.body.orderBy, 'Name');
+  assert.equal(query.body.take, 5);
+  assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD ('));
+});

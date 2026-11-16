@@ -606,11 +606,12 @@
           expect('EXISTS');
           const descendant = accept('DESCENDANT');
           if (!descendant) expect('CHILD');
-          expect('(');
           const relationship = { filters: [] };
           if (negated) relationship.negated = true;
-          predicates(relationship, false);
-          expect(')');
+          if (accept('(')) {
+            predicates(relationship, false);
+            expect(')');
+          }
           if (descendant) {
             Object.assign(relationship, { maximumDepth: 8, maximumNodes: 1000 });
             (target.anyDescendants ??= []).push(relationship);
