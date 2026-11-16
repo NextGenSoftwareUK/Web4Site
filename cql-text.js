@@ -430,8 +430,9 @@
       const fullJoin = !leftJoin && !rightJoin && accept('FULL');
       const outerJoin = leftJoin || rightJoin || fullJoin;
       const crossJoin = !outerJoin && accept('CROSS');
+      const childJoin = !outerJoin && !crossJoin && accept('CHILD');
       if (outerJoin) accept('OUTER');
-      else if (!crossJoin) accept('INNER');
+      else if (!crossJoin && !childJoin) accept('INNER');
       expect('JOIN');
       const secondSource = source();
       const [left, right] = rightJoin ? [secondSource, firstSource] : [firstSource, secondSource];
@@ -443,7 +444,7 @@
         throw new Error('Unknown join source alias.');
       };
       const keys = [];
-      if (!crossJoin) {
+      if (!crossJoin && !childJoin) {
         expect('ON');
         do {
           const first = qualifiedField();
@@ -471,9 +472,10 @@
         return column;
       });
       const product = left.body.take * right.body.take;
-      const maximumPairs = fullJoin ? Math.max(product, left.body.take + right.body.take) : product;
+      const maximumPairs = childJoin ? right.body.take :
+        fullJoin ? Math.max(product, left.body.take + right.body.take) : product;
       return { path: 'data/query-cql/join', body: {
-        provider: left.provider, kind: crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
+        provider: left.provider, kind: childJoin ? 'Child' : crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns,
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
       } };

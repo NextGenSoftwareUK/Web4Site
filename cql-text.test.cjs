@@ -1255,3 +1255,19 @@ test('groups by explicit selected column positions without counting aggregate po
   assert.throws(() => compile(base + '2, 4'), /explicit SELECT column/);
   assert.throws(() => compile(base + '2, IsActive, 3'), /different GROUP BY fields/);
 });
+
+test('compiles a bounded child join with canonical relationship keys', () => {
+  const query = "SELECT p.Id AS Parent, c.Id AS Child FROM (SELECT * FROM Neo4jOASIS LIMIT 3) AS p " +
+    "CHILD JOIN (SELECT * FROM Neo4jOASIS WHERE IsActive = TRUE LIMIT 4) AS c";
+  const { path, body } = compile(query);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Child');
+  assert.deepEqual(body.keys, []);
+  assert.equal(body.maximumLeftRows, 3);
+  assert.equal(body.maximumRightRows, 4);
+  assert.equal(body.maximumPairs, 4);
+  assert.equal(body.maximumResults, 4);
+  assert.equal(body.right.filters[0].field, 'IsActive');
+  assert.throws(() => compile(query + ' ON p.Id = c.ParentHolonId'));
+  assert.throws(() => compile(query.replace('FROM Neo4jOASIS WHERE', 'FROM MongoDBOASIS WHERE')), /one join provider/);
+});
