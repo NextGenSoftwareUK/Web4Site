@@ -2,6 +2,21 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('floating aggregate SQL retains the exact selection and HAVING wire types', () => {
+  for (const type of ['SINGLE', 'DOUBLE']) {
+    const valueType = type === 'SINGLE' ? 'Single' : 'Double';
+    const selector = `CAST(metadata.measure AS ${type})`;
+    const aggregate = compile(`SELECT AVG(${selector}) FROM MongoDBOASIS`);
+    assert.equal(aggregate.path, 'data/query-cql/scalar');
+    assert.deepEqual(aggregate.body.selection, { metadataPath: ['measure'], valueType, nullable: true });
+    const groups = compile(`SELECT Version, SUM(${selector}) AS Total, AVG(${selector}) AS Mean FROM Neo4jOASIS ` +
+      'GROUP BY Version HAVING Total >= 1e-5 AND Mean < 2E-05');
+    assert.equal(groups.path, 'data/query-cql/grouped');
+    assert.deepEqual(groups.body.columns.slice(1).map(column => column.selection), [aggregate.body.selection, aggregate.body.selection]);
+    assert.deepEqual(groups.body.resultFilters.map(({ value }) => value), ['1E-05', '2E-05']);
+  }
+});
+
 test('scalar aggregate aliases stay in the editor and do not change the native request', () => {
   const count = compile('SELECT COUNT(*) AS Total FROM MongoDBOASIS');
   const average = compile('SELECT AVG(CAST(metadata.rank AS SINGLE)) AS Mean FROM Neo4jOASIS');

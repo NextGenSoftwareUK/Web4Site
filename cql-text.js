@@ -446,7 +446,7 @@
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
     const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = hasSelection ? readAggregateSelection(true) : null;
+    const scalarSelection = hasSelection ? readAggregateSelection() : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection() {
       if (!accept('CAST')) {
@@ -470,11 +470,9 @@
       return { metadataPath, valueType: types[type], nullable: true };
     }
 
-    function readAggregateSelection(allowFloating = false) {
+    function readAggregateSelection() {
       const selection = readSelection();
-      const numericTypes = ['Int32', 'Int64', 'UInt64', 'Decimal'];
-      if (allowFloating) numericTypes.push('Single', 'Double');
-      if (selection.field !== 'Version' && !numericTypes.includes(selection.valueType))
+      if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal', 'Single', 'Double'].includes(selection.valueType))
         throw new Error('Aggregate Version or exact numeric metadata using CAST.');
       return selection;
     }
@@ -668,10 +666,13 @@
           const key = columns.find(column => column.alias.toUpperCase() === aliasToken);
           if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate alias or a selected grouping key alias.');
           const alias = (aggregate ?? key).alias;
-          const type = aggregate
-            ? aggregate.operation === 'LongCount' ? 'Count'
-              : aggregate.operation === 'Average' ? 'Decimal' : aggregate.selection.valueType ?? 'Int32'
-            : key.valueType ?? fields[key.field.toLowerCase()][1];
+          let type = key?.valueType ?? (key && fields[key.field.toLowerCase()][1]);
+          if (aggregate) {
+            const inputType = aggregate.selection?.valueType ?? 'Int32';
+            if (aggregate.operation === 'LongCount') type = 'Count';
+            else if (aggregate.operation === 'Average' && !['Single', 'Double'].includes(inputType)) type = 'Decimal';
+            else type = inputType;
+          }
           const nullable = aggregate ? aggregate.selection?.nullable === true : key.nullable || type === 'String';
           index++;
           if (key && accept('LIKE')) {
