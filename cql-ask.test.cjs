@@ -436,6 +436,7 @@ test('grounds a paged CHILD JOIN and preserves explicit review', async () => {
   await app.node('ask-generate').click();
   const system = JSON.parse(app.requests[0].options.body).messages[0].content;
   assert.match(system, /CHILD JOIN without ON/);
+  assert.match(system, /matching signed integer fields/);
   assert.match(system, /LIMIT n OFFSET m outside both inputs/);
   assert.equal(app.node('ask-draft').textContent, sql);
   assert.deepEqual(app.opened, []);
@@ -444,4 +445,16 @@ test('grounds a paged CHILD JOIN and preserves explicit review', async () => {
   const { path, body } = compile(app.opened[0]);
   assert.equal(path, 'data/query-cql/join');
   assert.deepEqual([body.left.take, body.right.take, body.outputOffset, body.outputLimit], [2, 4, 1, 2]);
+});
+
+test('reviews a WEB6 signed integer join draft before compiling it for WEB4', async () => {
+  const table = '(SELECT * FROM Neo4jOASIS LIMIT 2)';
+  const sql = 'SELECT l.Id AS BeforeId, r.Id AS AfterId FROM ' + table + ' l INNER JOIN ' + table + ' r ON l.Version < r.Version';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: sql }) }), null, compile, ['Neo4jOASIS']);
+  app.node('ask-question').value = 'Pair two bounded Neo4j windows where the first revision is lower.';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-draft').textContent, sql);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.equal(compile(app.opened[0]).body.keys[0].operator, 'LessThan');
 });
