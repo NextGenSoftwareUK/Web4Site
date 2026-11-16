@@ -83,7 +83,7 @@
     const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
     const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
-    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|"(?:[^"]|"")*"|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
@@ -142,8 +142,11 @@
       const path = [];
       do {
         expect('.');
-        const key = tokens[index++];
-        if (!/^[A-Za-z_][A-Za-z_0-9]*$/.test(key ?? '') || key.length > 64)
+        const token = tokens[index++] ?? '';
+        const quoted = token.startsWith('"');
+        const key = quoted ? token.slice(1, -1).replace(/""/g, '"') : token;
+        if (!key.trim() || key.length > 64 || /[\x00-\x1f\x7f-\x9f]/.test(key) ||
+            (!quoted && !/^[A-Za-z_][A-Za-z_0-9]*$/.test(key)))
           throw new Error('Expected a metadata path segment of up to 64 characters.');
         path.push(key);
         if (path.length > 4) throw new Error('Use at most four metadata path segments.');

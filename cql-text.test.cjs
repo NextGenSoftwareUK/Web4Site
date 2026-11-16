@@ -2,6 +2,16 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('double-quoted metadata segments carry literal names to native projections and predicates', () => {
+  const query = compile(`SELECT CAST(metadata."labels.v1"."Espresso ""Special""" AS STRING) AS Label
+    FROM MongoDBOASIS WHERE metadata."labels.v1"."Espresso ""Special""" = 'yes'`);
+  assert.deepEqual(query.body.columns[0].metadataPath, ['labels.v1', 'Espresso "Special"']);
+  assert.deepEqual(query.body.filters[0].metadataPath, ['labels.v1', 'Espresso "Special"']);
+  assert.deepEqual(compile('SELECT DISTINCT CAST(metadata."café price" AS DECIMAL) AS Price FROM Neo4jOASIS').body.keys[0].metadataPath, ['café price']);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata."" = \'x\''), /metadata path segment/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata."bad\nkey" = \'x\''), /metadata path segment/);
+});
+
 test('projects and groups the additional canonical WEB4 columns without expanding WHERE filters', () => {
   const columns = compile('SELECT IsPublic, HolonType, VersionId, PreviousVersionId, ' +
     'CreatedByAvatarId, ModifiedByAvatarId FROM MongoDBOASIS').body.columns;
