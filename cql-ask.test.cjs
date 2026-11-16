@@ -428,11 +428,11 @@ test('chooses a ready provider for a public question without sending a draft', (
   assert.equal(app.requests.length, 0);
 });
 
-test('grounds requested child rows in a bounded CHILD JOIN and preserves explicit review', async () => {
+test('grounds a paged CHILD JOIN and preserves explicit review', async () => {
   const sql = 'SELECT c.Id AS Child FROM (SELECT * FROM Neo4jOASIS LIMIT 2) AS p ' +
-    'CHILD JOIN (SELECT * FROM Neo4jOASIS LIMIT 4) AS c';
+    'CHILD JOIN (SELECT * FROM Neo4jOASIS LIMIT 4) AS c ORDER BY Child ASC LIMIT 2 OFFSET 1';
   const app = setup(() => ({ ok: true, json: async () => ({ content: sql }) }), null, compile, ['Neo4jOASIS']);
-  app.node('ask-question').value = 'Show the IDs of up to four visible children of two Neo4j records';
+  app.node('ask-question').value = 'Show two visible child IDs from two Neo4j records, ordered by ID and skipping the first child';
   await app.node('ask-generate').click();
   const system = JSON.parse(app.requests[0].options.body).messages[0].content;
   assert.match(system, /CHILD JOIN without ON/);
@@ -441,4 +441,7 @@ test('grounds requested child rows in a bounded CHILD JOIN and preserves explici
   assert.deepEqual(app.opened, []);
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [sql]);
+  const { path, body } = compile(app.opened[0]);
+  assert.equal(path, 'data/query-cql/join');
+  assert.deepEqual([body.left.take, body.right.take, body.outputOffset, body.outputLimit], [2, 4, 1, 2]);
 });
