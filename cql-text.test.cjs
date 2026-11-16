@@ -1205,3 +1205,14 @@ test('orders full rows by canonical keys on one native source', () => {
   assert.throws(() => compile('SELECT * FROM MongoDBOASIS ORDER BY Name, Name'), /only once/);
   assert.throws(() => compile('SELECT * FROM MongoDBOASIS ORDER BY Unknown, Id'), /Order full rows/);
 });
+
+test('compiles native negative child and descendant existence without inverting their local filters', () => {
+  const query = compile("SELECT * FROM Neo4jOASIS WHERE IsActive = TRUE AND NOT EXISTS CHILD (Name = 'pending') AND NOT EXISTS DESCENDANT (Version >= 2) LIMIT 3");
+  assert.equal(query.path, 'data/query-cql');
+  assert.equal(query.body.anyChildren[0].negated, true);
+  assert.equal(query.body.anyChildren[0].filters[0].operator, 'Equal');
+  assert.equal(query.body.anyDescendants[0].negated, true);
+  assert.equal(query.body.anyDescendants[0].filters[0].operator, 'GreaterThanOrEqual');
+  assert.equal(query.body.anyDescendants[0].maximumDepth, 8);
+  assert.throws(() => compile("SELECT * FROM Neo4jOASIS WHERE NOT EXISTS CHILD (NOT EXISTS CHILD (Version = 1))"));
+});

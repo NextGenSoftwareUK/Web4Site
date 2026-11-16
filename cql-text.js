@@ -592,11 +592,15 @@
           if (target.anyOf) throw new Error('Use one parenthesized OR group per scope.');
           target.anyOf = orPredicates(filter());
           expect(')');
-        } else if (allowChildren && accept('EXISTS')) {
+        } else if (allowChildren && (peek() === 'EXISTS'
+            || peek() === 'NOT' && tokens[index + 1]?.toUpperCase() === 'EXISTS')) {
+          const negated = accept('NOT');
+          expect('EXISTS');
           const descendant = accept('DESCENDANT');
           if (!descendant) expect('CHILD');
           expect('(');
           const relationship = { filters: [] };
+          if (negated) relationship.negated = true;
           predicates(relationship, false);
           expect(')');
           if (descendant) {
