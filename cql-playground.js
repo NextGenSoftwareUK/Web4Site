@@ -166,7 +166,7 @@
     return selected;
   }
 
-  function init({ getToken, getBase, getIdentity = getToken, ensureAccessToken = async () => getToken(), request = null, canPrepare = () => false }) {
+  function init({ getToken, getBase, getIdentity = getToken, ensureAccessToken = async () => getToken(), request = null, canPrepare = () => false, onCatalogueChanged = () => {} }) {
     const $ = id => document.getElementById(id);
     let controller = null;
     let generation = 0;
@@ -356,6 +356,7 @@
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
       $('cql-sources').textContent = '';
       controls();
+      onCatalogueChanged();
       if (!token) { note('Start a demo session or sign in above to load live providers.'); return; }
       const current = generation;
       const pending = new AbortController(); discovery = pending;
@@ -391,7 +392,11 @@
           ? 'Provider discovery stopped. No automatic retry was made.' : error.message, true);
       } finally {
         clearTimeout(timeout);
-        if (current === generation) { discovery = null; controls(); }
+        if (current === generation) {
+          discovery = null;
+          controls();
+          onCatalogueChanged();
+        }
       }
     }
 
@@ -451,7 +456,12 @@
       return publicExampleFor(source, $('cql-preset').value);
     }
 
-    function publicQuestionExample() {
+    function availableQuestionProviders() {
+      return (sources ?? []).filter(source => publicExampleFor(source)).map(source => source.provider);
+    }
+
+    function publicQuestionExample(provider) {
+      if (provider) return publicExampleFor(sources?.find(source => source.provider === provider));
       const selected = selectedPublicExample();
       if (selected) return selected;
       for (const source of sources ?? []) {
@@ -511,7 +521,8 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample };
+    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample,
+      availableQuestionProviders };
   }
 
   const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,

@@ -12,6 +12,8 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   const node = id => {
     if (!elements.has(id)) elements.set(id, {
       focus() { this.focused = true; },
+      replaceChildren(...children) { this.children = children; },
+      value: '',
       disabled: id === 'ask-preview',
       addEventListener(event, listener) { this[event] = listener; }
     });
@@ -20,6 +22,7 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   const context = {
     document: {
       getElementById: node,
+      createElement: () => ({}),
       querySelector: () => ({ click() { tabOpened = true; } })
     },
     AbortSignal,
@@ -31,12 +34,13 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   const ask = context.CqlAsk.init({
-    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: () => example },
+    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: provider => typeof example === 'function' ? example(provider) : example,
+      availableQuestionProviders: () => ['HashgraphOASIS', 'HoloOASIS'] },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
   });
   node('ask-question').value = 'Count active MongoDB holons';
   return { node, requests, opened, changeIdentity: () => { identity = 'another'; },
-    resetSession: ask.resetSession, tabOpened: () => tabOpened };
+    resetSession: ask.resetSession, refreshExampleProviders: ask.refreshExampleProviders, tabOpened: () => tabOpened };
 }
 
 test('grounds the WEB6 draft in ready discovered key names and exact set bounds', async () => {
@@ -403,4 +407,23 @@ test('Ask your data drafts a bounded composite join on an available provider', a
   assert.deepEqual(app.opened, []);
   app.node('ask-preview').click();
   assert.deepEqual(app.opened, [text]);
+});
+
+test('chooses a ready provider for a public question without sending a draft', () => {
+  const selected = [];
+  const app = setup(() => { throw Error('Choosing an example must not send a draft'); }, provider => {
+    selected.push(provider);
+    return { provider, request: { take: 2, filters: [
+      { metadataPath: ['HederaAccountId'], operator: 'In', value: ['0.0.2', '0.0.3'] }
+    ] } };
+  });
+  const chooser = app.node('ask-example-provider');
+  app.refreshExampleProviders();
+  assert.deepEqual(Array.from(chooser.children, option => option.value), ['', 'HashgraphOASIS', 'HoloOASIS']);
+  chooser.value = 'HashgraphOASIS';
+  app.node('ask-use-example').click();
+  assert.deepEqual(selected, ['HashgraphOASIS']);
+  assert.match(app.node('ask-question').value, /HashgraphOASIS.*0\.0\.2.*0\.0\.3/);
+  assert.equal(app.node('ask-question').focused, true);
+  assert.equal(app.requests.length, 0);
 });

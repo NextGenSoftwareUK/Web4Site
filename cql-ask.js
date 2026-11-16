@@ -65,6 +65,20 @@
     const questionInput = $('ask-question');
     let questionVersion = 0;
 
+    const exampleProvider = $('ask-example-provider');
+    function refreshExampleProviders() {
+      const selected = exampleProvider.value;
+      const options = [['', 'Any ready provider'], ...playground.availableQuestionProviders().map(provider => [provider, provider])];
+      exampleProvider.replaceChildren(...options.map(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        return option;
+      }));
+      if (options.some(([value]) => value === selected)) exampleProvider.value = selected;
+    }
+
+
     function clearDraft() {
       questionVersion++;
       draft = null;
@@ -87,7 +101,7 @@
     });
     $('ask-use-example').addEventListener('click', () => {
       try {
-        const example = isSandbox() && playground.publicQuestionExample();
+        const example = isSandbox() && playground.publicQuestionExample(exampleProvider.value);
         if (!example) throw new Error('No public query example is ready on this WEB4 host.');
         const { provider, request } = example;
         const filter = request.filters[0];
@@ -101,6 +115,7 @@
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
         clearDraft();
         questionInput.value = question;
+        questionInput.focus();
         status.textContent = 'Review the question, then select Draft query.';
       } catch (error) { status.textContent = error.message; }
     });
@@ -185,6 +200,7 @@
     });
 
     return {
+      refreshExampleProviders,
       resetSession() {
         clearDraft();
         questionInput.value = '';
