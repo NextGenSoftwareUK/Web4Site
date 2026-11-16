@@ -457,8 +457,9 @@
     const operation = !hasGrouping && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
     if (operation) expect('(');
-    const hasSelection = operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = hasSelection ? readAggregateSelection() : null;
+    const countDistinct = operation === 'LongCount' && accept('DISTINCT');
+    const hasSelection = countDistinct || operation && operation !== 'LongCount' && operation !== 'Any';
+    const scalarSelection = countDistinct ? readSelection() : hasSelection ? readAggregateSelection() : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection() {
       if (!accept('CAST')) {
@@ -814,7 +815,7 @@
       }
       return { path: 'data/query-cql/projection', body: { ...body, columns } };
     }
-    if (operation) body.operation = operation;
+    if (operation) body.operation = countDistinct ? 'CountDistinct' : operation;
     if (scalarSelection) body.selection = scalarSelection;
     if (selected.length > 1) {
       const { provider: _, skip, take, maximumDurationMilliseconds, ...source } = body;

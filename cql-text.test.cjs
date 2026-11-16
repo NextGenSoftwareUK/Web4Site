@@ -2,6 +2,19 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('COUNT DISTINCT carries the exact selection and complete source filters', () => {
+  const selected = compile('SELECT COUNT(DISTINCT CAST(metadata.category AS STRING)) AS UniqueCategories ' +
+    "FROM MongoDBOASIS WHERE IsActive = TRUE AND Name LIKE 'Coffee%'");
+  assert.equal(selected.path, 'data/query-cql/scalar');
+  assert.equal(selected.scalarAlias, 'UniqueCategories');
+  assert.equal(selected.body.operation, 'CountDistinct');
+  assert.equal(Object.hasOwn(selected.body, 'take'), false);
+  assert.deepEqual(selected.body.selection, { metadataPath: ['category'], valueType: 'String', nullable: true });
+  assert.deepEqual(selected.body.filters.map(filter => filter.operator), ['Equal', 'StartsWith']);
+  assert.deepEqual(compile('SELECT COUNT(DISTINCT Description) FROM Neo4jOASIS').body.selection, { field: 'Description' });
+  assert.throws(() => compile('SELECT COUNT(DISTINCT *) FROM MongoDBOASIS'), /selected field/);
+});
+
 test('double-quoted metadata segments carry literal names to native projections and predicates', () => {
   const query = compile(`SELECT CAST(metadata."labels.v1"."Espresso ""Special""" AS STRING) AS Label
     FROM MongoDBOASIS WHERE metadata."labels.v1"."Espresso ""Special""" = 'yes'`);
