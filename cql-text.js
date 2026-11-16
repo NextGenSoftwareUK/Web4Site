@@ -94,13 +94,15 @@
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();
-    function readOrderColumn(columns) {
-      const name = tokens[index++];
-      if (!/^\d+$/.test(name ?? '')) return name;
-      const position = Number(name);
+    function readSelectPosition(columns, clause) {
+      if (!/^-?\d+$/.test(tokens[index] ?? '')) return undefined;
+      const position = Number(tokens[index++]);
       if (!Number.isSafeInteger(position) || position < 1 || position > columns.length)
-        throw new Error('ORDER BY position must refer to an explicit SELECT column.');
-      return columns[position - 1].alias;
+        throw new Error(clause + ' position must refer to an explicit SELECT column.');
+      return columns[position - 1];
+    }
+    function readOrderColumn(columns) {
+      return readSelectPosition(columns, 'ORDER BY')?.alias ?? tokens[index++];
     }
     function accept(token) {
       if (peek() !== token) return false;
@@ -641,9 +643,13 @@
       if (!distinct) {
         expect('GROUP');
         expect('BY');
+        const selectedFields = columns.slice();
+        for (const { index } of groupedAggregates) selectedFields.splice(index, 0, null);
         const groupFields = [];
         do {
-          groupFields.push(readSelection());
+          const selected = readSelectPosition(selectedFields, 'GROUP BY');
+          if (selected === null) throw new Error('GROUP BY cannot refer to an aggregate position.');
+          groupFields.push(selected ?? readSelection());
         } while (accept(','));
         const groupKeys = groupFields.map(selectionKey);
         if (groupFields.length > 8 || new Set(groupKeys).size !== groupFields.length)

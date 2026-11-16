@@ -1243,3 +1243,15 @@ test('accepts predicate-free child and descendant existence without changing fol
   assert.equal(query.body.take, 5);
   assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD ('));
 });
+
+test('groups by explicit selected column positions without counting aggregate positions as fields', () => {
+  const base = 'SELECT COUNT(*) AS Total, IsActive AS Active, ' +
+    'CAST(metadata.label AS STRING) AS Label FROM Neo4jOASIS GROUP BY ';
+  const rest = ' HAVING Total > 1 ORDER BY 1 DESC LIMIT 5';
+  assert.deepEqual(compile(base + '2, 3' + rest), compile(base +
+    'IsActive, CAST(metadata.label AS STRING)' + rest));
+  assert.throws(() => compile(base + '1, 2, 3'), /aggregate position/);
+  assert.throws(() => compile(base + '0, 3'), /explicit SELECT column/);
+  assert.throws(() => compile(base + '2, 4'), /explicit SELECT column/);
+  assert.throws(() => compile(base + '2, IsActive, 3'), /different GROUP BY fields/);
+});
