@@ -461,12 +461,12 @@
       return null;
     }
 
-    for (const example of ['grouped', 'join']) {
+    for (const example of ['grouped', 'join', 'distinct-count']) {
       $('cql-load-' + example + '-example').addEventListener('click', () => {
         const editor = $('cql-text');
         editor.value = $('cql-' + example + '-example').textContent.trim();
         editor.focus();
-        note('Review the ' + example + ' example, then preview its request.');
+        note('Review the example, then preview its request.');
       });
     }
 

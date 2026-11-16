@@ -749,6 +749,23 @@ test('loads the displayed grouped example for review without submitting it', asy
     [['AverageVersion', '1.0'], ['TotalVersion', 1]]);
 });
 
+test('loads the unique category count without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-distinct-count-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-distinct-count-example', { textContent: sql });
+  h.elements.get('cql-load-distinct-count-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body, scalarAlias } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/scalar');
+  assert.equal(body.operation, 'CountDistinct');
+  assert.equal(scalarAlias, 'UniqueCategories');
+  assert.deepEqual(body.selection, { metadataPath: ['category'], valueType: 'String', nullable: true });
+});
+
 test('typed grouped results distinguish NULL from empty strings and preserve exact numbers', async () => {
   const h = harness(async url => {
     assert.match(url, /query-cql\/grouped$/);
