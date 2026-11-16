@@ -748,10 +748,12 @@ test('HAVING binds each aggregate using its exact WEB4 scalar type', () => {
 
 test('compiles bounded SQL LIKE patterns and rejects unsupported wildcards', () => {
   const query = predicate => compile('SELECT * FROM SQLLiteDBOASIS WHERE ' + predicate).body.filters[0];
-  for (const [pattern, operator] of [['A', 'Equal'], ['A%', 'StartsWith'], ['%A', 'EndsWith'], ['%A%', 'Contains']]) {
+  for (const [pattern, operator] of [['A', 'Equal'], ['A%', 'StartsWith'], ['%A', 'EndsWith'], ['%A%', 'Contains'], ['%%A%%', 'Contains']]) {
     assert.deepEqual(query("Name LIKE '" + pattern + "'"), { field: 'Name', scalar: 'String', operator, value: 'A' });
   }
-  for (const predicate of ["Name LIKE 'A%B'", "Name LIKE '%'", "Name LIKE 'A_'", "Version LIKE '3'"]) {
+  assert.deepEqual(query("Name LIKE '%'"), { field: 'Name', operator: 'IsNotNull' });
+  assert.deepEqual(query("Description LIKE '%%'"), { field: 'Description', operator: 'IsNotNull' });
+  for (const predicate of ["Name LIKE 'A%%B'", "metadata.category LIKE '%'", "Name LIKE 'A_'", "Version LIKE '3'"]) {
     assert.throws(() => query(predicate), /LIKE/);
   }
 });

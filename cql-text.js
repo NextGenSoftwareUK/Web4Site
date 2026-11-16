@@ -230,7 +230,7 @@
       throw new Error('Expected a ' + scalar + ' literal.');
     }
 
-    function readLike(scalar) {
+    function readLike(scalar, allowMatchAll = false) {
       if (scalar !== 'String') throw new Error('LIKE requires a string field.');
       const pattern = readLiteral(scalar);
       const escape = accept('ESCAPE') ? readLiteral(scalar) : null;
@@ -246,13 +246,14 @@
             throw new Error('LIKE ESCAPE must precede %, _ or the escape character.');
           units.push(escaped);
         } else if (character === '%') {
-          units.push(null);
+          if (units[units.length - 1] !== null) units.push(null);
         } else if (character === '_') {
           throw new Error('LIKE requires escaping a literal underscore.');
         } else {
           units.push(character);
         }
       }
+      if (allowMatchAll && units.length === 1 && units[0] === null) return { operator: 'IsNotNull' };
       const leading = units[0] === null;
       const trailing = units[units.length - 1] === null;
       const inner = units.slice(leading ? 1 : 0, trailing ? -1 : undefined);
@@ -325,7 +326,11 @@
           { ...selector, scalar, operator: 'LessThanOrEqual', value: upper }
         ];
       }
-      if (accept('LIKE')) return { ...selector, scalar, ...readLike(scalar) };
+      if (accept('LIKE')) {
+        const match = readLike(scalar, Boolean(selector.field));
+        if (match.operator === 'IsNotNull') return { ...selector, operator: match.operator };
+        return { ...selector, scalar, ...match };
+      }
       if (accept('IN')) {
         expect('(');
         const value = [literal()];
