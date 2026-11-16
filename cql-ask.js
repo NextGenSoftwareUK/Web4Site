@@ -142,6 +142,8 @@
           throw new Error('WEB6 returned an invalid response (HTTP ' + response.status + ').');
         });
         if (!current()) return;
+        if (!result || typeof result !== 'object' || Array.isArray(result))
+          throw new Error('WEB6 returned an invalid response (HTTP ' + response.status + ').');
         if (result.code === 'MEASUREMENT_REQUIRED')
           throw new Error('WEB6 could not confirm usage for this request. Reconciliation reference: ' +
             (result.operationId ?? response.headers.get('X-OASIS-Operation-Id') ?? requestKey));
@@ -150,8 +152,11 @@
         if (response.status === 400 && result.isError === true &&
             result.message === 'Error calling AI provider(s). Reason: No LeelaAI model in the catalogue is admitted by your plan.')
           throw new Error('Your Development plan has no available WEB6 model. You can still write and run CQL in the Playground.');
-        if (!response.ok) throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
-        const text = (result.result ?? result).content?.trim();
+        if (!response.ok || result.isError === true)
+          throw new Error('WEB6 could not draft a query (HTTP ' + response.status + ').');
+        const content = (result.result ?? result).content;
+        if (typeof content !== 'string' || !content.trim()) throw new Error('WEB6 returned no CQL statement.');
+        const text = content.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
         playground.compileAvailableText(text);
         draft = { text, identity };

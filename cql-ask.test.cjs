@@ -68,6 +68,23 @@ test('uses only ready databases in executable WEB6 examples', async () => {
   assert.deepEqual(app.opened, []);
 });
 
+test('rejects invalid and unsuccessful WEB6 responses before opening a CQL draft', async () => {
+  const text = 'SELECT COUNT(*) FROM Neo4jOASIS';
+  const cases = [
+    [null, /invalid response/],
+    [{ result: { content: 12 } }, /no CQL statement/],
+    [{ content: ' ' }, /no CQL statement/],
+    [{ isError: true, result: { content: text } }, /could not draft a query/]
+  ];
+  for (const [reply, expected] of cases) {
+    const app = setup(() => ({ ok: true, status: 200, json: async () => reply }));
+    await app.node('ask-generate').click();
+    assert.match(app.node('ask-status').textContent, expected);
+    assert.equal(app.node('ask-preview').disabled, true);
+    assert.deepEqual(app.opened, []);
+  }
+});
+
 test('WEB6 drafts a typed query and opens it only after review', async () => {
   const text = 'SELECT COUNT(*) FROM MongoDBOASIS WHERE IsActive = TRUE';
   const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
