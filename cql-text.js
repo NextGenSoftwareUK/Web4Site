@@ -765,6 +765,20 @@
         throw new Error('Grouped queries support up to twelve filters on the source records.');
       return { path: 'data/query-cql/grouped', body: grouped };
     }
+    const bindRowOrder = order => {
+      if (selected.length !== 1 || !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(selected[0]))
+        throw new Error('Multi-column row ordering requires one MongoDB, SQLite or Neo4j source.');
+      const terms = order.map(({ name, descending }) => {
+        const field = fields[name?.toLowerCase()]?.[0];
+        if (!['Name', 'Description', 'Version', 'Id'].includes(field))
+          throw new Error('Order full rows by Name, Description, Version or Id.');
+        return { field, descending };
+      });
+      if (new Set(terms.map(term => term.field)).size !== terms.length)
+        throw new Error('Use each row ordering field only once.');
+      body.orderBy = 'None';
+      body.ordering = terms;
+    };
     let selectedOrder;
     if (!operation && accept('ORDER')) {
       expect('BY');
@@ -775,9 +789,10 @@
         if (!descending) accept('ASC');
         order.push({ name, descending });
       } while (accept(','));
-      if (order.length > 1) {
-        if (!columns.length || order.length > 8)
-          throw new Error('Multi-column ORDER BY requires selected columns and up to eight sort keys.');
+      if (order.length > 1 && !columns.length) {
+        bindRowOrder(order);
+      } else if (order.length > 1) {
+        if (order.length > 8) throw new Error('Use up to eight selected ordering aliases.');
         selectedOrder = order.map(({ name, descending }) => {
           const column = columns.find(item => item.alias.toLowerCase() === name?.toLowerCase());
           if (!column) throw new Error('Order by selected column aliases.');
@@ -792,6 +807,8 @@
         if (['Name', 'Version', 'Id'].includes(field)) {
           body.orderBy = field;
           if (order[0].descending) body.descending = true;
+        } else if (!columns.length && field === 'Description') {
+          bindRowOrder(order);
         } else if (selectedColumn) {
           selectedOrder = [{ alias: selectedColumn.alias, descending: order[0].descending }];
         } else {

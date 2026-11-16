@@ -836,7 +836,8 @@ test('compiles selected multi-column sorting before result pagination', () => {
   assert.equal(body.take, 5);
   assert.deepEqual(body.selectedOrder, [{ alias: 'Revision', descending: true }, { alias: 'Id', descending: false }]);
   assert.equal(compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Version DESC, Id ASC LIMIT 5 OFFSET 125').body.skip, 125);
-  assert.throws(() => compile('SELECT * FROM Neo4jOASIS ORDER BY Name, Id'), /selected columns/);
+  assert.deepEqual(compile('SELECT * FROM Neo4jOASIS ORDER BY Name, Id DESC LIMIT 4 OFFSET 2').body.ordering,
+    [{ field: 'Name', descending: false }, { field: 'Id', descending: true }]);
   assert.throws(() => compile('SELECT Id, Version FROM Neo4jOASIS ORDER BY Name, Id'), /selected column aliases/);
 });
 
@@ -1187,4 +1188,20 @@ test('compiles negated HAVING patterns on selected text keys', () => {
     { alias: 'Label', operator: 'NotContains', value: '' }
   ]);
   assert.throws(() => compile(head + "Total NOT LIKE '%1%'"));
+});
+
+
+test('orders full rows by canonical keys on one native source', () => {
+  const compiled = compile('SELECT * FROM SQLLiteDBOASIS ORDER BY Description DESC, Id ASC LIMIT 5 OFFSET 100');
+  assert.equal(compiled.path, 'data/query-cql');
+  assert.equal(compiled.body.orderBy, 'None');
+  assert.equal(compiled.body.skip, 100);
+  assert.equal(compiled.body.take, 5);
+  assert.deepEqual(compiled.body.ordering, [
+    { field: 'Description', descending: true },
+    { field: 'Id', descending: false }
+  ]);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS, Neo4jOASIS ORDER BY Name, Id'), /one MongoDB/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS ORDER BY Name, Name'), /only once/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS ORDER BY Unknown, Id'), /Order full rows/);
 });
