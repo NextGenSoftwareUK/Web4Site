@@ -299,6 +299,12 @@
         const [field, type] = fields[name];
         selector = { field };
         scalar = type;
+        if (accept('IS')) {
+          if (scalar !== 'String') throw new Error('Canonical null tests require a text field.');
+          const negated = accept('NOT');
+          expect('NULL');
+          return { ...selector, operator: negated ? 'IsNotNull' : 'IsNull' };
+        }
       }
       const literal = () => readLiteral(scalar, Boolean(selector.metadataPath));
       const negatedRange = accept('NOT');
@@ -503,14 +509,13 @@
           const aggregate = aggregates[name];
           expect('(');
           const isCount = aggregate === 'LongCount';
-          const selection = isCount ? null : readAggregateSelection();
-          if (isCount && !accept('1')) expect('*');
+          const selection = isCount ? (accept('*') || accept('1') ? null : readSelection()) : readAggregateSelection();
           expect(')');
           const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
             throw new Error('Expected a column alias for the grouped aggregate.');
           const binding = { alias, operation: aggregate };
-          if (!isCount) binding.selection = selection;
+          if (selection) binding.selection = selection;
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }

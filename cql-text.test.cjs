@@ -18,6 +18,23 @@ test('COUNT of a column retains duplicate values and stays distinct from COUNT(*
   }
 });
 
+test('grouped COUNT sends separate row, column and typed metadata count bindings', () => {
+  const sql = 'SELECT Version, COUNT(*) AS Rows, COUNT(Description) AS Details, ' +
+    'COUNT(CAST(metadata.category AS STRING)) AS Categories FROM Neo4jOASIS GROUP BY Version ' +
+    'HAVING Details > 1 ORDER BY Categories DESC';
+  const { path, body } = compile(sql);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.columns, [
+    { alias: 'Version', keyAlias: 'Version' },
+    { alias: 'Rows', operation: 'LongCount' },
+    { alias: 'Details', operation: 'LongCount', selection: { field: 'Description' } },
+    { alias: 'Categories', operation: 'LongCount',
+      selection: { metadataPath: ['category'], valueType: 'String', nullable: true } }
+  ]);
+  assert.deepEqual(body.resultFilters, [{ alias: 'Details', operator: 'GreaterThan', value: '1' }]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Categories', descending: true }]);
+});
+
 test('COUNT DISTINCT carries the exact selection and complete source filters', () => {
   const selected = compile('SELECT COUNT(DISTINCT CAST(metadata.category AS STRING)) AS UniqueCategories ' +
     "FROM MongoDBOASIS WHERE IsActive = TRUE AND Name LIKE 'Coffee%'");
@@ -163,7 +180,7 @@ test('preserves the difference between missing and non-null metadata', () => {
     { metadataPath: ['profile', 'nickname'], operator: 'IsMissing' },
     { metadataPath: ['profile', 'since'], operator: 'IsNotNull' }
   ]);
-  assert.throws(() => compile(prefix + "Name IS NOT NULL"));
+  assert.deepEqual(compile(prefix + "Name IS NOT NULL").body.filters, [{ field: "Name", operator: "IsNotNull" }]);
   assert.throws(() => compile(prefix + "metadata.profile.nickname IS NOT PRESENT"));
 });
 
@@ -399,7 +416,13 @@ test('compiles bounded nested metadata presence and null predicates without a va
     { metadataPath: ['location', 'zip'], operator: 'IsNull' }
   ]);
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE metadata.a.b.c.d.e = 'x'"), /four metadata/);
-  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name IS NULL"));
+  const nullable = compile('SELECT * FROM MongoDBOASIS WHERE Description IS NULL AND Name IS NOT NULL');
+  assert.deepEqual(nullable.body.filters, [
+    { field: 'Description', operator: 'IsNull' },
+    { field: 'Name', operator: 'IsNotNull' }
+  ]);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE Version IS NULL'), /require a text field/);
+  assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE Name IS MISSING'));
 });
 
 test('compiles HoloOASIS text and federation as unordered bounded identity reads', () => {
