@@ -118,10 +118,10 @@
         throw new Error('Expected an integer from ' + minimum + ' to ' + maximum + '.');
       return value;
     }
-    function readWindow(maximumTake, maximumSkip) {
+    function readWindow(maximumTake, maximumSkip, minimumTake = 1) {
       let take, skip;
       if (accept('LIMIT')) {
-        take = integer(tokens[index++], 1, maximumTake);
+        take = integer(tokens[index++], minimumTake, maximumTake);
         if (accept('OFFSET')) skip = integer(tokens[index++], 0, maximumSkip);
       } else {
         if (accept('OFFSET')) {
@@ -131,7 +131,7 @@
         }
         if (accept('FETCH')) {
           if (!accept('FIRST')) expect('NEXT');
-          take = peek() === 'ROW' || peek() === 'ROWS' ? 1 : integer(tokens[index++], 1, maximumTake);
+          take = peek() === 'ROW' || peek() === 'ROWS' ? 1 : integer(tokens[index++], minimumTake, maximumTake);
           if (!accept('ROW')) expect('ROWS');
           expect('ONLY');
         }
@@ -476,6 +476,9 @@
           ? { outputOrderBy: terms[0].alias, outputDescending: terms[0].descending }
           : { outputOrdering: terms };
       }
+      const { take, skip } = readWindow(100, 1000, 0);
+      if (take === undefined && skip !== undefined)
+        throw new Error('A joined output offset requires LIMIT or FETCH.');
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
       const filterCount = left.body.filters.length + right.body.filters.length +
@@ -491,10 +494,13 @@
       const product = left.body.take * right.body.take;
       const maximumPairs = childJoin ? right.body.take :
         fullJoin ? Math.max(product, left.body.take + right.body.take) : product;
+      const outputLimit = take === undefined ? undefined : Math.min(take, maximumPairs);
+      const window = outputLimit === undefined ? {} : { outputLimit, outputOffset: skip ?? 0 };
       return { path: 'data/query-cql/join', body: {
         provider: left.provider, kind: childJoin ? 'Child' : crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
-        left: left.body, right: right.body, keys, columns, ...outputOrder,
-        maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs, maximumResults: maximumPairs
+        left: left.body, right: right.body, keys, columns, ...outputOrder, ...window,
+        maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs,
+        maximumResults: outputLimit === undefined ? maximumPairs : Math.max(1, outputLimit)
       } };
     }
 

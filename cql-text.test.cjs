@@ -965,7 +965,14 @@ test('compiles bounded composite left joins without paging joined results', () =
     { alias: 'RightId', source: 'Right', selection: { field: 'Id' }, allowMissing: true }
   ]);
   assert.deepEqual([body.maximumLeftRows, body.maximumRightRows, body.maximumPairs, body.maximumResults], [3, 2, 6, 6]);
-  assert.throws(() => compile(query + ' LIMIT 2'), /Unexpected join clause/);
+  const paged = compile(query + ' ORDER BY 2 DESC LIMIT 2 OFFSET 1').body;
+  assert.deepEqual([paged.left.take, paged.right.take, paged.maximumPairs, paged.maximumResults], [3, 2, 6, 2]);
+  assert.deepEqual([paged.outputOrderBy, paged.outputDescending, paged.outputOffset, paged.outputLimit], ['RightId', true, 1, 2]);
+  const fetch = compile(query + ' OFFSET 3 ROWS FETCH NEXT 1 ROW ONLY').body;
+  assert.deepEqual([fetch.outputOffset, fetch.outputLimit], [3, 1]);
+  assert.equal(compile(query + ' LIMIT 0').body.outputLimit, 0);
+  assert.throws(() => compile(query + ' OFFSET 2'), /requires LIMIT or FETCH/);
+  assert.throws(() => compile(query + ' LIMIT -1'), /integer/);
   assert.throws(() => compile(query.replace(right, right.replace('MongoDBOASIS', 'Neo4jOASIS'))), /one join provider/);
 });
 
@@ -1070,7 +1077,7 @@ test('join sources have independent offsets and keep their pair-work bounds', ()
   assert.deepEqual(body.right, { filters: [], orderBy: 'Name', descending: true, take: 2, skip: 1 });
   assert.deepEqual([body.maximumLeftRows, body.maximumRightRows, body.maximumPairs, body.maximumResults], [3, 2, 6, 6]);
   assert.throws(() => compile(sql.replace('OFFSET 2', 'OFFSET 1001')));
-  assert.throws(() => compile(sql + ' OFFSET 1'), /Unexpected join clause/);
+  assert.throws(() => compile(sql + ' OFFSET 1'), /requires LIMIT or FETCH/);
 });
 
 test('RIGHT OUTER JOIN preserves the original right input and selected output order', () => {
