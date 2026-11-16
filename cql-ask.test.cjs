@@ -436,6 +436,7 @@ test('grounds requested child rows in a bounded CHILD JOIN and preserves explici
   await app.node('ask-generate').click();
   const system = JSON.parse(app.requests[0].options.body).messages[0].content;
   assert.match(system, /CHILD JOIN without ON/);
+  assert.match(system, /LIMIT n OFFSET m outside both inputs/);
   assert.equal(app.node('ask-draft').textContent, sql);
   assert.deepEqual(app.opened, []);
   app.node('ask-preview').click();

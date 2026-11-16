@@ -869,5 +869,8 @@ test('loads a child join example without running it', async () => {
   const { path, body } = require('./cql-text.js').compile(editor.value);
   assert.equal(path, 'data/query-cql/join');
   assert.equal(body.kind, 'Child');
-  assert.equal(body.maximumResults, 5);
+  assert.equal(body.maximumResults, 3);
+  assert.equal(body.maximumPairs, 5);
+  assert.equal(body.outputLimit, 3);
+  assert.deepEqual(body.outputOrdering, [{ alias: 'ParentName', descending: false }, { alias: 'ChildName', descending: false }]);
 });
