@@ -855,3 +855,19 @@ test('SQL full outer join shows which source row exists even when projected valu
     ['NULL', 'NULL', 'Both'], ['Only left', 'NULL', 'Left only'], ['NULL', 'Only right', 'Right only']
   ]);
 });
+
+test('loads a child join example without running it', async () => {
+  const h = harness(async () => assert.fail('Loading the child join must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-child-join-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-child-join-example', { textContent: sql });
+  h.elements.get('cql-load-child-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Child');
+  assert.equal(body.maximumResults, 5);
+});
