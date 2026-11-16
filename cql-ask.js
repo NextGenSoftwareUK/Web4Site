@@ -61,7 +61,7 @@
     const status = $('ask-status');
     const generate = $('ask-generate');
     const preview = $('ask-preview');
-    let draft;
+    let draft, activeExample;
     const questionInput = $('ask-question');
     let questionVersion = 0;
 
@@ -86,6 +86,7 @@
       $('ask-draft').textContent = '';
     }
     questionInput.addEventListener('input', () => {
+      activeExample = null;
       clearDraft();
       status.textContent = '';
     });
@@ -115,6 +116,7 @@
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
         clearDraft();
         questionInput.value = question;
+        activeExample = { question, provider, request };
         questionInput.focus();
         status.textContent = 'Review the question, then select Draft query.';
       } catch (error) { status.textContent = error.message; }
@@ -136,10 +138,13 @@
       try {
         const token = await ensureAccessToken();
         if (!current() || !token) throw new Error('Sign in to the Development sandbox first.');
-        const providers = playground.availableTextProviders();
+        const example = activeExample?.question === question ? activeExample : null;
+        const readyProviders = playground.availableTextProviders();
+        const providers = example ? readyProviders.filter(provider => provider === example.provider) : readyProviders;
         if (!providers.length) throw new Error('Wait for WEB4 provider discovery before drafting a query.');
         const providerScope = 'Use only these currently available WEB4 providers: ' + providers.join(', ') + '.';
         const keyProfiles = Object.entries(playground.availableTextProfiles())
+          .filter(([provider]) => !example || provider === example.provider)
           .map(([provider, { key, maximumKeys }]) => provider + ':metadata.' + key + '(' + maximumKeys + ')');
         const keyScope = keyProfiles.length
           ? '\nAdditional ready sources (provider:metadata key, maximum IN keys). Use SELECT * and one equality on a supplied quoted key. IN is allowed only when the bound is positive. No ORDER BY or aggregation. ' + keyProfiles.join(', ')
@@ -175,7 +180,21 @@
         if (typeof content !== 'string' || !content.trim()) throw new Error('WEB6 returned no CQL statement.');
         const text = content.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
-        playground.compileAvailableText(text);
+        const compiled = playground.compileAvailableText(text);
+        if (example) {
+          const body = compiled.body;
+          const actual = body.filters?.[0];
+          const expected = example.request.filters[0];
+          const key = filter => JSON.stringify(filter.metadataPath ?? [filter.field]);
+          const values = filter => [].concat(filter.value).map(value => JSON.stringify(value)).sort();
+          if (compiled.path !== 'data/query-cql' || body.provider !== example.provider
+              || body.filters?.length !== 1 || body.anyOf?.length || body.relationships?.length
+              || !['Equal', 'In'].includes(actual?.operator) || key(actual) !== key(expected)
+              || JSON.stringify(values(actual)) !== JSON.stringify(values(expected))
+              || (body.skip ?? 0) !== 0 || body.take < values(expected).length
+              || body.take > example.request.take)
+            throw new Error('The draft did not preserve the reviewed public example. Nothing was run.');
+        }
         draft = { text, identity };
         $('ask-draft').textContent = text;
         preview.disabled = false;
@@ -205,6 +224,7 @@
       resetSession() {
         clearDraft();
         questionInput.value = '';
+        activeExample = null;
         status.textContent = '';
         $('cql-text').value = '';
       }
