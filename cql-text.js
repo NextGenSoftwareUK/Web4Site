@@ -317,10 +317,10 @@
         if (values.length > 100) throw new Error('IN accepts up to 100 values.');
         if (!negated) return { ...selector, scalar, operator: 'In', value: values };
         if (!allowRange) throw new Error('NOT IN needs an AND clause outside OR alternatives.');
-        if (!['Id', 'Version', 'Name', 'Description'].includes(selector.field))
-          throw new Error('NOT IN requires Id, Version, Name, or Description.');
+        if (!selector.metadataPath && !['Id', 'Version', 'Name', 'Description'].includes(selector.field))
+          throw new Error('NOT IN requires Id, Version, Name, Description, or a metadata path.');
         const predicates = [...new Set(values)].map(value => ({ ...selector, scalar, operator: 'NotEqual', value }));
-        if (scalar === 'String') predicates.unshift({ ...selector, operator: 'IsNotNull' });
+        if (selector.metadataPath || scalar === 'String') predicates.unshift({ ...selector, operator: 'IsNotNull' });
         if (predicates.length > 12) throw new Error('NOT IN exceeds the twelve-filter budget.');
         return predicates;
       }

@@ -770,7 +770,15 @@ test('lowers bounded NOT IN with SQL null exclusion and typed literals', () => {
     { field: 'Version', scalar: 'Integer', operator: 'NotEqual', value: 2 }
   ]);
   assert.throws(() => compile(prefix + "Description NOT IN ('a') OR Version = 1"), /outside OR/);
-  assert.throws(() => compile(prefix + "metadata.category NOT IN ('a')"), /NOT IN requires/);
+  assert.deepEqual(compile(prefix + "metadata.category NOT IN ('a')").body.filters, [
+    { metadataPath: ['category'], operator: 'IsNotNull' },
+    { metadataPath: ['category'], scalar: 'String', operator: 'NotEqual', value: 'a' }
+  ]);
+  assert.deepEqual(compile(prefix + 'metadata.sequence AS INT64 NOT IN (9007199254740993)').body.filters, [
+    { metadataPath: ['sequence'], operator: 'IsNotNull' },
+    { metadataPath: ['sequence'], scalar: 'Integer', operator: 'NotEqual', value: '9007199254740993' }
+  ]);
+  assert.throws(() => compile(prefix + 'IsActive NOT IN (TRUE)'), /NOT IN requires/);
   assert.throws(() => compile(prefix + "Description NOT IN ('a', NULL)"), /literal/);
   const numbers = Array.from({ length: 13 }, (_, index) => index + 1);
   assert.throws(() => compile(prefix + 'Version NOT IN (' + numbers.join(',') + ')'), /filter budget/);
