@@ -169,6 +169,8 @@
         if (result.code === 'MEASUREMENT_REQUIRED')
           throw new Error('WEB6 could not confirm usage for this request. Reconciliation reference: ' +
             (result.operationId ?? response.headers.get('X-OASIS-Operation-Id') ?? requestKey));
+        if (result.errorCode === 'WEB6_FREE_ROUTE_UNAVAILABLE')
+          throw new Error('Free AI drafting is temporarily unavailable. You can still write and run CQL in the Playground.');
         if (result.code === 'DAILY_TOKEN_LIMIT_EXCEEDED')
           throw new Error('Your remaining daily AI token allowance is too low for this draft. You can still write and run CQL in the Playground.');
         if (response.status === 400 && result.isError === true &&

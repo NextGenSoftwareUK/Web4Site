@@ -324,6 +324,17 @@ test('explains the deployed WEB6 response when the visitor plan admits no model'
   assert.deepEqual(app.opened, []);
 });
 
+test('keeps the Playground available when the Free inference route is unconfigured', async () => {
+  const app = setup(() => ({ ok: false, status: 400, json: async () => ({
+    isError: true, errorCode: 'WEB6_FREE_ROUTE_UNAVAILABLE'
+  }) }));
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent, /Free AI drafting is temporarily unavailable/);
+  assert.match(app.node('ask-status').textContent, /write and run CQL in the Playground/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.deepEqual(app.opened, []);
+});
+
 test('Ask your data can return counts with an unselected grouping field', async () => {
   const text = 'SELECT COUNT(*) AS Total FROM MongoDBOASIS GROUP BY Version';
   const app = setup(() => ({ ok: true, json: async () => ({ result: { content: text } }) }));
