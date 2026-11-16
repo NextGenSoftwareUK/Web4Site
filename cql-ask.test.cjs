@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const { compile } = require('./cql-text.js');
 
-function setup(reply, example = null, compileAvailableText = compile, providers = ['MongoDBOASIS', 'Neo4jOASIS'], textProfiles = {}) {
+function setup(reply, example = null, compileAvailableText = compile, providers = ['MongoDBOASIS', 'Neo4jOASIS'], textProfiles = {}, demo = false) {
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
@@ -36,7 +36,7 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   const ask = context.CqlAsk.init({
     playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: provider => typeof example === 'function' ? example(provider) : example,
       availableQuestionProviders: () => ['HashgraphOASIS', 'HoloOASIS'] },
-    isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token'
+    isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token', isDemoSession: () => demo
   });
   node('ask-question').value = 'Count active MongoDB holons';
   return { node, requests, opened, changeIdentity: () => { identity = 'another'; },
@@ -457,4 +457,27 @@ test('reviews a WEB6 signed integer join draft before compiling it for WEB4', as
   assert.deepEqual(app.opened, []);
   app.node('ask-preview').click();
   assert.equal(compile(app.opened[0]).body.keys[0].operator, 'LessThan');
+});
+
+test('temporary avatars request free inference and review only the exact public example keys', async () => {
+  let query = "SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId IN ('0.0.3', '0.0.2') LIMIT 2";
+  const example = { provider: 'HashgraphOASIS', request: {take: 2, filters: [
+    {metadataPath: ['HederaAccountId'], operator: 'In', value: ['0.0.2', '0.0.3']}
+  ]} };
+  const app = setup(() => ({ ok: true, json: async () => ({content:query}) }), example, compile,
+    ['HashgraphOASIS','MongoDBOASIS'], {}, true);
+  app.node('ask-example-provider').value = 'HashgraphOASIS';
+  app.node('ask-use-example').click();
+  await app.node('ask-generate').click();
+  const request = JSON.parse(app.requests[0].options.body);
+  assert.equal(request.freeOnly, true);
+  assert.match(request.messages[0].content, /available WEB4 providers: HashgraphOASIS\./);
+  assert.doesNotMatch(request.messages[0].content, /MongoDBOASIS/);
+  assert.equal(app.node('ask-preview').disabled, false);
+  assert.deepEqual(app.opened, []);
+  query = "SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId IN ('0.0.2','0.0.4') LIMIT 2";
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.match(app.node('ask-status').textContent, /did not preserve the reviewed public example/);
+  assert.deepEqual(app.opened, []);
 });
