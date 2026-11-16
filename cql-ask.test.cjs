@@ -427,3 +427,17 @@ test('chooses a ready provider for a public question without sending a draft', (
   assert.equal(app.node('ask-question').focused, true);
   assert.equal(app.requests.length, 0);
 });
+
+test('grounds requested child rows in a bounded CHILD JOIN and preserves explicit review', async () => {
+  const sql = 'SELECT c.Id AS Child FROM (SELECT * FROM Neo4jOASIS LIMIT 2) AS p ' +
+    'CHILD JOIN (SELECT * FROM Neo4jOASIS LIMIT 4) AS c';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: sql }) }), null, compile, ['Neo4jOASIS']);
+  app.node('ask-question').value = 'Show the IDs of up to four visible children of two Neo4j records';
+  await app.node('ask-generate').click();
+  const system = JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.match(system, /CHILD JOIN without ON/);
+  assert.equal(app.node('ask-draft').textContent, sql);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [sql]);
+});
