@@ -448,20 +448,29 @@
         expect('ON');
         do {
           const first = qualifiedField();
-          const symbol = tokens[index++];
+          let nullComparison;
+          if (accept('IS')) {
+            const negate = accept('NOT');
+            expect('DISTINCT');
+            expect('FROM');
+            nullComparison = negate ? 'IsNotDistinctFrom' : 'IsDistinctFrom';
+          }
+          const symbol = nullComparison ? undefined : tokens[index++];
           const reversed = { '=': '=', '<>': '<>', '!=': '!=', '<': '>', '<=': '>=', '>': '<', '>=': '<=' };
-          if (!Object.hasOwn(reversed, symbol)) throw new Error('Use an exact join comparison operator.');
+          if (!nullComparison && !Object.hasOwn(reversed, symbol)) throw new Error('Use an exact join comparison operator.');
           const second = qualifiedField();
           const one = sourceSide(first.source);
           if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
           const [l, r] = one === 'Left' ? [first, second] : [second, first];
           const ordered = symbol !== '=';
-          const operator = ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined;
+          const operator = nullComparison ?? (ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined);
           if (ordered) {
             const integerDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
             const domain = integerDomain(l.selection);
             if (!['Int32', 'Int64'].includes(domain) || domain !== integerDomain(r.selection))
               throw new Error('Join comparisons require matching signed integer columns.');
+            if (nullComparison && (!l.selection.nullable || !r.selection.nullable))
+              throw new Error('Use IS DISTINCT FROM with two nullable signed integer fields.');
           }
           if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
               selectionKey(key.right) === selectionKey(r.selection) && key.operator === operator))

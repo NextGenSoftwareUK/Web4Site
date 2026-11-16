@@ -1306,3 +1306,15 @@ test('orders detached child and ordinary join rows by a selected alias or positi
     assert.throws(() => compile(query + ' ORDER BY ' + Array(9).fill('Parent').join(', ')), /eight joined ordering terms/);
   }
 });
+
+test('compiles null-safe join operators separately from SQL equality', () => {
+  const window = '(SELECT * FROM MongoDBOASIS LIMIT 3)';
+  const prefix = 'SELECT l.Id AS LeftId FROM ' + window + ' AS l INNER JOIN ' + window + ' AS r ON ';
+  const left = 'CAST(l.metadata.amount AS INT64)';
+  const right = 'CAST(r.metadata.amount AS INT64)';
+  assert.equal(compile(prefix + left + ' IS NOT DISTINCT FROM ' + right).body.keys[0].operator, 'IsNotDistinctFrom');
+  assert.equal(compile(prefix + right + ' IS DISTINCT FROM ' + left).body.keys[0].operator, 'IsDistinctFrom');
+  assert.equal(compile(prefix + left + ' = ' + right).body.keys[0].operator, undefined);
+  assert.throws(() => compile(prefix + 'l.Version IS DISTINCT FROM r.Version'), /two nullable signed integer/);
+  assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching signed integer/);
+});
