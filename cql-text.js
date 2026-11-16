@@ -465,12 +465,15 @@
           const ordered = symbol !== '=';
           const operator = nullComparison ?? (ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined);
           if (ordered) {
-            const integerDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
-            const domain = integerDomain(l.selection);
-            if (!['Int32', 'Int64'].includes(domain) || domain !== integerDomain(r.selection))
+            const keyDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
+            const domain = keyDomain(l.selection);
+            if (nullComparison) {
+              if (!['Boolean', 'Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection) ||
+                  !l.selection.nullable || !r.selection.nullable)
+                throw new Error('Use IS DISTINCT FROM with matching nullable Boolean or signed integer columns.');
+            } else if (!['Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection)) {
               throw new Error('Join comparisons require matching signed integer columns.');
-            if (nullComparison && (!l.selection.nullable || !r.selection.nullable))
-              throw new Error('Use IS DISTINCT FROM with two nullable signed integer fields.');
+            }
           }
           if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
               selectionKey(key.right) === selectionKey(r.selection) && key.operator === operator))

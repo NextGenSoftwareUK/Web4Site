@@ -1315,6 +1315,15 @@ test('compiles null-safe join operators separately from SQL equality', () => {
   assert.equal(compile(prefix + left + ' IS NOT DISTINCT FROM ' + right).body.keys[0].operator, 'IsNotDistinctFrom');
   assert.equal(compile(prefix + right + ' IS DISTINCT FROM ' + left).body.keys[0].operator, 'IsDistinctFrom');
   assert.equal(compile(prefix + left + ' = ' + right).body.keys[0].operator, undefined);
-  assert.throws(() => compile(prefix + 'l.Version IS DISTINCT FROM r.Version'), /two nullable signed integer/);
-  assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching signed integer/);
+  const leftFlag = 'CAST(l.metadata.flag AS BOOLEAN)';
+  const rightFlag = 'CAST(r.metadata.flag AS BOOLEAN)';
+  const booleanPair = compile(prefix + leftFlag + ' IS NOT DISTINCT FROM ' + rightFlag).body.keys[0];
+  assert.equal(booleanPair.operator, 'IsNotDistinctFrom');
+  assert.equal(booleanPair.left.valueType, 'Boolean');
+  assert.equal(booleanPair.left.nullable, true);
+  assert.equal(compile(prefix + rightFlag + ' IS DISTINCT FROM ' + leftFlag).body.keys[0].operator, 'IsDistinctFrom');
+  assert.throws(() => compile(prefix + leftFlag + ' < ' + rightFlag), /matching signed integer/);
+  assert.throws(() => compile(prefix + 'l.Version IS DISTINCT FROM r.Version'), /matching nullable Boolean or signed integer/);
+  assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching nullable Boolean or signed integer/);
+  assert.throws(() => compile(prefix + leftFlag + ' IS DISTINCT FROM ' + right), /matching nullable Boolean or signed integer/);
 });
