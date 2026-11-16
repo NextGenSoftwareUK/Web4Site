@@ -25,6 +25,19 @@ test('double-quoted metadata segments carry literal names to native projections 
   assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE metadata."bad\nkey" = \'x\''), /metadata path segment/);
 });
 
+test('distinguishes literal dots from nested metadata in compound selections', () => {
+  const literal = 'CAST(metadata."catalog.v1" AS STRING)';
+  const nested = 'CAST(metadata.catalog.v1 AS STRING)';
+  const selected = literal + ' AS Literal, ' + nested + ' AS Nested';
+  const paths = [['catalog.v1'], ['catalog', 'v1']];
+  const distinct = compile('SELECT DISTINCT ' + selected + ' FROM Neo4jOASIS');
+  assert.deepEqual(distinct.body.keys.map(key => key.metadataPath), paths);
+  const grouped = compile('SELECT ' + selected + ', COUNT(*) AS Total FROM MongoDBOASIS GROUP BY ' + literal + ', ' + nested);
+  assert.deepEqual(grouped.body.keys.map(key => key.metadataPath), paths);
+  assert.throws(() => compile('SELECT DISTINCT ' + literal + ' AS One, ' + literal + ' AS Two FROM Neo4jOASIS'));
+  assert.throws(() => compile('SELECT ' + literal + ' AS Literal, COUNT(*) AS Total FROM MongoDBOASIS GROUP BY ' + nested));
+});
+
 test('projects and groups the additional canonical WEB4 columns without expanding WHERE filters', () => {
   const columns = compile('SELECT IsPublic, HolonType, VersionId, PreviousVersionId, ' +
     'CreatedByAvatarId, ModifiedByAvatarId FROM MongoDBOASIS').body.columns;

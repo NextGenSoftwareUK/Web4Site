@@ -490,7 +490,7 @@
       return selection;
     }
     function selectionKey(column) {
-      return column.field ?? [column.valueType, ...column.metadataPath].join('.');
+      return column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
     }
     const columns = [];
     const groupedAggregates = [];
