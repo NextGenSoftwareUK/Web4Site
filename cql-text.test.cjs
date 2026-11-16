@@ -2,6 +2,22 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { compile, discoverKeyProfiles } = require('./cql-text.js');
 
+test('COUNT of a column retains duplicate values and stays distinct from COUNT(*)', () => {
+  const compiled = compile('SELECT COUNT(Description) AS VisibleDescriptions FROM Neo4jOASIS WHERE Version = 1');
+  assert.equal(compiled.scalarAlias, 'VisibleDescriptions');
+  assert.equal(compiled.body.operation, 'CountValues');
+  assert.deepEqual(compiled.body.selection, { field: 'Description' });
+  assert.equal(Object.hasOwn(compiled.body, 'take'), false);
+  const metadata = compile('SELECT COUNT(CAST(metadata.rank AS SINGLE)) FROM MongoDBOASIS');
+  assert.equal(metadata.body.operation, 'CountValues');
+  assert.deepEqual(metadata.body.selection, { metadataPath: ['rank'], valueType: 'Single', nullable: true });
+  for (const text of ['COUNT(*)', 'COUNT(1)']) {
+    const count = compile('SELECT ' + text + ' FROM Neo4jOASIS');
+    assert.equal(count.body.operation, 'LongCount');
+    assert.equal(count.body.selection, undefined);
+  }
+});
+
 test('COUNT DISTINCT carries the exact selection and complete source filters', () => {
   const selected = compile('SELECT COUNT(DISTINCT CAST(metadata.category AS STRING)) AS UniqueCategories ' +
     "FROM MongoDBOASIS WHERE IsActive = TRUE AND Name LIKE 'Coffee%'");
@@ -915,7 +931,7 @@ test('COUNT(1) uses exactly the same native scalar and grouped requests as COUNT
   for (const text of [scalar, grouped]) {
     assert.deepEqual(compile(text), compile(text.replace('COUNT(1)', 'COUNT(*)')));
   }
-  for (const text of ['SELECT COUNT(NULL) FROM MongoDBOASIS', 'SELECT COUNT(Name) FROM MongoDBOASIS',
+  for (const text of ['SELECT COUNT(NULL) FROM MongoDBOASIS', 'SELECT COUNT(UnknownField) FROM MongoDBOASIS',
     'SELECT ANY(1) FROM MongoDBOASIS', 'SELECT COUNT(DISTINCT 1) FROM MongoDBOASIS']) {
     assert.throws(() => compile(text));
   }
