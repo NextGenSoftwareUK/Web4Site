@@ -976,6 +976,17 @@ test('compiles bounded composite left joins without paging joined results', () =
   assert.throws(() => compile(query.replace(right, right.replace('MongoDBOASIS', 'Neo4jOASIS'))), /one join provider/);
 });
 
+test('compiles signed integer comparisons and reverses reordered join operands', () => {
+  const window = '(SELECT * FROM Neo4jOASIS LIMIT 3)';
+  const prefix = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + window + ' l FULL OUTER JOIN ' + window + ' r ON ';
+  const result = compile(prefix + 'r.Version > l.Version AND CAST(l.metadata.Amount AS INT64) <= CAST(r.metadata.Amount AS INT64)');
+  assert.equal(result.path, 'data/query-cql/join');
+  assert.deepEqual(result.body.keys.map(key => key.operator), ['LessThan', 'LessThanOrEqual']);
+  assert.equal(result.body.keys[1].left.valueType, 'Int64');
+  assert.throws(() => compile(prefix + 'l.Name < r.Name'), /matching signed integer/);
+  assert.throws(() => compile(prefix + 'l.Version > CAST(r.metadata.Amount AS INT64)'), /matching signed integer/);
+});
+
 test('uses exact typed metadata in composite join keys and selected right output', () => {
   const source = '(SELECT * FROM SQLLiteDBOASIS LIMIT 3)';
   const text = 'SELECT l.Id, CAST(r.metadata.Amount AS DECIMAL) AS Amount FROM ' + source +

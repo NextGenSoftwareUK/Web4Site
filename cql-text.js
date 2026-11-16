@@ -448,15 +448,25 @@
         expect('ON');
         do {
           const first = qualifiedField();
-          expect('=');
+          const symbol = tokens[index++];
+          const reversed = { '=': '=', '<>': '<>', '!=': '!=', '<': '>', '<=': '>=', '>': '<', '>=': '<=' };
+          if (!Object.hasOwn(reversed, symbol)) throw new Error('Use an exact join comparison operator.');
           const second = qualifiedField();
           const one = sourceSide(first.source);
           if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
           const [l, r] = one === 'Left' ? [first, second] : [second, first];
+          const ordered = symbol !== '=';
+          const operator = ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined;
+          if (ordered) {
+            const integerDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
+            const domain = integerDomain(l.selection);
+            if (!['Int32', 'Int64'].includes(domain) || domain !== integerDomain(r.selection))
+              throw new Error('Join comparisons require matching signed integer columns.');
+          }
           if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
-              selectionKey(key.right) === selectionKey(r.selection)))
+              selectionKey(key.right) === selectionKey(r.selection) && key.operator === operator))
             throw new Error('Use each join key pair once.');
-          keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection });
+          keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) });
         } while (accept('AND'));
       }
       let outputOrder;
