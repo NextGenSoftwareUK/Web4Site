@@ -141,11 +141,17 @@ test('mixed result labels align with the exact returned rows', () => {
   const end = source.indexOf('    async function run()', start);
   assert.ok(start >= 0 && end > start);
   const cells = [];
-  const row = () => ({append: () => {}, insertCell: () => {const cell = {}; cells.push(cell); return cell;}});
+  const buttons = [];
+  const row = () => ({append: () => {}, insertCell: () => {
+    const cell = {append: button => buttons.push(button)};
+    cells.push(cell);
+    return cell;
+  }});
   const table = {createTHead: () => ({insertRow: row}), createTBody: () => ({insertRow: row})};
   const elements = {'cql-response': {}, 'cql-results': {replaceChildren: () => {}}};
   const ctx = vm.createContext({$: key => elements[key], note: () => {},
-    document: {createElement: tag => tag === 'table' ? table : {}}});
+    document: {createElement: tag => tag === 'table' ? table :
+      {addEventListener: function (event, action) { this[event] = action; }}}});
   vm.runInContext(source.slice(start, end), ctx);
   const payload = {version:'cql-projection-v1', columns:[{alias:'Id'}], rows:[['left'], ['right']],
     provenance:[{representation:'Materialized'}, {representation:'Virtual', alsoMaterialized:true}]};
@@ -153,6 +159,16 @@ test('mixed result labels align with the exact returned rows', () => {
   assert.deepEqual(cells.map(cell => cell.textContent),
     ['left', 'Stored Holon', 'right', 'Live mapping · stored copy exists']);
   assert.throws(() => ctx.render({result: {...payload, provenance: []}}), /incomplete row provenance/);
+  const virtual = {representation:'Virtual', mappingId:'owned-mapping'};
+  const calls = [];
+  ctx.render({result:{...payload, rows:[...payload.rows,['new']],
+    provenance:[...payload.provenance,virtual]}}, undefined, (...args) => calls.push(args));
+  assert.equal(buttons.length,1);
+  assert.equal(buttons[0].textContent,'Save snapshot');
+  assert.equal(calls.length,0);
+  buttons[0].click();
+  assert.deepEqual(calls,[[virtual,'new',buttons[0]]]);
+
 });
 
 
