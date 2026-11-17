@@ -551,7 +551,7 @@
       return null;
     }
 
-    for (const example of ['grouped', 'join', 'distinct-count', 'child-join', 'version-join']) {
+    for (const example of ['grouped', 'join', 'distinct-count', 'child-join', 'version-join', 'length']) {
       $('cql-load-' + example + '-example').addEventListener('click', () => {
         const editor = $('cql-text');
         editor.value = $('cql-' + example + '-example').textContent.trim();

@@ -895,3 +895,24 @@ test('loads the signed version comparison and previews the bounded native reques
   assert.deepEqual(body.outputOrdering, [{ alias: 'LaterVersion', descending: true },
     { alias: 'EarlierVersion', descending: false }]);
 });
+
+test('loads the displayed text length example for review without querying', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-length-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-length-example', { textContent: sql });
+  h.elements.get('cql-load-length-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const { path, body } = require('./cql-text.js').compile(editor.value.replace('MongoDBOASIS', provider));
+    assert.equal(path, 'data/query-cql/projection');
+    assert.equal(body.provider, provider);
+    assert.deepEqual(body.filters[1], { field: 'Name', scalar: 'String',
+      function: 'Utf16Length', operator: 'GreaterThanOrEqual', value: '4' });
+    assert.deepEqual(body.columns.map(c => c.field), ['Id', 'Name']);
+    assert.equal(body.take, 10);
+  }
+});
