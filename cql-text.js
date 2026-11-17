@@ -689,6 +689,18 @@
 
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
+    if (accept('WITH')) {
+      expect('VIRTUAL');
+      expect('MAPPING');
+      const id = readLiteral('Guid');
+      if (/^0{8}(?:-0{4}){3}-0{12}$/.test(id))
+        throw new Error('Use a nonempty Virtual Holon mapping ID.');
+      if (columns.length < 2 || columns[0].field !== 'Id' || distinct || groupedAggregates.length || operation ||
+          columns.slice(1).some(column => column.metadataPath?.length !== 1))
+        throw new Error('Virtual mapping queries must select Id first and at least one mapped metadata field.');
+      body.virtualMappingId = id;
+    }
+
     function orPredicates(first) {
       const alternatives = first.anyOf ?? [first];
       while (accept('OR')) {
@@ -740,6 +752,11 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
+    if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length !== 1 ||
+        body.filters[0].metadataPath?.length !== 1 || body.filters[0].operator !== 'Equal' ||
+        !['String', 'Boolean', 'Integer'].includes(body.filters[0].scalar) ||
+        body.anyOf || body.anyChildren || body.anyDescendants))
+      throw new Error('Use one typed metadata equality filter with a Virtual Holon mapping.');
     if (distinct || groupedAggregates.length || peek() === 'GROUP') {
       let keys = columns;
       if (!distinct) {
@@ -1008,6 +1025,11 @@
     }
     if (columns.length) {
       delete body.includeMetadata;
+      if (body.virtualMappingId) {
+        if (selectedOrder || body.orderBy !== 'Id' || body.descending || body.skip || body.take < 1)
+          throw new Error('Use ORDER BY Id and a positive LIMIT without OFFSET for a Virtual Holon mapping.');
+        return { path: 'data/query-cql/projection/mixed', body: { ...body, columns } };
+      }
       if (selectedOrder) {
         return { path: 'data/query-cql/projection',
           body: { ...body, orderBy: 'None', columns, selectedOrder } };

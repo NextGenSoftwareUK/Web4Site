@@ -1473,3 +1473,20 @@ test('null-safe text join comparisons bind canonical and typed text keys without
     assert.throws(() => compile(sql + 'l.Description IS DISTINCT FROM r.Version'), /matching text columns/);
   }
 });
+
+
+test('SQL-like CQL names a saved virtual mapping and compiles its measured route', () => {
+  const {compile} = require('./cql-text.js');
+  const {withVirtualMapping} = require('./cql-playground.js');
+  const id = '2fef1cbc-feb8-4ed3-b7de-5f406f769149';
+  const select = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WITH VIRTUAL MAPPING '" + id + "'";
+  const statement = select + " WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10";
+  const compiled = compile(statement);
+  assert.equal(compiled.path,'data/query-cql/projection/mixed');
+  assert.equal(compiled.body.virtualMappingId,id);
+  assert.deepEqual(withVirtualMapping(compiled.body,compiled.path,''),compiled);
+  assert.throws(() => withVirtualMapping(compiled.body,compiled.path,'43b88e30-7afb-47e9-a1f4-5a27f5cb35f2'), /differ/);
+  assert.throws(() => compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10"), /equality/);
+  assert.throws(() => compile(statement.replace('ORDER BY Id','ORDER BY Id DESC')), /ORDER BY Id/);
+  assert.throws(() => compile(statement.replace(id,'00000000-0000-0000-0000-000000000000')), /nonempty/);
+});

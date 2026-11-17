@@ -84,14 +84,14 @@
   function withVirtualMapping(body, endpoint, mappingInput) {
     const id = mappingInput?.trim() || body.virtualMappingId;
     if (id === undefined || id === '') return {path: endpoint, body};
-    if (endpoint !== 'data/query-cql/projection')
+    if (endpoint !== 'data/query-cql/projection' && endpoint !== 'data/query-cql/projection/mixed')
       throw new Error('Use a selected-column projection to include a Virtual Holon mapping.');
     if (typeof id !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ||
         /^0{8}(?:-0{4}){3}-0{12}$/.test(id))
       throw new Error('Enter a valid Virtual Holon mapping ID.');
     if (body.virtualMappingId && String(body.virtualMappingId).toLowerCase() !== id.toLowerCase())
       throw new Error('The mapping IDs in the editor and mapping field differ.');
-    return {path: endpoint + '/mixed', body: {...body, virtualMappingId: id}};
+    return {path: 'data/query-cql/projection/mixed', body: {...body, virtualMappingId: id}};
   }
 
   function virtualSnapshotQuery(body) {
