@@ -26,3 +26,13 @@ test('rawJSON-shaped source objects are data and malformed JSON is refused', () 
   assert.equal({}.n,undefined);
   assert.throws(() => parse('{"result":'),SyntaxError);
 });
+
+for (const missing of ['raw JSON','numeric source context']) test('refuses snapshot decoding without '+missing, () => {
+  const fs=require('node:fs'),vm=require('node:vm');
+  const legacy = {parse:JSON.parse,stringify:JSON.stringify,rawJSON:JSON.rawJSON,isRawJSON:JSON.isRawJSON};
+  if(missing==='raw JSON') delete legacy.rawJSON;
+  else legacy.parse=(text,reviver)=> JSON.parse(text,reviver && function(key,value){return reviver(key,value);});
+  const context=vm.createContext({JSON:legacy});
+  vm.runInContext(fs.readFileSync(require.resolve('./lossless-metadata.js'),'utf8'),context);
+  assert.throws(()=>context.CqlLosslessMetadata.parse('{"metaData":{"n":9007199254740993}}'),/Update your browser/);
+});
