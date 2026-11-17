@@ -1490,7 +1490,7 @@ test('SQL-like CQL names a saved virtual mapping and compiles its measured route
     " AND metadata.name = 'Ada'".repeat(8) + " ORDER BY")), /equality filters|filter/);
   assert.deepEqual(withVirtualMapping(compiled.body,compiled.path,''),compiled);
   assert.throws(() => withVirtualMapping(compiled.body,compiled.path,'43b88e30-7afb-47e9-a1f4-5a27f5cb35f2'), /differ/);
-  assert.throws(() => compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10"), /comparison/);
+  assert.equal(compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10").body.filters[0].operator, 'StartsWith');
   const page = compile(statement.replace('ORDER BY Id','ORDER BY Id DESC') + ' OFFSET 2');
   assert.equal(page.body.descending, true);
   assert.equal(page.body.skip, 2);
@@ -1554,8 +1554,34 @@ test('SQL virtual predicates preserve functions and exact numeric bounds across 
 test('SQL virtual predicates reject unadmitted string ordering, null literals and membership', () => {
   const prefix = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE ";
   for (const predicate of ["metadata.name > 'A'","metadata.name = NULL","metadata.name IN ('A','B')",
-    "metadata.name IS NULL","metadata.name LIKE '%A%'"])
+    "metadata.name IS NULL","metadata.name NOT LIKE '%A%'"])
     assert.throws(() => compile(prefix + predicate + ' ORDER BY Id LIMIT 10'),/comparison|literal/);
   const unequal = compile(prefix + "metadata.name <> 'A' ORDER BY Id LIMIT 10");
   assert.equal(unequal.body.filters[0].operator,'NotEqual');
+});
+
+
+test('mixed source SQL string matches preserve literal wildcard escapes and provider routing', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const prefix = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM " + provider +
+      " WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE ";
+    for (const [sql, operator, value] of [
+      ["metadata.name CONTAINS '$.*'", 'Contains', '$.*'],
+      ["metadata.name STARTSWITH 'abc'", 'StartsWith', 'abc'],
+      ["metadata.name ENDSWITH 'def'", 'EndsWith', 'def'],
+      ["metadata.name LIKE '%A!_%' ESCAPE '!'", 'Contains', 'A_'],
+      ["metadata.name LIKE 'A!%%' ESCAPE '!'", 'StartsWith', 'A%'],
+      ["metadata.name LIKE '%A!!' ESCAPE '!'", 'EndsWith', 'A!']
+    ]) {
+      const compiled = compile(prefix + sql + " ORDER BY Id LIMIT 10");
+      assert.equal(compiled.path, 'data/query-cql/projection/mixed');
+      assert.equal(compiled.body.provider, provider);
+      assert.deepEqual(compiled.body.filters,
+        [{metadataPath:['name'], scalar:'String', operator, value}]);
+    }
+    for (const sql of ["metadata.name AS BOOLEAN CONTAINS true", "metadata.name AS INT64 CONTAINS 1",
+      "metadata.name NOT LIKE '%A%'", "LENGTH(metadata.name) CONTAINS 'A'"]) {
+      assert.throws(() => compile(prefix + sql + " ORDER BY Id LIMIT 10"));
+    }
+  }
 });

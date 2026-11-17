@@ -767,10 +767,15 @@
     if (accept('WHERE')) predicates(body, true);
     if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length < 1 || body.filters.length > 8 ||
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
-            !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual'].includes(filter.operator) ||
+            !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
+              'Contains', 'StartsWith', 'EndsWith'].includes(filter.operator) ||
             !['String', 'Boolean', 'Integer'].includes(filter.scalar) ||
-            filter.function != null && (filter.function !== 'Utf16Length' || filter.scalar !== 'String') ||
-            filter.function == null && filter.scalar !== 'Integer' && !['Equal', 'NotEqual'].includes(filter.operator)) ||
+            filter.function != null && (filter.function !== 'Utf16Length' || filter.scalar !== 'String' ||
+              ['Contains', 'StartsWith', 'EndsWith'].includes(filter.operator)) ||
+            filter.function == null && filter.scalar !== 'Integer' &&
+              !(filter.scalar === 'String' ? ['Equal', 'NotEqual', 'Contains', 'StartsWith', 'EndsWith'] :
+                ['Equal', 'NotEqual']).includes(filter.operator) ||
+            ['Contains', 'StartsWith', 'EndsWith'].includes(filter.operator) && filter.scalar !== 'String') ||
         body.anyOf || body.anyChildren || body.anyDescendants))
       throw new Error('Use one to eight supported typed metadata comparison filters with a Virtual Holon mapping.');
     if (distinct || groupedAggregates.length || peek() === 'GROUP') {
