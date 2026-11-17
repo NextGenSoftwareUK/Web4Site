@@ -1408,3 +1408,16 @@ test('HAVING repeated selected expressions bind to the same native result column
   assert.throws(() => compile(prefix + 'COUNT(Description) > 1'), /must name a selected aggregate or grouping key/);
   assert.throws(() => compile(prefix + 'SUM(CAST(metadata.other AS DECIMAL)) > 1'), /must name a selected aggregate or grouping key/);
 });
+
+test('grouped ORDER BY binds typed keys and aggregates to existing native result columns', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const prefix = 'SELECT CAST(metadata.stock AS INT64) AS Stock, COUNT(1) AS Total FROM ' + provider +
+      ' GROUP BY Stock ORDER BY ';
+    const page = ' LIMIT 2 OFFSET 1';
+    const aliases = compile(prefix + 'Total DESC, Stock ASC' + page);
+    assert.deepEqual(compile(prefix + 'COUNT(*) DESC, CAST(metadata.stock AS INT64) ASC' + page), aliases);
+    assert.deepEqual(compile(prefix + '2 DESC, 1 ASC' + page), aliases);
+    assert.throws(() => compile(prefix + 'Total DESC, COUNT(1)'), /each grouped ordering alias only once/);
+    assert.throws(() => compile(prefix + 'SUM(Version)'), /selected column alias or expression/);
+  }
+});

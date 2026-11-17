@@ -776,6 +776,26 @@
         columns: resultColumns,
         maximumGroups: 100
       };
+      function readGroupedResultColumn() {
+        const name = peek();
+        let aggregate, key;
+        if (tokens[index + 1] === '(' && name !== 'ANY' && Object.hasOwn(aggregates, name)) {
+          index++;
+          const expression = readGroupedAggregate(name);
+          const input = expression.selection ? selectionKey(expression.selection) : null;
+          aggregate = groupedAggregates.find(({ binding }) => binding.operation === expression.operation &&
+            (binding.selection ? selectionKey(binding.selection) : null) === input)?.binding;
+        } else if (name === 'CAST' && tokens[index + 1] === '(') {
+          const expression = selectionKey(readSelection());
+          key = columns.find(column => selectionKey(column) === expression);
+        } else {
+          aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === name)?.binding;
+          key = columns.find(column => column.alias.toUpperCase() === name) ??
+            columns.find(column => column.field?.toUpperCase() === name);
+          index++;
+        }
+        return { aggregate, key };
+      }
       if (accept('HAVING')) {
         if (distinct) throw new Error('DISTINCT does not accept a HAVING clause.');
         grouped.resultFilters = [];
@@ -810,23 +830,7 @@
           addHavingFilter({ alias, operator: comparisons[comparison], value });
         }
         do {
-          const name = peek();
-          let aggregate, key;
-          if (tokens[index + 1] === '(' && name !== 'ANY' && Object.hasOwn(aggregates, name)) {
-            index++;
-            const expression = readGroupedAggregate(name);
-            const input = expression.selection ? selectionKey(expression.selection) : null;
-            aggregate = groupedAggregates.find(({ binding }) => binding.operation === expression.operation &&
-              (binding.selection ? selectionKey(binding.selection) : null) === input)?.binding;
-          } else if (name === 'CAST' && tokens[index + 1] === '(') {
-            const expression = selectionKey(readSelection());
-            key = columns.find(column => selectionKey(column) === expression);
-          } else {
-            aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === name)?.binding;
-            key = columns.find(column => column.alias.toUpperCase() === name) ??
-              columns.find(column => column.field?.toUpperCase() === name);
-            index++;
-          }
+          const { aggregate, key } = readGroupedResultColumn();
           if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate or grouping key by alias or expression.');
           const alias = (aggregate ?? key).alias;
           let type = key?.valueType ?? (key && projectionFields[key.field.toLowerCase()][1]);
@@ -868,9 +872,10 @@
         expect('BY');
         grouped.resultOrder = [];
         do {
-          const name = readOrderColumn(resultColumns)?.toLowerCase();
-          const alias = resultColumns.find(column => column.alias.toLowerCase() === name)?.alias;
-          if (!alias) throw new Error('Order grouped results by a selected column alias.');
+          const position = readSelectPosition(resultColumns, 'ORDER BY');
+          const { aggregate, key } = position ? {} : readGroupedResultColumn();
+          const alias = (position ?? aggregate ?? key)?.alias;
+          if (!alias) throw new Error('Order grouped results by a selected column alias or expression.');
           if (grouped.resultOrder.some(item => item.alias === alias))
             throw new Error('Use each grouped ordering alias only once.');
           const descending = accept('DESC');
