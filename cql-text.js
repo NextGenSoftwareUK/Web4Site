@@ -443,7 +443,6 @@
         if (alias === right.alias) return 'Right';
         throw new Error('Unknown join source alias.');
       };
-      const seenKeys = [];
       function joinKey() {
         const first = qualifiedField();
         let nullComparison;
@@ -473,12 +472,7 @@
             throw new Error('Join comparisons require matching signed integer columns.');
           }
         }
-        const key = { left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) };
-        if (seenKeys.some(previous => selectionKey(previous.left) === selectionKey(key.left) &&
-            selectionKey(previous.right) === selectionKey(key.right) && previous.operator === key.operator))
-          throw new Error('Use each join key pair once.');
-        seenKeys.push(key);
-        return key;
+        return { left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) };
       }
 
       const keyCount = groups => groups.reduce((count, group) => count + group.length, 0);
@@ -497,7 +491,13 @@
         while (accept('AND')) {
           const next = term(depth);
           if (keyCount(groups) * next.length + keyCount(next) * groups.length > 8) throw tooManyKeys();
-          groups = groups.flatMap(group => next.map(branch => group.concat(branch)));
+          groups = groups.flatMap(group => next.map(branch => {
+            if (branch.some(key => group.some(previous =>
+                selectionKey(previous.left) === selectionKey(key.left) &&
+                selectionKey(previous.right) === selectionKey(key.right) && previous.operator === key.operator)))
+              throw new Error('Use each join key pair once in a conjunction.');
+            return group.concat(branch);
+          }));
         }
         return groups;
       }
