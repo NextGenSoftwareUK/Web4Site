@@ -1046,7 +1046,8 @@ test('HAVING filters selected grouping keys and aggregate aliases before paging'
   ]);
   assert.deepEqual(compile(text.replace("<> 'O''Brien'", 'IS NULL')).body.resultFilters, [{ alias: 'Label', operator: 'IsNull' }]);
   assert.throws(() => compile(query.replace('Enabled = TRUE', 'Enabled > TRUE')), /equality/);
-  assert.throws(() => compile(query.replace('Revision BETWEEN 2 AND 4', 'Version > 2')), /selected/);
+  assert.deepEqual(compile(query.replace('Revision BETWEEN 2 AND 4', 'Version > 2')),
+    compile(query.replace('Revision BETWEEN 2 AND 4', 'Revision > 2')));
 });
 
 test('HAVING LIKE matches selected text keys using the row LIKE escape rules', () => {
@@ -1396,4 +1397,14 @@ test('GROUP BY selected aliases use native grouping fields and preserve source n
     const castAlias = 'SELECT CAST(metadata.stock AS INT64) AS Cast, COUNT(*) FROM ' + provider + ' GROUP BY ';
     assert.deepEqual(compile(castAlias + 'Cast'), compile(castAlias + 'CAST(metadata.stock AS INT64)'));
   }
+});
+
+test('HAVING repeated selected expressions bind to the same native result columns', () => {
+  const prefix = 'SELECT CAST(metadata.stock AS INT64) AS Stock, Version AS V, COUNT(1) AS Total, ' +
+    'SUM(CAST(metadata.amount AS DECIMAL)) AS Amount FROM Neo4jOASIS GROUP BY Stock, V HAVING ';
+  assert.deepEqual(compile(prefix + 'COUNT(*) > 1 AND CAST(metadata.stock AS INT64) >= 7 AND Version = 2 ' +
+    'AND SUM(CAST(metadata.amount AS DECIMAL)) > 1.25'), compile(
+    prefix + 'Total > 1 AND Stock >= 7 AND V = 2 AND Amount > 1.25'));
+  assert.throws(() => compile(prefix + 'COUNT(Description) > 1'), /must name a selected aggregate or grouping key/);
+  assert.throws(() => compile(prefix + 'SUM(CAST(metadata.other AS DECIMAL)) > 1'), /must name a selected aggregate or grouping key/);
 });

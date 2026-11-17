@@ -611,22 +611,26 @@
     function selectionKey(column) {
       return column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
     }
+    function readGroupedAggregate(name) {
+      const operation = aggregates[name];
+      expect('(');
+      const selection = operation === 'LongCount'
+        ? (accept('*') || accept('1') ? null : readSelection())
+        : readAggregateSelection();
+      expect(')');
+      return selection ? { operation, selection } : { operation };
+    }
     const columns = [];
     const groupedAggregates = [];
     if (!operation && !accept('*')) {
       do {
         if (peek() !== 'ANY' && Object.hasOwn(aggregates, peek())) {
           const name = tokens[index++].toUpperCase();
-          const aggregate = aggregates[name];
-          expect('(');
-          const isCount = aggregate === 'LongCount';
-          const selection = isCount ? (accept('*') || accept('1') ? null : readSelection()) : readAggregateSelection();
-          expect(')');
+          const binding = readGroupedAggregate(name);
           const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
             throw new Error('Expected a column alias for the grouped aggregate.');
-          const binding = { alias, operation: aggregate };
-          if (selection) binding.selection = selection;
+          binding.alias = alias;
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
@@ -806,10 +810,24 @@
           addHavingFilter({ alias, operator: comparisons[comparison], value });
         }
         do {
-          const aliasToken = peek();
-          const aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === aliasToken)?.binding;
-          const key = columns.find(column => column.alias.toUpperCase() === aliasToken);
-          if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate alias or a selected grouping key alias.');
+          const name = peek();
+          let aggregate, key;
+          if (tokens[index + 1] === '(' && name !== 'ANY' && Object.hasOwn(aggregates, name)) {
+            index++;
+            const expression = readGroupedAggregate(name);
+            const input = expression.selection ? selectionKey(expression.selection) : null;
+            aggregate = groupedAggregates.find(({ binding }) => binding.operation === expression.operation &&
+              (binding.selection ? selectionKey(binding.selection) : null) === input)?.binding;
+          } else if (name === 'CAST' && tokens[index + 1] === '(') {
+            const expression = selectionKey(readSelection());
+            key = columns.find(column => selectionKey(column) === expression);
+          } else {
+            aggregate = groupedAggregates.find(({ binding }) => binding.alias.toUpperCase() === name)?.binding;
+            key = columns.find(column => column.alias.toUpperCase() === name) ??
+              columns.find(column => column.field?.toUpperCase() === name);
+            index++;
+          }
+          if (!aggregate && !key) throw new Error('HAVING must name a selected aggregate or grouping key by alias or expression.');
           const alias = (aggregate ?? key).alias;
           let type = key?.valueType ?? (key && projectionFields[key.field.toLowerCase()][1]);
           if (aggregate) {
@@ -819,7 +837,6 @@
             else type = inputType;
           }
           const nullable = aggregate ? aggregate.selection?.nullable === true : key.nullable || type === 'String';
-          index++;
           if (key && accept('NOT')) {
             expect('LIKE');
             const match = readLike(type, true);
