@@ -915,7 +915,15 @@
       expect('BY');
       const order = [];
       do {
-        const name = readOrderColumn(columns);
+        let name;
+        if (columns.length && peek() === 'CAST' && tokens[index + 1] === '(') {
+          const expression = selectionKey(readSelection());
+          const selectedColumn = columns.find(column => selectionKey(column) === expression);
+          if (!selectedColumn) throw new Error('Order by selected column aliases or expressions.');
+          name = selectedColumn.alias;
+        } else {
+          name = readOrderColumn(columns);
+        }
         const descending = accept('DESC');
         if (!descending) accept('ASC');
         order.push({ name, descending });

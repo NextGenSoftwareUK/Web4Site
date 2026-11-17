@@ -1421,3 +1421,15 @@ test('grouped ORDER BY binds typed keys and aggregates to existing native result
     assert.throws(() => compile(prefix + 'SUM(Version)'), /selected column alias or expression/);
   }
 });
+
+test('projected ORDER BY binds a repeated CAST before native pagination', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const cast = 'CAST(metadata.stock AS INT64)';
+    const prefix = 'SELECT Id, ' + cast + ' AS Stock FROM ' + provider + ' ORDER BY ';
+    const tail = ' DESC, Id ASC LIMIT 2 OFFSET 1';
+    assert.deepEqual(compile(prefix + cast + tail), compile(prefix + 'Stock' + tail));
+    assert.deepEqual(compile(prefix + cast + ' DESC LIMIT 2'), compile(prefix + 'Stock DESC LIMIT 2'));
+    assert.throws(() => compile(prefix + 'CAST(metadata.stock AS UINT64)' + tail), /selected column aliases or expressions/);
+    assert.throws(() => compile(prefix + cast + ' DESC, Stock LIMIT 2'), /each selected ordering alias only once/);
+  }
+});
