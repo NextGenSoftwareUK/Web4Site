@@ -1447,9 +1447,29 @@ test('joined ORDER BY binds qualified selected fields and typed expressions to t
     const longOrder = sql.replace(cast, longCast);
     assert.deepEqual(compile(longOrder + longCast + ' DESC' + tail),
       compile(longOrder + 'Stock DESC' + tail));
-    const unsignedOrder = sql.replace(cast, 'CAST(r.metadata.stock AS UINT64)');
-    assert.throws(() => compile(unsignedOrder + 'Stock DESC' + tail), /Joined ordering supports/);
+    for (const type of ['UINT64', 'DATETIME']) {
+      const typedCast = 'CAST(r.metadata.stock AS ' + type + ')';
+      const sorted = sql.replace(cast, typedCast);
+      assert.deepEqual(compile(sorted + typedCast + ' DESC' + tail), compile(sorted + 'Stock DESC' + tail));
+    }
+    const decimalOrder = sql.replace(cast, 'CAST(r.metadata.stock AS DECIMAL)');
+    assert.throws(() => compile(decimalOrder + 'Stock DESC' + tail), /Joined ordering supports/);
     assert.throws(() => compile(sql + 'r.Id' + tail), /selected column alias or qualified expression/);
     assert.throws(() => compile(sql + 'CAST(l.metadata.stock AS INT32)' + tail), /selected column alias or qualified expression/);
+  }
+});
+
+test('null-safe text join comparisons bind canonical and typed text keys without coercion', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const source = '(SELECT * FROM ' + provider + ' LIMIT 3)';
+    const sql = 'SELECT l.Id AS LeftId, r.Id AS RightId FROM ' + source + ' AS l JOIN ' + source + ' AS r ON ';
+    assert.deepEqual(compile(sql + 'l.Description IS NOT DISTINCT FROM r.Description').body.keys, [{
+      alias: 'Key1', left: { field: 'Description' }, right: { field: 'Description' }, operator: 'IsNotDistinctFrom'
+    }]);
+    const key = compile(sql + 'CAST(l.metadata.name AS STRING) IS DISTINCT FROM r.Name').body.keys[0];
+    assert.deepEqual(key.left, { metadataPath: ['name'], valueType: 'String', nullable: true });
+    assert.deepEqual(key.right, { field: 'Name' });
+    assert.equal(key.operator, 'IsDistinctFrom');
+    assert.throws(() => compile(sql + 'l.Description IS DISTINCT FROM r.Version'), /matching text columns/);
   }
 });

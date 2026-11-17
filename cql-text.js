@@ -462,12 +462,14 @@
         const ordered = symbol !== '=';
         const operator = nullComparison ?? (ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined);
         if (ordered) {
-          const keyDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
+          const keyDomain = selection => selection.field === 'Version' ? 'Int32'
+            : selection.field ? fields[selection.field.toLowerCase()][1] : selection.valueType;
           const domain = keyDomain(l.selection);
           if (nullComparison) {
-            if (!['Boolean', 'Guid', 'DateTime', 'Int32', 'Int64', 'UInt64', 'Decimal'].includes(domain) || domain !== keyDomain(r.selection) ||
-                !l.selection.nullable || !r.selection.nullable)
-              throw new Error('Use IS DISTINCT FROM with matching nullable Boolean, GUID, UTC timestamp or supported exact numeric columns.');
+            if (domain !== keyDomain(r.selection) || (domain !== 'String' &&
+                (!['Boolean', 'Guid', 'DateTime', 'Int32', 'Int64', 'UInt64', 'Decimal'].includes(domain) ||
+                 !l.selection.nullable || !r.selection.nullable)))
+              throw new Error('Use IS DISTINCT FROM with matching nullable Boolean, GUID, UTC timestamp or supported exact numeric columns, or matching text columns.');
           } else if (!['Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection)) {
             throw new Error('Join comparisons require matching signed integer columns.');
           }
@@ -534,8 +536,8 @@
           }
           if (!selected) throw new Error('Order joined results by a selected column alias or qualified expression.');
           const type = selected.selection.valueType ?? fields[selected.selection.field.toLowerCase()][1];
-          if (!['Guid', 'String', 'Integer', 'Int32', 'Int64', 'Boolean'].includes(type))
-            throw new Error('Joined ordering supports GUID, STRING, INT32, INT64, and BOOLEAN outputs.');
+          if (!['Guid', 'String', 'Integer', 'Int32', 'Int64', 'UInt64', 'DateTime', 'Boolean'].includes(type))
+            throw new Error('Joined ordering supports GUID, STRING, INT32, INT64, UINT64, DATETIME, and BOOLEAN outputs.');
           const descending = accept('DESC');
           if (!descending) accept('ASC');
           terms.push({ alias: selected.alias, descending });
