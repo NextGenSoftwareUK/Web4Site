@@ -522,9 +522,17 @@
         expect('BY');
         const terms = [];
         do {
-          const name = readOrderColumn(fieldsToSelect)?.toLowerCase();
-          const selected = fieldsToSelect.find(field => field.alias.toLowerCase() === name);
-          if (!selected) throw new Error('Order joined results by a selected column alias.');
+          let selected;
+          if (tokens[index + 1] === '.' || (peek() === 'CAST' && tokens[index + 1] === '(')) {
+            const field = qualifiedField();
+            const expression = selectionKey(field.selection);
+            selected = fieldsToSelect.find(column => column.source === field.source &&
+              selectionKey(column.selection) === expression);
+          } else {
+            const name = readOrderColumn(fieldsToSelect)?.toLowerCase();
+            selected = fieldsToSelect.find(field => field.alias.toLowerCase() === name);
+          }
+          if (!selected) throw new Error('Order joined results by a selected column alias or qualified expression.');
           const descending = accept('DESC');
           if (!descending) accept('ASC');
           terms.push({ alias: selected.alias, descending });

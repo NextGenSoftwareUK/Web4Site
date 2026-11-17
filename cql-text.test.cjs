@@ -1433,3 +1433,17 @@ test('projected ORDER BY binds a repeated CAST before native pagination', () => 
     assert.throws(() => compile(prefix + cast + ' DESC, Stock LIMIT 2'), /each selected ordering alias only once/);
   }
 });
+
+test('joined ORDER BY binds qualified selected fields and typed expressions to the native output order', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const cast = 'CAST(r.metadata.stock AS INT64)';
+    const source = '(SELECT * FROM ' + provider + ' LIMIT 3)';
+    const sql = 'SELECT l.Id AS LeftId, ' + cast + ' AS Stock FROM ' + source +
+      ' AS l INNER JOIN ' + source + ' AS r ON l.Id = r.Id ORDER BY ';
+    const tail = ' LIMIT 1 OFFSET 1';
+    assert.deepEqual(compile(sql + cast + ' DESC, l.Id ASC' + tail),
+      compile(sql + 'Stock DESC, LeftId ASC' + tail));
+    assert.throws(() => compile(sql + 'r.Id' + tail), /selected column alias or qualified expression/);
+    assert.throws(() => compile(sql + 'CAST(l.metadata.stock AS INT64)' + tail), /selected column alias or qualified expression/);
+  }
+});
