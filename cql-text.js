@@ -468,9 +468,9 @@
             const keyDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
             const domain = keyDomain(l.selection);
             if (nullComparison) {
-              if (!['Boolean', 'Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection) ||
+              if (!['Boolean', 'Guid', 'Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection) ||
                   !l.selection.nullable || !r.selection.nullable)
-                throw new Error('Use IS DISTINCT FROM with matching nullable Boolean or signed integer columns.');
+                throw new Error('Use IS DISTINCT FROM with matching nullable Boolean, GUID or signed integer columns.');
             } else if (!['Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection)) {
               throw new Error('Join comparisons require matching signed integer columns.');
             }
