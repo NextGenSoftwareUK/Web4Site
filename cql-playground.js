@@ -81,6 +81,19 @@
 
   // Keep the browser alive through the admitted server budget plus transport
   // time. This does not extend the server deadline or retry uncertain work.
+  function withVirtualMapping(body, endpoint, mappingInput) {
+    const id = mappingInput?.trim();
+    if (!id) return body;
+    if (endpoint !== 'data/query-cql/projection')
+      throw new Error('Use a selected-column projection to include a Virtual Holon mapping.');
+    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ||
+        /^0{8}(?:-0{4}){3}-0{12}$/.test(id))
+      throw new Error('Enter a valid Virtual Holon mapping ID.');
+    if (body.virtualMappingId && String(body.virtualMappingId).toLowerCase() !== id.toLowerCase())
+      throw new Error('The mapping IDs in the editor and mapping field differ.');
+    return {...body, virtualMappingId: id};
+  }
+
   function requestTimeout(body) {
     const duration = body.maximumDurationMilliseconds ?? 5000;
     if (!Number.isInteger(duration) || duration < 1 || duration > 30000)
@@ -246,24 +259,35 @@
       const showPairSource = joined && payload.kind === 'Full';
       const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version))
         ? payload.columns : null;
+      const provenance = payload.provenance;
+      if (provenance !== undefined && (!Array.isArray(provenance) || provenance.length !== payload.rows.length ||
+          provenance.some(source => !source || !['Virtual', 'Materialized'].includes(source.representation))))
+        throw new Error('The API returned incomplete row provenance.');
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
       const labels = columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata'];
       if (showRightMatch) labels.push('Matched');
       if (showPairSource) labels.push('Source rows');
+      if (provenance) labels.push('Source');
       for (const label of labels) {
         const th = document.createElement('th');
         th.textContent = label;
         header.append(th);
       }
       const tbody = table.createTBody();
-      for (const item of payload.rows) {
+      for (const [index, item] of payload.rows.entries()) {
         if (columns) {
           const tr = tbody.insertRow();
           for (const value of joined ? item.values : item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
           if (showRightMatch) tr.insertCell().textContent = item.hasRight ? 'Yes' : 'No';
           if (showPairSource) tr.insertCell().textContent = item.hasLeft
             ? (item.hasRight ? 'Both' : 'Left only') : 'Right only';
+          if (provenance) {
+            const source = provenance[index];
+            tr.insertCell().textContent = source.representation === 'Virtual'
+              ? (source.alsoMaterialized ? 'Live mapping · stored copy exists' : 'Live mapping')
+              : 'Stored Holon';
+          }
           continue;
         }
         const row = item.selected ? item.selected.row : item;
@@ -283,7 +307,7 @@
       let body;
       let timeoutMilliseconds;
       try {
-        body = parse($('cql-request').value);
+        body = withVirtualMapping(parse($('cql-request').value), endpoint, $('cql-virtual-mapping')?.value);
         timeoutMilliseconds = requestTimeout(body);
       }
       catch (error) { note(error.message, true); return; }
@@ -346,6 +370,12 @@
       controller = null;
       discovery?.abort(); discovery = null;
       if (force || sessionIdentity !== identity || sessionBase !== base) {
+        const mapping = $('cql-virtual-mapping');
+        if (mapping) mapping.value = '';
+        const savedMappings = $('cql-saved-mapping');
+        if (savedMappings) { savedMappings.replaceChildren(); savedMappings.hidden = true; }
+        const mappingNote = $('cql-mapping-note');
+        if (mappingNote) mappingNote.textContent = '';
         $('cql-results').replaceChildren();
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
@@ -525,7 +555,7 @@
       availableQuestionProviders };
   }
 
-  const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
+  const api = { providers, presets, preset, parse, withVirtualMapping, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
     localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;

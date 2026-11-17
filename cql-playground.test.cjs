@@ -575,7 +575,7 @@ test('shipped query runner gives a 30-second preset 35 seconds and dispatches on
   const body = { provider: 'TONOASIS', maximumDurationMilliseconds: 30000 };
   const elements = new Map();
   const element = id => {
-    if (!elements.has(id)) elements.set(id, { value: JSON.stringify(body), replaceChildren() {} });
+    if (!elements.has(id)) elements.set(id, { value: id === 'cql-request' ? JSON.stringify(body) : '', replaceChildren() {} });
     return elements.get(id);
   };
   const timers = [], cleared = [], errors = [];
@@ -583,7 +583,7 @@ test('shipped query runner gives a 30-second preset 35 seconds and dispatches on
   const context = vm.createContext({
     controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0, namedScalar: null,
     getToken: () => 'controlled', getIdentity: () => 'same-avatar', getBase: () => 'https://example.invalid',
-    ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout,
+    ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout, withVirtualMapping: cql.withVirtualMapping,
     unwrap: cql.unwrap, $: element, crypto: { randomUUID: () => 'one-operation' }, AbortController,
     controls() {}, render() {}, note: (text, error) => { if (error) errors.push(text); },
     setTimeout: (_callback, delay) => { timers.push(delay); return 7; },

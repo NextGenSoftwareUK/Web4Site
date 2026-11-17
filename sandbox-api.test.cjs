@@ -75,3 +75,76 @@ for (const captured of [true, false]) test(`failover display uses only this resp
   assert.equal(element('fo-trace').innerHTML.includes('this-route'),captured);
   assert.equal(element('fo-trace').innerHTML.includes('this-failover'),captured);
 });
+
+
+test('virtual mapping prepares one definition and conditionally saves only that definition', async () => {
+  const start = html.indexOf("$('im-save-virtual').addEventListener('click'");
+  const end = html.indexOf("\n$('im-import').addEventListener", start);
+  assert.ok(start >= 0 && end > start);
+  const elements = {
+    'cql-virtual-mapping': {},
+    'im-save-virtual': {addEventListener: (_event, handler) => { elements.click = handler; }},
+    'im-source': {value: 'inventory'},
+    'im-virtual-fields': {value: 'Name=label,Stock=qty'},
+    'im-virtual-note': {}
+  };
+  const sent = [];
+  let serial = 0, current = 'saved-user-and-connection';
+  const ctx = vm.createContext({
+    $: id => elements[id],
+    virtualSourceContext: () => current,
+    virtualListedContext: current,
+    virtualConnectionName: () => 'warehouse',
+    busy: async (_button, _note, _label, work) => work(),
+    setNote: () => {},
+    syncVirtualControls: () => {},
+    crypto: {randomUUID: () => `id-${++serial}`},
+    call: async (method, path, body) => {
+      sent.push({method, path, body: JSON.parse(JSON.stringify(body))});
+      return {result: {id: body.id, isPublic: false}};
+    }
+  });
+  vm.runInContext(html.slice(start, end), ctx);
+  await elements.click();
+  assert.deepEqual(sent, [
+    {method: 'POST', path: 'native-data/MongoDBOASIS/virtual-mappings/prepare',
+      body: {id: 'id-1', sourceName: 'inventory', connectionName: 'warehouse', fields: {Name:'label', Stock:'qty'}}},
+    {method: 'POST', path: 'data/save-holon',
+      body: {holon:{id:'id-1', isPublic:false}, operationId:'id-2',
+        expectedRevisions:{'id-1':null}, saveChildren:false, recursive:false}}
+  ]);
+  current = 'other-connection';
+  await elements.click();
+  assert.equal(sent.length, 2);
+});
+
+
+test('mixed projection attaches a nonempty mapping ID without changing its filter', () => {
+  const {withVirtualMapping} = require('./cql-playground.js');
+  const id = '2fef1cbc-feb8-4ed3-b7de-5f406f769149';
+  const body = {provider:'MongoDBOASIS', filters:[{metadataPath:['category'],operator:'Equal',value:'coffee'}]};
+  assert.deepEqual(withVirtualMapping(body, 'data/query-cql/projection', id), {...body, virtualMappingId:id});
+  assert.throws(() => withVirtualMapping(body, 'data/query-cql', id), /projection/);
+  assert.throws(() => withVirtualMapping(body, 'data/query-cql/projection', 'invalid'), /valid/);
+});
+
+
+test('mixed result labels align with the exact returned rows', () => {
+  const source = fs.readFileSync(__dirname + '/cql-playground.js', 'utf8');
+  const start = source.indexOf('    function render(result, scalarAlias)');
+  const end = source.indexOf('    async function run()', start);
+  assert.ok(start >= 0 && end > start);
+  const cells = [];
+  const row = () => ({append: () => {}, insertCell: () => {const cell = {}; cells.push(cell); return cell;}});
+  const table = {createTHead: () => ({insertRow: row}), createTBody: () => ({insertRow: row})};
+  const elements = {'cql-response': {}, 'cql-results': {replaceChildren: () => {}}};
+  const ctx = vm.createContext({$: key => elements[key], note: () => {},
+    document: {createElement: tag => tag === 'table' ? table : {}}});
+  vm.runInContext(source.slice(start, end), ctx);
+  const payload = {version:'cql-projection-v1', columns:[{alias:'Id'}], rows:[['left'], ['right']],
+    provenance:[{representation:'Materialized'}, {representation:'Virtual', alsoMaterialized:true}]};
+  ctx.render({result: payload});
+  assert.deepEqual(cells.map(cell => cell.textContent),
+    ['left', 'Stored Holon', 'right', 'Live mapping · stored copy exists']);
+  assert.throws(() => ctx.render({result: {...payload, provenance: []}}), /incomplete row provenance/);
+});

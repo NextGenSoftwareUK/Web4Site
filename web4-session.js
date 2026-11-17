@@ -123,6 +123,7 @@
     return {
       token: () => current?.token ?? null,
       identity: () => current ? `${current.base}:${current.avatarId}:${current.generation}` : null,
+      avatarId: () => current?.avatarId ?? null,
       signIn: credentials => authenticate('avatar/authenticate', credentials),
       startDemo: () => authenticate('sandbox/session', {}),
       ensureAccessToken, accessContext, assertContext, signOut, clear

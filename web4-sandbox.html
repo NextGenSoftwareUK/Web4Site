@@ -239,6 +239,18 @@ ORDER BY ParentName ASC, ChildName ASC LIMIT 3</code></pre>
         <button type="button" id="cql-run-text">Run CQL</button>
           <button type="button" id="cql-compile">Preview request</button>
       </details>
+      <details>
+        <summary>Include a Virtual Holon mapping</summary>
+        <label for="cql-virtual-mapping">Virtual mapping ID</label>
+        <div class="row">
+          <input id="cql-virtual-mapping" placeholder="Paste a saved mapping ID" autocomplete="off">
+          <button type="button" class="ghost" id="cql-virtual-example">Load customer query</button>
+          <button type="button" class="ghost" id="cql-list-mappings">List my mappings</button>
+        </div>
+        <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
+        <p id="cql-mapping-note" class="note" role="status"></p>
+        <p class="note">Use a projection with Id first, one typed equality on a mapped metadata field, and ORDER BY Id. Results show whether each row was read live or from OASIS.</p>
+      </details>
       <label for="cql-request">JSON query description</label>
       <textarea id="cql-request" spellcheck="false" rows="20" style="display:block;width:100%;margin:10px 0 16px;padding:16px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:13px/1.8 'Share Tech Mono',monospace;tab-size:2" aria-describedby="cql-help"></textarea>
       <p class="note" id="cql-help">filters are combined with AND. anyOf adds an OR group. In selects an array of exact values. metadataPath selects a metadata key. skip and take page the results. This editor accepts JSON, not executable C#, SQL or Cypher. The server checks permissions, bounds and provider capabilities.</p>
@@ -1751,10 +1763,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div id="im-previews"></div>
     </div>
     <div class="card">
-      <h2>3 · Import it, then import it again</h2>
-      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Imported holons are ordinary OASIS data: they replicate to every provider.</p>
-      <div class="row"><button id="im-import" disabled>IMPORT SOURCE</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
-      <p class="note" id="im-import-note"></p>
+      <h2>3 · Full import or virtual mapping</h2>
+      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Full import saves the selected rows as Holons. HyperDrive can replicate them to eligible providers.</p>
+      <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
+        <details id="im-virtual-panel" hidden>
+          <summary>Virtual mapping</summary>
+          <p class="note">Use the sandbox MongoDB fixture or a saved MongoDB connection. For the customer example, choose customers and enter name=name, tier=tier.</p>
+          <div class="row">
+            <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
+              aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
+            <button id="im-save-virtual" disabled>CREATE VIRTUAL MAPPING</button>
+          </div>
+          <p class="note" id="im-virtual-note" role="status"></p>
+        </details>
+        <p class="note" id="im-import-note"></p>
       <div class="table-wrap" id="im-report"></div>
       <div class="table-wrap" id="im-copies"></div>
     </div>
@@ -1787,7 +1809,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
   OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
 </footer>
 
-<script src="web4-session.js?v=session-renewal-status-v3"></script>
+<script src="web4-session.js?v=session-renewal-status-v3-virtual-mapping-v1"></script>
 <script src="web4-tabs.js?v=provider-card-links-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
@@ -1980,6 +2002,7 @@ $('fo-load').addEventListener('click', async () => {
 // Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
 const native = () => $('im-provider').value;
 let firstImportedId = null;
+let virtualListedContext = null;
 let sqliteUpload = null; // {fileName, fileBase64} once a SQLite file is chosen
 
 const importMode = () => document.querySelector('input[name="im-mode"]:checked').value;
@@ -2053,6 +2076,19 @@ $('im-delete-conn').addEventListener('click', () => busy($('im-delete-conn'), $(
   await refreshSaved(); setNote($('im-saved-note'), `Deleted '${name}'.`, 'ok');
 }));
 // Shows only the fields the chosen database type needs, and enables the controls that can work right now.
+function virtualConnectionName(){
+  return importMode() === 'demo' && isSandbox() ? 'oasis-sandbox-native-fixture' : savedName();
+}
+function virtualSourceContext(){
+  const connectionName = virtualConnectionName();
+  return jwt && native() === 'MongoDBOASIS' && connectionName
+    ? JSON.stringify([session.identity(), importMode(), connectionName]) : null;
+}
+function syncVirtualControls(){
+  const context = virtualSourceContext();
+  $('im-virtual-panel').hidden = !context;
+  $('im-save-virtual').disabled = !context || context !== virtualListedContext;
+}
 function syncImportControls(){
   const own = importMode() === 'own', select = $('im-provider');
   [...select.options].forEach(o => { o.hidden = o.disabled = !own && !DEMO_TYPES.includes(o.value); });
@@ -2071,6 +2107,7 @@ function syncImportControls(){
   $('im-saved-row').hidden = !own;
   $('im-save-conn').disabled = !(jwt && own) || saved;
   $('im-delete-conn').disabled = !saved;
+  syncVirtualControls();
   $('im-seed').disabled = !(jwt && isSandbox());
   $('im-sources').disabled = !(jwt && (own || isSandbox()));
 }
@@ -2110,11 +2147,16 @@ $('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'
   await loadSources();
 }));
 async function loadSources(){
+  const virtualContext = virtualSourceContext();
+  virtualListedContext = null;
+  syncVirtualControls();
   const conn = importMode() === 'own';
   const r = conn ? await call('POST', `native-data/${native()}/sources`, connRef()) : await call('GET', `native-data/${native()}/sources`);
   const sources = r.result || [];
   $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
   const ok = sources.length > 0;
+  virtualListedContext = ok ? virtualContext : null;
+  syncVirtualControls();
   ['im-source','im-preview','im-import','im-save-mapping'].forEach(id => $(id).disabled = !ok);
   setNote($('im-preview-note'), ok ? `${sources.length} sources found${conn ? ' in your database' : ' in the shop database'}.` : (conn ? 'Connected, but no sources were found.' : 'Create the demo shop data first.'), ok ? 'ok' : '');
 }
@@ -2132,6 +2174,36 @@ $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-prev
       <div><div class="list-title">OASIS HOLON · ${esc(p.holonType)}</div>${p.error ? `<p class="note err">${esc(p.error)}</p>` :
         `<pre>${esc(JSON.stringify({id: p.holonId, name: p.holonName, description: p.holonDescription, metaData: p.holonMetaData}, null, 2))}</pre>`}</div></div>`).join('');
 }));
+$('im-save-virtual').addEventListener('click', async () => {
+  const context = virtualSourceContext();
+  if (!context || context !== virtualListedContext) return;
+  await busy($('im-save-virtual'), $('im-virtual-note'), 'Creating mapping…', async () => {
+    const sourceName = $('im-source').value;
+    const fields = Object.create(null);
+    const nativeFields = new Set();
+    for (const pair of $('im-virtual-fields').value.split(',')) {
+      const [alias, field, unexpected] = pair.split('=').map(value => value.trim());
+      if (!alias || alias.length > 128 || /^oasis\.native\./i.test(alias) ||
+          !field || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(field) || field === '_id' ||
+          unexpected !== undefined || Object.hasOwn(fields, alias) || nativeFields.has(field))
+        throw new Error('Enter unique bindings in the form CQL field=source field.');
+      fields[alias] = field;
+      nativeFields.add(field);
+    }
+    if (nativeFields.size > 32) throw new Error('Use at most 32 field bindings.');
+    const id = crypto.randomUUID(), operationId = crypto.randomUUID();
+    const prepared = await call('POST', 'native-data/MongoDBOASIS/virtual-mappings/prepare',
+      {id, sourceName, connectionName: virtualConnectionName(), fields});
+    if (virtualSourceContext() !== context) throw new Error('The active connection changed. List sources again.');
+    if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false)
+      throw new Error('WEB4 did not prepare the expected private mapping.');
+    await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
+      expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+    $('cql-virtual-mapping').value = id;
+    setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in MongoDB.`, 'ok');
+  });
+  syncVirtualControls();
+});
 $('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
   const source = $('im-source').value;
   const t0 = performance.now();
@@ -2284,11 +2356,43 @@ function renderMetrics(metrics, connections, best){
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-text.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-exact-metadata-path-v1-count-distinct-v1-quoted-metadata-v1-canonical-fields-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-21-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-not-exists-v1-child-join-v1-join-output-order-v2-nullable-join-v1-boolean-null-join-v1"></script>
-<script src="cql-playground.js?v=distinct-example-v1-scalar-alias-v1-cql-text-v6-typed-joins-example-chooser-v1-child-join-v1"></script>
+<script src="cql-playground.js?v=distinct-example-v1-scalar-alias-v1-cql-text-v6-typed-joins-example-chooser-v1-child-join-v1-virtual-mapping-v1"></script>
 <script src="cql-ask.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-draft-envelope-v1-ready-examples-v1-count-distinct-v1-quoted-metadata-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-session-reset-v1-27-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-compact-prompt-v1-not-exists-v1-example-chooser-v1-child-join-v1-free-routes-v1-reviewed-keys-v1-nullable-join-v1-free-availability-v1-boolean-null-join-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });
+  $('cql-list-mappings').addEventListener('click', () =>
+    busy($('cql-list-mappings'), $('cql-mapping-note'), 'Loading mappings…', async () => {
+      const actor = session.avatarId();
+      if (!actor) throw new Error('Sign in to list your mappings.');
+      const response = await call('POST', 'data/query-cql/projection', {
+        filters: [{metadataPath:['oasis.virtual.mapping'], scalar:'Boolean', operator:'Equal', value:true},
+          {field:'IsActive', scalar:'Boolean', operator:'Equal', value:true}],
+        orderBy:'Id', take:100,
+        columns:[{field:'Id', alias:'Id'}, {field:'Name', alias:'Source'}, {field:'CreatedByAvatarId', alias:'Owner'}]
+      });
+      const choices = $('cql-saved-mapping');
+      choices.replaceChildren(new Option('Choose a saved mapping', ''));
+      for (const [id, source, owner] of response.result.rows) {
+        if (String(owner).toLowerCase() === actor.toLowerCase())
+          choices.add(new Option(source, id));
+      }
+      choices.hidden = choices.options.length === 1;
+      setNote($('cql-mapping-note'), choices.hidden ? 'No mappings found for this avatar.' :
+        (response.result.rows.length === 100 ? 'Showing mappings from the first 100 matching results.' : 'Choose a mapping.'), 'ok');
+    }));
+  $('cql-saved-mapping').addEventListener('change', () => {
+    $('cql-virtual-mapping').value = $('cql-saved-mapping').value;
+  });
+  $('cql-virtual-example').addEventListener('click', () => {
+    const sql = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10";
+    try {
+      window.cqlPlayground.loadText(sql);
+      $('cql-text').value = sql;
+    } catch (error) {
+      setNote($('cql-note'), error.message, 'err');
+    }
+  });
 window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken,
   isDemoSession: () => demoSessionIdentity !== null && demoSessionIdentity === session.identity() });
 </script>
