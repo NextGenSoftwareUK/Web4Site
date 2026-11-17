@@ -443,48 +443,79 @@
         if (alias === right.alias) return 'Right';
         throw new Error('Unknown join source alias.');
       };
-      const keys = [];
-      const keyGroupStarts = [0];
+      const seenKeys = [];
+      function joinKey() {
+        const first = qualifiedField();
+        let nullComparison;
+        if (accept('IS')) {
+          const negate = accept('NOT');
+          expect('DISTINCT');
+          expect('FROM');
+          nullComparison = negate ? 'IsNotDistinctFrom' : 'IsDistinctFrom';
+        }
+        const symbol = nullComparison ? undefined : tokens[index++];
+        const reversed = { '=': '=', '<>': '<>', '!=': '!=', '<': '>', '<=': '>=', '>': '<', '>=': '<=' };
+        if (!nullComparison && !Object.hasOwn(reversed, symbol)) throw new Error('Use an exact join comparison operator.');
+        const second = qualifiedField();
+        const one = sourceSide(first.source);
+        if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
+        const [l, r] = one === 'Left' ? [first, second] : [second, first];
+        const ordered = symbol !== '=';
+        const operator = nullComparison ?? (ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined);
+        if (ordered) {
+          const keyDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
+          const domain = keyDomain(l.selection);
+          if (nullComparison) {
+            if (!['Boolean', 'Guid', 'DateTime', 'Int32', 'Int64', 'UInt64', 'Decimal'].includes(domain) || domain !== keyDomain(r.selection) ||
+                !l.selection.nullable || !r.selection.nullable)
+              throw new Error('Use IS DISTINCT FROM with matching nullable Boolean, GUID, UTC timestamp or supported exact numeric columns.');
+          } else if (!['Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection)) {
+            throw new Error('Join comparisons require matching signed integer columns.');
+          }
+        }
+        const key = { left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) };
+        if (seenKeys.some(previous => selectionKey(previous.left) === selectionKey(key.left) &&
+            selectionKey(previous.right) === selectionKey(key.right) && previous.operator === key.operator))
+          throw new Error('Use each join key pair once.');
+        seenKeys.push(key);
+        return key;
+      }
+
+      const keyCount = groups => groups.reduce((count, group) => count + group.length, 0);
+      const tooManyKeys = () => new Error('Use up to eight join keys after expanding the ON conditions.');
+      function alternatives(depth) {
+        const groups = conjunction(depth);
+        while (accept('OR')) {
+          const next = conjunction(depth);
+          if (keyCount(groups) + keyCount(next) > 8) throw tooManyKeys();
+          groups.push(...next);
+        }
+        return groups;
+      }
+      function conjunction(depth) {
+        let groups = term(depth);
+        while (accept('AND')) {
+          const next = term(depth);
+          if (keyCount(groups) * next.length + keyCount(next) * groups.length > 8) throw tooManyKeys();
+          groups = groups.flatMap(group => next.map(branch => group.concat(branch)));
+        }
+        return groups;
+      }
+      function term(depth) {
+        if (!accept('(')) return [[joinKey()]];
+        if (depth >= 8) throw new Error('JOIN ON conditions are nested too deeply.');
+        const groups = alternatives(depth + 1);
+        expect(')');
+        return groups;
+      }
+
+      const keys = [], keyGroupStarts = [];
       if (!crossJoin && !childJoin) {
         expect('ON');
-        do {
-          const first = qualifiedField();
-          let nullComparison;
-          if (accept('IS')) {
-            const negate = accept('NOT');
-            expect('DISTINCT');
-            expect('FROM');
-            nullComparison = negate ? 'IsNotDistinctFrom' : 'IsDistinctFrom';
-          }
-          const symbol = nullComparison ? undefined : tokens[index++];
-          const reversed = { '=': '=', '<>': '<>', '!=': '!=', '<': '>', '<=': '>=', '>': '<', '>=': '<=' };
-          if (!nullComparison && !Object.hasOwn(reversed, symbol)) throw new Error('Use an exact join comparison operator.');
-          const second = qualifiedField();
-          const one = sourceSide(first.source);
-          if (one === sourceSide(second.source)) throw new Error('Join keys must compare both sources.');
-          const [l, r] = one === 'Left' ? [first, second] : [second, first];
-          const ordered = symbol !== '=';
-          const operator = nullComparison ?? (ordered ? comparisons[one === 'Left' ? symbol : reversed[symbol]] : undefined);
-          if (ordered) {
-            const keyDomain = selection => selection.field === 'Version' ? 'Int32' : selection.valueType;
-            const domain = keyDomain(l.selection);
-            if (nullComparison) {
-              if (!['Boolean', 'Guid', 'DateTime', 'Int32', 'Int64', 'UInt64', 'Decimal'].includes(domain) || domain !== keyDomain(r.selection) ||
-                  !l.selection.nullable || !r.selection.nullable)
-                throw new Error('Use IS DISTINCT FROM with matching nullable Boolean, GUID, UTC timestamp or supported exact numeric columns.');
-            } else if (!['Int32', 'Int64'].includes(domain) || domain !== keyDomain(r.selection)) {
-              throw new Error('Join comparisons require matching signed integer columns.');
-            }
-          }
-          if (keys.some(key => selectionKey(key.left) === selectionKey(l.selection) &&
-              selectionKey(key.right) === selectionKey(r.selection) && key.operator === operator))
-            throw new Error('Use each join key pair once.');
-          keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) });
-          const nextConnector = peek();
-          if (nextConnector !== 'AND' && nextConnector !== 'OR') break;
-          if (nextConnector === 'OR') keyGroupStarts.push(keys.length);
-          index++;
-        } while (true);
+        for (const group of alternatives(0)) {
+          keyGroupStarts.push(keys.length);
+          for (const key of group) keys.push({ alias: 'Key' + (keys.length + 1), ...key });
+        }
       }
       let outputOrder;
       if (accept('ORDER')) {
@@ -526,7 +557,7 @@
       return { path: 'data/query-cql/join', body: {
         provider: left.provider, kind: childJoin ? 'Child' : crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns, ...outputOrder, ...window,
-        ...(keyGroupStarts.length === 1 ? {} : keyGroupStarts.length === keys.length
+        ...(keyGroupStarts.length <= 1 ? {} : keyGroupStarts.length === keys.length
           ? { matchAnyKey: true } : { keyGroupStarts }),
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs,
         maximumResults: outputLimit === undefined ? maximumPairs : Math.max(1, outputLimit)

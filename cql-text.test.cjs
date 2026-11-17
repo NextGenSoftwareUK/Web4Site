@@ -1363,3 +1363,13 @@ test('compiles disjunctive and grouped joins with SQL precedence', () => {
   assert.deepEqual(compile(prefix + 'l.Id = r.Id AND l.Version = r.Version OR l.Name = r.Name').body.keyGroupStarts, [0, 2]);
   assert.throws(() => compile(prefix + 'l.Id = r.Id OR'), /source alias/i);
 });
+
+test('preserves parenthesized joined predicates within the native key budget', () => {
+  const window = '(SELECT * FROM MongoDBOASIS LIMIT 3)';
+  const prefix = 'SELECT l.Id AS LeftId FROM ' + window + ' AS l INNER JOIN ' + window + ' AS r ON ';
+  const { body } = compile(prefix + '(l.Id = r.Id OR l.Version = r.Version) AND l.Name = r.Name');
+  assert.deepEqual(body.keyGroupStarts, [0, 2]);
+  assert.deepEqual(body.keys.map(key => key.left.field), ['Id', 'Name', 'Version', 'Name']);
+  assert.throws(() => compile(prefix + '(' + '('.repeat(8) + 'l.Id = r.Id' + ')'.repeat(9)), /nested too deeply/);
+  assert.throws(() => compile(prefix + '(l.Id = r.Id OR l.Version = r.Version OR l.IsActive = r.IsActive) AND (l.Name = r.Name OR l.Description = r.Description)'), /eight join keys/);
+});
