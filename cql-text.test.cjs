@@ -1443,8 +1443,12 @@ test('joined ORDER BY binds qualified selected fields and typed expressions to t
     const tail = ' LIMIT 1 OFFSET 1';
     assert.deepEqual(compile(sql + cast + ' DESC, l.Id ASC' + tail),
       compile(sql + 'Stock DESC, LeftId ASC' + tail));
-    const longOrder = sql.replace(cast, 'CAST(r.metadata.stock AS INT64)');
-    assert.throws(() => compile(longOrder + 'Stock DESC' + tail), /Joined ordering supports/);
+    const longCast = 'CAST(r.metadata.stock AS INT64)';
+    const longOrder = sql.replace(cast, longCast);
+    assert.deepEqual(compile(longOrder + longCast + ' DESC' + tail),
+      compile(longOrder + 'Stock DESC' + tail));
+    const unsignedOrder = sql.replace(cast, 'CAST(r.metadata.stock AS UINT64)');
+    assert.throws(() => compile(unsignedOrder + 'Stock DESC' + tail), /Joined ordering supports/);
     assert.throws(() => compile(sql + 'r.Id' + tail), /selected column alias or qualified expression/);
     assert.throws(() => compile(sql + 'CAST(l.metadata.stock AS INT32)' + tail), /selected column alias or qualified expression/);
   }

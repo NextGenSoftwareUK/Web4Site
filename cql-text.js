@@ -534,8 +534,8 @@
           }
           if (!selected) throw new Error('Order joined results by a selected column alias or qualified expression.');
           const type = selected.selection.valueType ?? fields[selected.selection.field.toLowerCase()][1];
-          if (!['Guid', 'String', 'Integer', 'Int32', 'Boolean'].includes(type))
-            throw new Error('Joined ordering supports GUID, STRING, INT32, and BOOLEAN outputs.');
+          if (!['Guid', 'String', 'Integer', 'Int32', 'Int64', 'Boolean'].includes(type))
+            throw new Error('Joined ordering supports GUID, STRING, INT32, INT64, and BOOLEAN outputs.');
           const descending = accept('DESC');
           if (!descending) accept('ASC');
           terms.push({ alias: selected.alias, descending });
