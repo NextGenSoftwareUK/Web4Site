@@ -1770,7 +1770,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
         <details id="im-virtual-panel" hidden>
           <summary>Virtual mapping</summary>
-          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB connection. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
+          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB or Neo4j connection. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
           <div class="row">
             <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
               aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
@@ -2082,7 +2082,7 @@ function virtualConnectionName(){
   const provider = native();
   if (importMode() === 'demo')
     return isSandbox() && ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider) ? 'oasis-sandbox-native-fixture' : null;
-  return provider === 'MongoDBOASIS' ? savedName() : null;
+  return ['MongoDBOASIS', 'Neo4jOASIS'].includes(provider) ? savedName() : null;
 }
 function virtualSourceContext(){
   const connectionName = virtualConnectionName();
@@ -2188,7 +2188,7 @@ $('im-save-virtual').addEventListener('click', async () => {
     const nativeFields = new Set();
     for (const pair of $('im-virtual-fields').value.split(',')) {
       const [alias, field, unexpected] = pair.split('=').map(value => value.trim());
-      if (!alias || alias.length > 128 || /^oasis\.native\./i.test(alias) ||
+      if (!alias || alias.length > 64 || /[\u0000-\u001f\u007f-\u009f]/.test(alias) || /^oasis\.(native|virtual)\./i.test(alias) ||
           !field || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(field) || field === '_id' ||
           unexpected !== undefined || Object.hasOwn(fields, alias) || nativeFields.has(field))
         throw new Error('Enter unique bindings in the form CQL field=source field.');

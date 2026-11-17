@@ -77,6 +77,28 @@ for (const captured of [true, false]) test(`failover display uses only this resp
 });
 
 
+test('virtual mappings use saved MongoDB or Neo4j connections and configured sandbox samples', () => {
+  const start = html.indexOf('function virtualConnectionName()');
+  const end = html.indexOf('function virtualSourceContext()', start);
+  assert.ok(start >= 0 && end > start);
+  let provider = 'Neo4jOASIS', mode = 'own', sandbox = false, saved = 'warehouse';
+  const ctx = vm.createContext({native: () => provider, importMode: () => mode,
+    isSandbox: () => sandbox, savedName: () => saved});
+  vm.runInContext(html.slice(start, end), ctx);
+  assert.equal(ctx.virtualConnectionName(), 'warehouse');
+  provider = 'MongoDBOASIS';
+  assert.equal(ctx.virtualConnectionName(), 'warehouse');
+  saved = null;
+  assert.equal(ctx.virtualConnectionName(), null);
+  provider = 'SQLLiteDBOASIS';
+  saved = 'warehouse';
+  assert.equal(ctx.virtualConnectionName(), null);
+  mode = 'demo';
+  assert.equal(ctx.virtualConnectionName(), null);
+  sandbox = true;
+  assert.equal(ctx.virtualConnectionName(), 'oasis-sandbox-native-fixture');
+});
+
 test('virtual mapping prepares one definition and conditionally saves only that definition', async () => {
   const start = html.indexOf("$('im-save-virtual').addEventListener('click'");
   const end = html.indexOf("\n$('im-import').addEventListener", start);
