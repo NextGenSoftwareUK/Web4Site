@@ -192,4 +192,7 @@ test('snapshot keeps all exact filters and their fields from the mixed projectio
     filters, columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']}]
   });
   assert.deepEqual(query,{filters,select:['name','points','active'],take:100});
+  assert.deepEqual(virtualSnapshotQuery({filters: filters.slice(0, 1),
+    columns:[{field:'Id'},{metadataPath:['name']}]}),
+    {matchField:'points',matchType:'Int64',matchValue:'9007199254740993',select:['name','points'],take:100});
 });
