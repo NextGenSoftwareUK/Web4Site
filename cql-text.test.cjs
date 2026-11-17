@@ -1348,7 +1348,7 @@ test('compiles null-safe join operators separately from SQL equality', () => {
   assert.throws(() => compile(prefix + leftFlag + ' IS DISTINCT FROM ' + right), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
 });
 
-test('compiles disjunctive joins and requires uniform ON connectors', () => {
+test('compiles disjunctive and grouped joins with SQL precedence', () => {
   const window = '(SELECT * FROM MongoDBOASIS LIMIT 3)';
   const prefix = 'SELECT l.Id AS LeftId FROM ' + window + ' AS l INNER JOIN ' + window + ' AS r ON ';
   const clauses = 'l.Id = r.Id OR l.Version >= r.Version';
@@ -1357,5 +1357,9 @@ test('compiles disjunctive joins and requires uniform ON connectors', () => {
   assert.equal(body.keys.length, 2);
   assert.equal(body.keys[1].operator, 'GreaterThanOrEqual');
   assert.equal(compile(prefix + 'l.Id = r.Id AND l.Version = r.Version').body.matchAnyKey, undefined);
-  assert.throws(() => compile(prefix + clauses + ' AND l.Name = r.Name'), /either AND or OR/);
+  const grouped = compile(prefix + clauses + ' AND l.Name = r.Name').body;
+  assert.equal(grouped.matchAnyKey, undefined);
+  assert.deepEqual(grouped.keyGroupStarts, [0, 1]);
+  assert.deepEqual(compile(prefix + 'l.Id = r.Id AND l.Version = r.Version OR l.Name = r.Name').body.keyGroupStarts, [0, 2]);
+  assert.throws(() => compile(prefix + 'l.Id = r.Id OR'), /source alias/i);
 });
