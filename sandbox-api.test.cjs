@@ -137,7 +137,7 @@ test('mixed projection attaches a nonempty mapping ID without changing its filte
 
 test('mixed result labels align with the exact returned rows', () => {
   const source = fs.readFileSync(__dirname + '/cql-playground.js', 'utf8');
-  const start = source.indexOf('    function render(result, scalarAlias)');
+  const start = source.indexOf('    function render(result, scalarAlias,');
   const end = source.indexOf('    async function run()', start);
   assert.ok(start >= 0 && end > start);
   const cells = [];
@@ -163,4 +163,15 @@ test('SQLite virtual example compiles a MongoDB materialized read with a shared 
   assert.equal(query.path,'data/query-cql/projection');
   assert.equal(query.body.provider,'MongoDBOASIS');
   assert.deepEqual(query.body.filters,[{metadataPath:['country'],scalar:'String',operator:'Equal',value:'United Kingdom'}]);
+});
+
+
+test('snapshot uses the same exact filter and selected fields as the mixed projection', () => {
+  const {virtualSnapshotQuery} = require('./cql-playground.js');
+  const query = virtualSnapshotQuery({
+    filters:[{metadataPath:['points'],scalar:'Integer',value:'9007199254740993'}],
+    columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']},{metadataPath:['points']}]
+  });
+  assert.deepEqual(query,{matchField:'points',matchType:'Int64',matchValue:'9007199254740993',
+    select:['name','points'],take:100});
 });

@@ -94,6 +94,17 @@
     return {path: endpoint + '/mixed', body: {...body, virtualMappingId: id}};
   }
 
+  function virtualSnapshotQuery(body) {
+    const filter = body.filters[0];
+    const matchType = filter.scalar === 'Integer' ? 'Int64' : filter.scalar;
+    return {
+      matchField: filter.metadataPath[0], matchType,
+      matchValue: matchType === 'Int64' ? String(filter.value) : filter.value,
+      select: [...new Set(body.columns.slice(1).map(column => column.metadataPath[0]))],
+      take: 100
+    };
+  }
+
   function requestTimeout(body) {
     const duration = body.maximumDurationMilliseconds ?? 5000;
     if (!Number.isInteger(duration) || duration < 1 || duration > 30000)
@@ -246,7 +257,7 @@
       loadPreset();
     }
 
-    function render(result, scalarAlias) {
+    function render(result, scalarAlias, onSnapshot = null) {
       const payload = result.result;
       $('cql-response').textContent = JSON.stringify(result, null, 2);
       if (payload && Object.hasOwn(payload, 'value')) {
@@ -269,6 +280,8 @@
       if (showRightMatch) labels.push('Matched');
       if (showPairSource) labels.push('Source rows');
       if (provenance) labels.push('Source');
+      const showSnapshot = !!onSnapshot && provenance?.some(row => row.representation === 'Virtual');
+      if (showSnapshot) labels.push('Snapshot');
       for (const label of labels) {
         const th = document.createElement('th');
         th.textContent = label;
@@ -287,6 +300,17 @@
             tr.insertCell().textContent = source.representation === 'Virtual'
               ? (source.alsoMaterialized ? 'Live mapping · stored copy exists' : 'Live mapping')
               : 'Stored Holon';
+            if (showSnapshot) {
+              const action = tr.insertCell();
+              if (source.representation === 'Virtual' && !source.alsoMaterialized) {
+                const save = document.createElement('button');
+                save.type = 'button';
+                save.className = 'ghost';
+                save.textContent = 'Save snapshot';
+                save.addEventListener('click', () => onSnapshot(source, item[0], save));
+                action.append(save);
+              }
+            }
           }
           continue;
         }
@@ -352,7 +376,30 @@
           throw new Error(`HTTP ${response.status}${result?.errorCode ? ' · ' + result.errorCode : ''}: ` +
             (result?.message || data?.message || 'The API rejected this query.'));
         }
-        render(result, scalarAlias);
+        const canSnapshot = requestPath === 'data/query-cql/projection/mixed' && canPrepare() &&
+          typeof request === 'function' && result.result?.canPrepareSnapshot === true;
+        render(result, scalarAlias, canSnapshot ? async (source, id, button) => {
+          const stillCurrent = () => current === generation && identity === getIdentity() && base === getBase();
+          if (button.disabled || controller || !stillCurrent()) return;
+          button.disabled = true;
+          try {
+            const prepared = await request('POST',
+              `native-data/${encodeURIComponent(source.provider)}/virtual-mappings/${encodeURIComponent(source.mappingId)}/snapshot/prepare`,
+              {rowId: id, query: virtualSnapshotQuery(body)});
+            if (!stillCurrent()) return;
+            const holon = prepared.result;
+            if (holon?.id !== id || holon.isPublic !== false)
+              throw new Error('WEB4 did not prepare the expected private snapshot.');
+            await request('POST', 'data/save-holon', {holon, providerType: result.result.provider,
+              operationId: crypto.randomUUID(), expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+            if (stillCurrent()) {
+              button.textContent = 'Snapshot saved';
+              note('Private snapshot saved. Run the query again to see that a stored copy exists.');
+            }
+          } catch (error) {
+            if (stillCurrent()) note(error.message, true);
+          }
+        } : null);
       } catch (error) {
         if (current === generation) note(pending.signal.aborted
           ? (timedOut ? 'Request timed out. No automatic retry was made.' : 'Request cancelled. Server work may already have executed.')
@@ -556,7 +603,7 @@
       availableQuestionProviders };
   }
 
-  const api = { providers, presets, preset, parse, withVirtualMapping, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
+  const api = { providers, presets, preset, parse, withVirtualMapping, virtualSnapshotQuery, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
     localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;
