@@ -197,8 +197,8 @@ ORDER BY Name LIMIT 5</code></pre>
           <pre><code id="cql-grouped-example">SELECT IsActive, COUNT(*) AS Total, AVG(Version) AS AverageVersion, SUM(Version) AS TotalVersion
 FROM MongoDBOASIS
 GROUP BY IsActive
-HAVING AverageVersion &gt;= 1.0 AND TotalVersion &gt;= 1
-ORDER BY Total DESC, IsActive ASC LIMIT 5</code></pre>
+HAVING AVG(Version) &gt;= 1.0 AND SUM(Version) &gt;= 1
+ORDER BY COUNT(*) DESC, IsActive ASC LIMIT 5</code></pre>
           <button type="button" id="cql-load-grouped-example">Load grouped example</button>
         </details>
         <details>

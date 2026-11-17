@@ -747,6 +747,7 @@ test('loads the displayed grouped example for review without submitting it', asy
   assert.equal(path, 'data/query-cql/grouped');
   assert.deepEqual(body.resultFilters.map(({ alias, value }) => [alias, value]),
     [['AverageVersion', '1.0'], ['TotalVersion', 1]]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Total', descending: true }, { alias: 'IsActive', descending: false }]);
 });
 
 test('loads the unique category count without submitting it', async () => {
