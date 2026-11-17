@@ -1381,3 +1381,17 @@ test('allows a shared join comparison in separate alternatives', () => {
   assert.deepEqual(body.keyGroupStarts, [0, 2]);
   assert.deepEqual(body.keys.map(key => key.left.field), ['Id', 'Version', 'Id', 'Name']);
 });
+
+test('GROUP BY selected aliases use native grouping fields and preserve source name precedence', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const sql = 'SELECT CAST(metadata.stock AS INT64) AS Stock, Version AS V, COUNT(*) AS Total FROM ' +
+      provider + ' GROUP BY ';
+    assert.deepEqual(compile(sql + 'stock, v HAVING Total > 1 ORDER BY V'), compile(
+      sql + 'CAST(metadata.stock AS INT64), Version HAVING Total > 1 ORDER BY V'));
+    assert.throws(() => compile(sql + 'Total, V'), /Unknown selected field/);
+    assert.throws(() => compile(sql + 'Stock, V, Version'), /different GROUP BY fields/);
+    const collision = 'SELECT Version AS Name, COUNT(*) FROM ' + provider + ' GROUP BY ';
+    assert.throws(() => compile(collision + 'Name'), /selected field must match GROUP BY/);
+    assert.deepEqual(compile(collision + '1'), compile(collision + 'Version'));
+  }
+});

@@ -734,7 +734,11 @@
         do {
           const selected = readSelectPosition(selectedFields, 'GROUP BY');
           if (selected === null) throw new Error('GROUP BY cannot refer to an aggregate position.');
-          groupFields.push(selected ?? readSelection());
+          const alias = selected === undefined && !Object.hasOwn(projectionFields, peek()?.toLowerCase())
+            ? columns.find(column => column.alias.toUpperCase() === peek())
+            : null;
+          if (alias) index++;
+          groupFields.push(selected ?? alias ?? readSelection());
         } while (accept(','));
         const groupKeys = groupFields.map(selectionKey);
         if (groupFields.length > 8 || new Set(groupKeys).size !== groupFields.length)
