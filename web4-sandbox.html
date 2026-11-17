@@ -1770,7 +1770,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
         <details id="im-virtual-panel" hidden>
           <summary>Virtual mapping</summary>
-          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB or Neo4j connection. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
+          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB, Neo4j or Azure Cosmos DB connection. Cosmos DB containers must use /id as their only partition key for virtual mapping. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
           <div class="row">
             <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
               aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
@@ -2082,7 +2082,7 @@ function virtualConnectionName(){
   const provider = native();
   if (importMode() === 'demo')
     return isSandbox() && ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider) ? 'oasis-sandbox-native-fixture' : null;
-  return ['MongoDBOASIS', 'Neo4jOASIS'].includes(provider) ? savedName() : null;
+  return ['MongoDBOASIS', 'Neo4jOASIS', 'AzureCosmosDBOASIS'].includes(provider) ? savedName() : null;
 }
 function virtualSourceContext(){
   const connectionName = virtualConnectionName();
