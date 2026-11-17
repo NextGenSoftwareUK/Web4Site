@@ -1554,7 +1554,7 @@ test('SQL virtual predicates preserve functions and exact numeric bounds across 
 test('SQL virtual predicates reject unadmitted string ordering, null literals and membership', () => {
   const prefix = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE ";
   for (const predicate of ["metadata.name > 'A'","metadata.name = NULL","metadata.name IN ('A','B')",
-    "metadata.name IS NULL","metadata.name NOT LIKE '%A%'"])
+    "metadata.name IS NULL"])
     assert.throws(() => compile(prefix + predicate + ' ORDER BY Id LIMIT 10'),/comparison|literal/);
   const unequal = compile(prefix + "metadata.name <> 'A' ORDER BY Id LIMIT 10");
   assert.equal(unequal.body.filters[0].operator,'NotEqual');
@@ -1580,8 +1580,26 @@ test('mixed source SQL string matches preserve literal wildcard escapes and prov
         [{metadataPath:['name'], scalar:'String', operator, value}]);
     }
     for (const sql of ["metadata.name AS BOOLEAN CONTAINS true", "metadata.name AS INT64 CONTAINS 1",
-      "metadata.name NOT LIKE '%A%'", "LENGTH(metadata.name) CONTAINS 'A'"]) {
+      "metadata.name IS NULL", "LENGTH(metadata.name) CONTAINS 'A'"]) {
       assert.throws(() => compile(prefix + sql + " ORDER BY Id LIMIT 10"));
+    }
+  }
+});
+
+
+test('mixed negative LIKE retains the CQL negated string operator and escaped literal', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const prefix = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM " + provider +
+      " WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE ";
+    for (const [sql, operator, value] of [
+      ["metadata.name NOT LIKE '%A!_%' ESCAPE '!'", 'NotContains', 'A_'],
+      ["metadata.name NOT LIKE 'A!%%' ESCAPE '!'", 'NotStartsWith', 'A%'],
+      ["metadata.name NOT LIKE '%A!!' ESCAPE '!'", 'NotEndsWith', 'A!']
+    ]) {
+      const compiled = compile(prefix + sql + " ORDER BY Id LIMIT 10");
+      assert.equal(compiled.path, 'data/query-cql/projection/mixed');
+      assert.deepEqual(compiled.body.filters,
+        [{metadataPath:['name'], scalar:'String', operator, value}]);
     }
   }
 });
