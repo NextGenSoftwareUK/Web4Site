@@ -1498,3 +1498,47 @@ test('SQL-like CQL names a saved virtual mapping and compiles its measured route
   assert.throws(() => compile(statement + ' OFFSET 200'), /OFFSET below 200/);
   assert.throws(() => compile(statement.replace(id,'00000000-0000-0000-0000-000000000000')), /nonempty/);
 });
+
+test('SQL length preserves the string input and exact Int64 output bound', () => {
+  const canonical = compile('SELECT * FROM MongoDBOASIS WHERE LENGTH(Name) >= 4 ORDER BY Id LIMIT 3');
+  assert.deepEqual(canonical.body.filters, [{ field: 'Name', scalar: 'String', function: 'Utf16Length',
+    operator: 'GreaterThanOrEqual', value: '4' }]);
+  const metadata = compile('SELECT * FROM Neo4jOASIS WHERE length(metadata.label) = 9007199254740993');
+  assert.deepEqual(metadata.body.filters, [{ metadataPath: ['label'], scalar: 'String', function: 'Utf16Length',
+    operator: 'Equal', value: '9007199254740993' }]);
+});
+
+test('SQL length supports every integer relation and signed boundary', () => {
+  const relations = { '=': 'Equal', '<>': 'NotEqual', '>': 'GreaterThan', '>=': 'GreaterThanOrEqual',
+    '<': 'LessThan', '<=': 'LessThanOrEqual' };
+  for (const [token, operation] of Object.entries(relations)) {
+    for (const bound of ['-9223372036854775808', '-1', '0', '9223372036854775807']) {
+      const result = compile('SELECT * FROM SQLLiteDBOASIS WHERE LENGTH(Name) ' + token + ' ' + bound);
+      assert.equal(result.body.filters[0].operator, operation);
+      assert.equal(result.body.filters[0].value, bound);
+    }
+  }
+});
+
+test('SQL length composes with OR and leaves ordinary filters unchanged', () => {
+  const result = compile("SELECT * FROM MongoDBOASIS WHERE " +
+    "(LENGTH(Name) > 4 OR LENGTH(Description) = 2) AND Version >= 1");
+  assert.equal(result.body.anyOf.length, 2);
+  assert.ok(result.body.anyOf.every(filter => filter.function === 'Utf16Length'));
+  assert.deepEqual(result.body.filters, [{ field: 'Version', scalar: 'Integer',
+    operator: 'GreaterThanOrEqual', value: 1 }]);
+});
+
+test('SQL length rejects unsupported domains, bounds and incomplete parentheses', () => {
+  for (const expression of [
+    'LENGTH(Version) > 3', 'LENGTH(Id) > 3', 'LENGTH(metadata.label AS INT64) > 3',
+    "LENGTH(Name) = '2'", 'LENGTH(Name) = 2.0', 'LENGTH(Name) = 9223372036854775808',
+    "LENGTH(Name) LIKE '%a%'", '(LENGTH(Name IS NULL)', 'LENGTH(LENGTH(Name)) = 1'
+  ]) assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE ' + expression));
+});
+
+test('SQL virtual equality cannot discard a length function', () => {
+  const id = '11000000-0000-0000-0000-000000000001';
+  assert.throws(() => compile('SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS ' +
+    "WITH VIRTUAL MAPPING '" + id + "' WHERE LENGTH(metadata.name) = 2 ORDER BY Id LIMIT 10"));
+});

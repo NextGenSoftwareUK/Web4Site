@@ -278,11 +278,14 @@
     }
 
     function filter(allowRange = false) {
+      const length = accept('LENGTH');
+      if (length) expect('(');
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
       if (name === 'metadata') {
         selector = { metadataPath: readMetadataPath() };
         if (accept('IS')) {
+          if (length) throw new Error('Close LENGTH before its numeric comparison.');
           if (accept('NULL')) return { ...selector, operator: 'IsNull' };
           if (accept('MISSING')) return { ...selector, operator: 'IsMissing' };
           if (accept('NOT')) {
@@ -311,11 +314,21 @@
         selector = { field };
         scalar = type;
         if (accept('IS')) {
+          if (length) throw new Error('Close LENGTH before its numeric comparison.');
           if (scalar !== 'String') throw new Error('Canonical null tests require a text field.');
           const negated = accept('NOT');
           expect('NULL');
           return { ...selector, operator: negated ? 'IsNotNull' : 'IsNull' };
         }
+      }
+      if (length) {
+        if (scalar !== 'String') throw new Error('LENGTH requires a string field.');
+        expect(')');
+        const operator = comparisons[tokens[index++]?.toUpperCase()];
+        if (!['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual'].includes(operator))
+          throw new Error('Use an integer comparison after LENGTH.');
+        return { ...selector, scalar: 'String', function: 'Utf16Length', operator,
+          value: readLiteral('Integer', true) };
       }
       const literal = () => readLiteral(scalar, Boolean(selector.metadataPath));
       const negated = accept('NOT');
@@ -753,7 +766,7 @@
     }
     if (accept('WHERE')) predicates(body, true);
     if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length < 1 || body.filters.length > 8 ||
-        body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.operator !== 'Equal' ||
+        body.filters.some(filter => filter.function != null || filter.metadataPath?.length !== 1 || filter.operator !== 'Equal' ||
           !['String', 'Boolean', 'Integer'].includes(filter.scalar)) ||
         body.anyOf || body.anyChildren || body.anyDescendants))
       throw new Error('Use one to eight typed metadata equality filters with a Virtual Holon mapping.');
