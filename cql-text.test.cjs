@@ -1331,8 +1331,19 @@ test('compiles null-safe join operators separately from SQL equality', () => {
   assert.equal(guidPair.left.nullable, true);
   assert.equal(compile(prefix + leftGuid + ' IS DISTINCT FROM ' + rightGuid).body.keys[0].operator, 'IsDistinctFrom');
   assert.throws(() => compile(prefix + leftGuid + ' < ' + rightGuid), /matching signed integer/);
-  assert.throws(() => compile(prefix + leftGuid + ' IS DISTINCT FROM ' + rightFlag), /matching nullable Boolean, GUID or signed integer/);
-  assert.throws(() => compile(prefix + 'l.Version IS DISTINCT FROM r.Version'), /matching nullable Boolean, GUID or signed integer/);
-  assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching nullable Boolean, GUID or signed integer/);
-  assert.throws(() => compile(prefix + leftFlag + ' IS DISTINCT FROM ' + right), /matching nullable Boolean, GUID or signed integer/);
+  for (const [cast, valueType] of [['UINT64', 'UInt64'], ['DECIMAL', 'Decimal'], ['DATETIME', 'DateTime']]) {
+    const leftValue = 'CAST(l.metadata.value AS ' + cast + ')';
+    const rightValue = 'CAST(r.metadata.value AS ' + cast + ')';
+    for (const [sql, wire] of [['IS NOT DISTINCT FROM', 'IsNotDistinctFrom'], ['IS DISTINCT FROM', 'IsDistinctFrom']]) {
+      const pair = compile(prefix + leftValue + ' ' + sql + ' ' + rightValue).body.keys[0];
+      assert.equal(pair.operator, wire);
+      assert.equal(pair.left.valueType, valueType);
+      assert.equal(pair.right.nullable, true);
+    }
+    assert.throws(() => compile(prefix + leftValue + ' < ' + rightValue), /matching signed integer/);
+  }
+  assert.throws(() => compile(prefix + leftGuid + ' IS DISTINCT FROM ' + rightFlag), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
+  assert.throws(() => compile(prefix + 'l.Version IS DISTINCT FROM r.Version'), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
+  assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
+  assert.throws(() => compile(prefix + leftFlag + ' IS DISTINCT FROM ' + right), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
 });
