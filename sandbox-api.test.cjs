@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 // Exercise the shipped helper rather than a separate copy of its request logic.
 const html = fs.readFileSync(`${__dirname}/web4-sandbox.html`, 'utf8');
-const start = html.indexOf('async function call(method, path, body){');
+const start = html.indexOf('async function call(');
 const end = html.indexOf('\n// 1 ', start);
 assert.ok(start >= 0 && end > start);
 function client(fetch) {
@@ -12,7 +12,7 @@ function client(fetch) {
   const access = { base: 'https://example.invalid', token: 'controlled-token' };
   const session = { accessContext: async () => access,
     assertContext: observed => assert.equal(observed, access) };
-  const context = vm.createContext({fetch, session,
+  const context = vm.createContext({fetch, session, CqlLosslessMetadata:require('./lossless-metadata.js'),
     crypto:{randomUUID:()=> 'new-key'}});
   vm.runInContext(html.slice(start, end), context);
   return context.call;
@@ -234,4 +234,21 @@ test('single length snapshot retains its function, operator, bound and source te
   assert.equal(query.filters[0].operator,'GreaterThanOrEqual');
   assert.deepEqual(query.filters[0].metadataPath,['name']);
   assert.equal(query.filters[0].value,'9007199254740993');
+});
+
+test('actual snapshot transport sends exact prepared metadata to the save endpoint', async () => {
+  const sent=[];
+  const source='{"result":{"id":"row","isPublic":false,"metaData":{"points":9007199254740993,"maximum":9223372036854775807}}}';
+  const call=client(async(url,init)=>{
+    sent.push({url,init});
+    if(url.endsWith('/snapshot/prepare')) return {ok:true,status:200,headers:{get:()=>null},
+      text:async()=>source,json:async()=>assert.fail('Snapshot parsing must retain numeric source tokens.')};
+    return response(200,{result:{id:'row'}});
+  });
+  const prepared=await call('POST','native-data/MongoDBOASIS/virtual-mappings/owned/snapshot/prepare',
+    {rowId:'row'},{preserveMetadata:true});
+  await call('POST','data/save-holon',{operationId:'one-save',holon:prepared.result});
+  assert.equal(sent.length,2);
+  assert.ok(sent[1].init.body.includes('"points":9007199254740993'));
+  assert.ok(sent[1].init.body.includes('"maximum":9223372036854775807'));
 });

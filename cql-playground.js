@@ -382,7 +382,7 @@
           try {
             const prepared = await request('POST',
               `native-data/${encodeURIComponent(source.provider)}/virtual-mappings/${encodeURIComponent(source.mappingId)}/snapshot/prepare`,
-              {rowId: id, query: virtualSnapshotQuery(body)});
+              {rowId: id, query: virtualSnapshotQuery(body)}, {preserveMetadata: true});
             if (!stillCurrent()) return;
             const holon = prepared.result;
             if (holon?.id !== id || holon.isPublic !== false)
