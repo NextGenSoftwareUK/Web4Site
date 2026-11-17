@@ -1490,7 +1490,7 @@ test('SQL-like CQL names a saved virtual mapping and compiles its measured route
     " AND metadata.name = 'Ada'".repeat(8) + " ORDER BY")), /equality filters|filter/);
   assert.deepEqual(withVirtualMapping(compiled.body,compiled.path,''),compiled);
   assert.throws(() => withVirtualMapping(compiled.body,compiled.path,'43b88e30-7afb-47e9-a1f4-5a27f5cb35f2'), /differ/);
-  assert.throws(() => compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10"), /equality/);
+  assert.throws(() => compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10"), /comparison/);
   const page = compile(statement.replace('ORDER BY Id','ORDER BY Id DESC') + ' OFFSET 2');
   assert.equal(page.body.descending, true);
   assert.equal(page.body.skip, 2);
@@ -1537,8 +1537,25 @@ test('SQL length rejects unsupported domains, bounds and incomplete parentheses'
   ]) assert.throws(() => compile('SELECT * FROM MongoDBOASIS WHERE ' + expression));
 });
 
-test('SQL virtual equality cannot discard a length function', () => {
+test('SQL virtual predicates preserve functions and exact numeric bounds across three providers', () => {
   const id = '11000000-0000-0000-0000-000000000001';
-  assert.throws(() => compile('SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS ' +
-    "WITH VIRTUAL MAPPING '" + id + "' WHERE LENGTH(metadata.name) = 2 ORDER BY Id LIMIT 10"));
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const compiled = compile('SELECT Id, CAST(metadata.name AS STRING) AS Label FROM ' + provider +
+      " WITH VIRTUAL MAPPING '" + id + "' WHERE LENGTH(metadata.name) = 2 ORDER BY Id LIMIT 10");
+    assert.equal(compiled.path,'data/query-cql/projection/mixed');
+    assert.deepEqual(compiled.body.filters,[{metadataPath:['name'],scalar:'String',function:'Utf16Length',
+      operator:'Equal',value:'2'}]);
+    const range = compile('SELECT Id, CAST(metadata.name AS STRING) AS Label FROM ' + provider +
+      " WITH VIRTUAL MAPPING '" + id + "' WHERE metadata.points AS INT64 >= 9007199254740993 ORDER BY Id LIMIT 10");
+    assert.equal(range.body.filters[0].value,'9007199254740993');
+    assert.equal(range.body.filters[0].operator,'GreaterThanOrEqual');
+  }
+});
+test('SQL virtual predicates reject unadmitted string ordering, null literals and membership', () => {
+  const prefix = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE ";
+  for (const predicate of ["metadata.name > 'A'","metadata.name = NULL","metadata.name IN ('A','B')",
+    "metadata.name IS NULL","metadata.name LIKE '%A%'"])
+    assert.throws(() => compile(prefix + predicate + ' ORDER BY Id LIMIT 10'),/comparison|literal/);
+  const unequal = compile(prefix + "metadata.name <> 'A' ORDER BY Id LIMIT 10");
+  assert.equal(unequal.body.filters[0].operator,'NotEqual');
 });

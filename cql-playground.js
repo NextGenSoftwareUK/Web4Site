@@ -98,13 +98,8 @@
     const { filters, columns } = body;
     const select = [...new Set([...columns.slice(1).map(column => column.metadataPath[0]),
       ...filters.map(filter => filter.metadataPath[0])])];
-    if (filters.length === 1) {
-      const [filter] = filters;
-      const matchType = filter.scalar === 'Integer' ? 'Int64' : filter.scalar;
-      return { matchField: filter.metadataPath[0], matchType,
-        matchValue: matchType === 'Int64' ? String(filter.value) : filter.value, select, take: 100 };
-    }
-    return { filters, select, take: 100 };
+    const captured = filters.map(filter => ({...filter, metadataPath: filter.metadataPath.slice()}));
+    return { filters: captured, select, take: 100 };
   }
 
   function requestTimeout(body) {

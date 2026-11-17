@@ -216,5 +216,22 @@ test('snapshot keeps all exact filters and their fields from the mixed projectio
   assert.deepEqual(query,{filters,select:['name','points','active'],take:100});
   assert.deepEqual(virtualSnapshotQuery({filters: filters.slice(0, 1),
     columns:[{field:'Id'},{metadataPath:['name']}]}),
-    {matchField:'points',matchType:'Int64',matchValue:'9007199254740993',select:['name','points'],take:100});
+    {filters:filters.slice(0,1),select:['name','points'],take:100});
+});
+
+test('single length snapshot retains its function, operator, bound and source text field', () => {
+  const {virtualSnapshotQuery} = require('./cql-playground.js');
+  const filter = {metadataPath:['name'],scalar:'String',function:'Utf16Length',
+    operator:'GreaterThanOrEqual',value:'9007199254740993'};
+  const query = virtualSnapshotQuery({filters:[filter],
+    columns:[{field:'Id'},{metadataPath:['label'],valueType:'String'}]});
+  assert.deepEqual(query.select,['label','name']);
+  assert.deepEqual(query.filters,[filter]);
+  filter.function = null;
+  filter.operator = 'Equal';
+  filter.metadataPath[0] = 'changed';
+  assert.equal(query.filters[0].function,'Utf16Length');
+  assert.equal(query.filters[0].operator,'GreaterThanOrEqual');
+  assert.deepEqual(query.filters[0].metadataPath,['name']);
+  assert.equal(query.filters[0].value,'9007199254740993');
 });
