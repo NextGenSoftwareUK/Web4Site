@@ -1026,8 +1026,8 @@
     if (columns.length) {
       delete body.includeMetadata;
       if (body.virtualMappingId) {
-        if (selectedOrder || body.orderBy !== 'Id' || body.descending || body.skip || body.take < 1)
-          throw new Error('Use ORDER BY Id and a positive LIMIT without OFFSET for a Virtual Holon mapping.');
+        if (selectedOrder || body.orderBy !== 'Id' || body.skip >= 200 || body.take < 1)
+          throw new Error('Use ORDER BY Id, a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body, columns } };
       }
       if (selectedOrder) {
