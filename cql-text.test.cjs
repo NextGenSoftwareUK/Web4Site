@@ -1484,6 +1484,10 @@ test('SQL-like CQL names a saved virtual mapping and compiles its measured route
   const compiled = compile(statement);
   assert.equal(compiled.path,'data/query-cql/projection/mixed');
   assert.equal(compiled.body.virtualMappingId,id);
+  const conjunction = compile(statement.replace(" ORDER BY", " AND metadata.name = 'Ada' ORDER BY"));
+  assert.deepEqual(conjunction.body.filters.map(filter => filter.metadataPath[0]), ['tier', 'name']);
+  assert.throws(() => compile(statement.replace(" ORDER BY",
+    " AND metadata.name = 'Ada'".repeat(8) + " ORDER BY")), /equality filters|filter/);
   assert.deepEqual(withVirtualMapping(compiled.body,compiled.path,''),compiled);
   assert.throws(() => withVirtualMapping(compiled.body,compiled.path,'43b88e30-7afb-47e9-a1f4-5a27f5cb35f2'), /differ/);
   assert.throws(() => compile(select + " WHERE metadata.tier LIKE 'g%' ORDER BY Id LIMIT 10"), /equality/);

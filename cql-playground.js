@@ -95,14 +95,10 @@
   }
 
   function virtualSnapshotQuery(body) {
-    const filter = body.filters[0];
-    const matchType = filter.scalar === 'Integer' ? 'Int64' : filter.scalar;
-    return {
-      matchField: filter.metadataPath[0], matchType,
-      matchValue: matchType === 'Int64' ? String(filter.value) : filter.value,
-      select: [...new Set([...body.columns.slice(1).map(column => column.metadataPath[0]), filter.metadataPath[0]])],
-      take: 100
-    };
+    const { filters, columns } = body;
+    const select = [...new Set([...columns.slice(1).map(column => column.metadataPath[0]),
+      ...filters.map(filter => filter.metadataPath[0])])];
+    return { filters, select, take: 100 };
   }
 
   function requestTimeout(body) {

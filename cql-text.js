@@ -752,11 +752,11 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length !== 1 ||
-        body.filters[0].metadataPath?.length !== 1 || body.filters[0].operator !== 'Equal' ||
-        !['String', 'Boolean', 'Integer'].includes(body.filters[0].scalar) ||
+    if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length < 1 || body.filters.length > 8 ||
+        body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.operator !== 'Equal' ||
+          !['String', 'Boolean', 'Integer'].includes(filter.scalar)) ||
         body.anyOf || body.anyChildren || body.anyDescendants))
-      throw new Error('Use one typed metadata equality filter with a Virtual Holon mapping.');
+      throw new Error('Use one to eight typed metadata equality filters with a Virtual Holon mapping.');
     if (distinct || groupedAggregates.length || peek() === 'GROUP') {
       let keys = columns;
       if (!distinct) {

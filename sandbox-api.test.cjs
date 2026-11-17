@@ -182,12 +182,14 @@ test('SQLite virtual example compiles a MongoDB materialized read with a shared 
 });
 
 
-test('snapshot uses the same exact filter and selected fields as the mixed projection', () => {
+test('snapshot keeps all exact filters and their fields from the mixed projection', () => {
   const {virtualSnapshotQuery} = require('./cql-playground.js');
+  const filters = [
+    {metadataPath:['points'],scalar:'Integer',operator:'Equal',value:'9007199254740993'},
+    {metadataPath:['active'],scalar:'Boolean',operator:'Equal',value:true}
+  ];
   const query = virtualSnapshotQuery({
-    filters:[{metadataPath:['points'],scalar:'Integer',value:'9007199254740993'}],
-    columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']}]
+    filters, columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']}]
   });
-  assert.deepEqual(query,{matchField:'points',matchType:'Int64',matchValue:'9007199254740993',
-    select:['name','points'],take:100});
+  assert.deepEqual(query,{filters,select:['name','points','active'],take:100});
 });
