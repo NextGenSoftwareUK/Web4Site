@@ -1393,5 +1393,7 @@ test('GROUP BY selected aliases use native grouping fields and preserve source n
     const collision = 'SELECT Version AS Name, COUNT(*) FROM ' + provider + ' GROUP BY ';
     assert.throws(() => compile(collision + 'Name'), /selected field must match GROUP BY/);
     assert.deepEqual(compile(collision + '1'), compile(collision + 'Version'));
+    const castAlias = 'SELECT CAST(metadata.stock AS INT64) AS Cast, COUNT(*) FROM ' + provider + ' GROUP BY ';
+    assert.deepEqual(compile(castAlias + 'Cast'), compile(castAlias + 'CAST(metadata.stock AS INT64)'));
   }
 });

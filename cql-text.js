@@ -734,7 +734,8 @@
         do {
           const selected = readSelectPosition(selectedFields, 'GROUP BY');
           if (selected === null) throw new Error('GROUP BY cannot refer to an aggregate position.');
-          const alias = selected === undefined && !Object.hasOwn(projectionFields, peek()?.toLowerCase())
+          const alias = selected === undefined && !(peek() === 'CAST' && tokens[index + 1] === '(')
+            && !Object.hasOwn(projectionFields, peek()?.toLowerCase())
             ? columns.find(column => column.alias.toUpperCase() === peek())
             : null;
           if (alias) index++;
