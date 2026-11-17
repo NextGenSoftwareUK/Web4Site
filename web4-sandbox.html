@@ -245,6 +245,8 @@ ORDER BY ParentName ASC, ChildName ASC LIMIT 3</code></pre>
         <div class="row">
           <input id="cql-virtual-mapping" placeholder="Paste a saved mapping ID" autocomplete="off">
           <button type="button" class="ghost" id="cql-virtual-example">Load customer query</button>
+          <button type="button" class="ghost" id="cql-sqlite-virtual-example">Load supplier query</button>
+          <button type="button" class="ghost" id="cql-neo-virtual-example">Load loyalty query</button>
           <button type="button" class="ghost" id="cql-list-mappings">List my mappings</button>
         </div>
         <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
@@ -1768,7 +1770,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
         <details id="im-virtual-panel" hidden>
           <summary>Virtual mapping</summary>
-          <p class="note">Use the sandbox MongoDB fixture or a saved MongoDB connection. For the customer example, choose customers and enter name=name, tier=tier.</p>
+          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB connection. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
           <div class="row">
             <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
               aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
@@ -2077,12 +2079,15 @@ $('im-delete-conn').addEventListener('click', () => busy($('im-delete-conn'), $(
 }));
 // Shows only the fields the chosen database type needs, and enables the controls that can work right now.
 function virtualConnectionName(){
-  return importMode() === 'demo' && isSandbox() ? 'oasis-sandbox-native-fixture' : savedName();
+  const provider = native();
+  if (importMode() === 'demo')
+    return isSandbox() && ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider) ? 'oasis-sandbox-native-fixture' : null;
+  return provider === 'MongoDBOASIS' ? savedName() : null;
 }
 function virtualSourceContext(){
   const connectionName = virtualConnectionName();
-  return jwt && native() === 'MongoDBOASIS' && connectionName
-    ? JSON.stringify([session.identity(), importMode(), connectionName]) : null;
+  return jwt && connectionName
+    ? JSON.stringify([session.identity(), importMode(), native(), connectionName]) : null;
 }
 function syncVirtualControls(){
   const context = virtualSourceContext();
@@ -2192,7 +2197,7 @@ $('im-save-virtual').addEventListener('click', async () => {
     }
     if (nativeFields.size > 32) throw new Error('Use at most 32 field bindings.');
     const id = crypto.randomUUID(), operationId = crypto.randomUUID();
-    const prepared = await call('POST', 'native-data/MongoDBOASIS/virtual-mappings/prepare',
+    const prepared = await call('POST', 'native-data/' + native() + '/virtual-mappings/prepare',
       {id, sourceName, connectionName: virtualConnectionName(), fields});
     if (virtualSourceContext() !== context) throw new Error('The active connection changed. List sources again.');
     if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false)
@@ -2200,7 +2205,7 @@ $('im-save-virtual').addEventListener('click', async () => {
     await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
       expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
     $('cql-virtual-mapping').value = id;
-    setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in MongoDB.`, 'ok');
+    setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in their database.`, 'ok');
   });
   syncVirtualControls();
 });
@@ -2384,15 +2389,20 @@ window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => 
   $('cql-saved-mapping').addEventListener('change', () => {
     $('cql-virtual-mapping').value = $('cql-saved-mapping').value;
   });
-  $('cql-virtual-example').addEventListener('click', () => {
-    const sql = "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10";
+  function loadVirtualExample(sql) {
     try {
       window.cqlPlayground.loadText(sql);
       $('cql-text').value = sql;
     } catch (error) {
       setNote($('cql-note'), error.message, 'err');
     }
-  });
+  }
+  $('cql-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
+  $('cql-sqlite-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Supplier FROM MongoDBOASIS WHERE metadata.country = 'United Kingdom' ORDER BY Id LIMIT 10"));
+  $('cql-neo-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Member FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
 window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken,
   isDemoSession: () => demoSessionIdentity !== null && demoSessionIdentity === session.identity() });
 </script>

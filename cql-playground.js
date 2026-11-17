@@ -82,16 +82,16 @@
   // Keep the browser alive through the admitted server budget plus transport
   // time. This does not extend the server deadline or retry uncertain work.
   function withVirtualMapping(body, endpoint, mappingInput) {
-    const id = mappingInput?.trim();
-    if (!id) return body;
+    const id = mappingInput?.trim() || body.virtualMappingId;
+    if (id === undefined || id === '') return {path: endpoint, body};
     if (endpoint !== 'data/query-cql/projection')
       throw new Error('Use a selected-column projection to include a Virtual Holon mapping.');
-    if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ||
+    if (typeof id !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ||
         /^0{8}(?:-0{4}){3}-0{12}$/.test(id))
       throw new Error('Enter a valid Virtual Holon mapping ID.');
     if (body.virtualMappingId && String(body.virtualMappingId).toLowerCase() !== id.toLowerCase())
       throw new Error('The mapping IDs in the editor and mapping field differ.');
-    return {...body, virtualMappingId: id};
+    return {path: endpoint + '/mixed', body: {...body, virtualMappingId: id}};
   }
 
   function requestTimeout(body) {
@@ -305,9 +305,10 @@
     async function run() {
       if (controller || preparing || discovery || !getToken() || !endpoint) return;
       let body;
+      let requestPath;
       let timeoutMilliseconds;
       try {
-        body = withVirtualMapping(parse($('cql-request').value), endpoint, $('cql-virtual-mapping')?.value);
+        ({path: requestPath, body} = withVirtualMapping(parse($('cql-request').value), endpoint, $('cql-virtual-mapping')?.value));
         timeoutMilliseconds = requestTimeout(body);
       }
       catch (error) { note(error.message, true); return; }
@@ -329,7 +330,7 @@
       try {
         const token = await ensureAccessToken();
         if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
-        const response = await fetch(`${base}/api/${endpoint}`, {
+        const response = await fetch(`${base}/api/${requestPath}`, {
           method: 'POST', signal: pending.signal,
           headers: { Accept: 'application/json', 'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token, 'Idempotency-Key': requestKey },

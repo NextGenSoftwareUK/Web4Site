@@ -95,6 +95,7 @@ test('virtual mapping prepares one definition and conditionally saves only that 
     virtualSourceContext: () => current,
     virtualListedContext: current,
     virtualConnectionName: () => 'warehouse',
+    native: () => 'MongoDBOASIS',
     busy: async (_button, _note, _label, work) => work(),
     setNote: () => {},
     syncVirtualControls: () => {},
@@ -123,7 +124,12 @@ test('mixed projection attaches a nonempty mapping ID without changing its filte
   const {withVirtualMapping} = require('./cql-playground.js');
   const id = '2fef1cbc-feb8-4ed3-b7de-5f406f769149';
   const body = {provider:'MongoDBOASIS', filters:[{metadataPath:['category'],operator:'Equal',value:'coffee'}]};
-  assert.deepEqual(withVirtualMapping(body, 'data/query-cql/projection', id), {...body, virtualMappingId:id});
+  assert.deepEqual(withVirtualMapping(body, 'data/query-cql/projection', id),
+    {path:'data/query-cql/projection/mixed',body:{...body,virtualMappingId:id}});
+  assert.deepEqual(withVirtualMapping(body, 'data/query-cql/projection', ''),
+    {path:'data/query-cql/projection',body});
+  assert.equal(withVirtualMapping({...body,virtualMappingId:id}, 'data/query-cql/projection').path,
+    'data/query-cql/projection/mixed');
   assert.throws(() => withVirtualMapping(body, 'data/query-cql', id), /projection/);
   assert.throws(() => withVirtualMapping(body, 'data/query-cql/projection', 'invalid'), /valid/);
 });
@@ -147,4 +153,14 @@ test('mixed result labels align with the exact returned rows', () => {
   assert.deepEqual(cells.map(cell => cell.textContent),
     ['left', 'Stored Holon', 'right', 'Live mapping · stored copy exists']);
   assert.throws(() => ctx.render({result: {...payload, provenance: []}}), /incomplete row provenance/);
+});
+
+
+test('SQLite virtual example compiles a MongoDB materialized read with a shared supplier predicate', () => {
+  const sql = html.match(/cql-sqlite-virtual-example'\)\.addEventListener\('click', \(\) => loadVirtualExample\(\s*"([^"]+)"/)?.[1];
+  assert.ok(sql);
+  const query = require('./cql-text.js').compile(sql);
+  assert.equal(query.path,'data/query-cql/projection');
+  assert.equal(query.body.provider,'MongoDBOASIS');
+  assert.deepEqual(query.body.filters,[{metadataPath:['country'],scalar:'String',operator:'Equal',value:'United Kingdom'}]);
 });
