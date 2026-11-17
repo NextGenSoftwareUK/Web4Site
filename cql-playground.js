@@ -100,7 +100,7 @@
     return {
       matchField: filter.metadataPath[0], matchType,
       matchValue: matchType === 'Int64' ? String(filter.value) : filter.value,
-      select: [...new Set(body.columns.slice(1).map(column => column.metadataPath[0]))],
+      select: [...new Set([...body.columns.slice(1).map(column => column.metadataPath[0]), filter.metadataPath[0]])],
       take: 100
     };
   }

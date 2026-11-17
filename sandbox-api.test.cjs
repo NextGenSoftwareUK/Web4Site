@@ -186,7 +186,7 @@ test('snapshot uses the same exact filter and selected fields as the mixed proje
   const {virtualSnapshotQuery} = require('./cql-playground.js');
   const query = virtualSnapshotQuery({
     filters:[{metadataPath:['points'],scalar:'Integer',value:'9007199254740993'}],
-    columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']},{metadataPath:['points']}]
+    columns:[{field:'Id'},{metadataPath:['name']},{metadataPath:['name']}]
   });
   assert.deepEqual(query,{matchField:'points',matchType:'Int64',matchValue:'9007199254740993',
     select:['name','points'],take:100});
