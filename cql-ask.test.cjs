@@ -484,11 +484,28 @@ test('temporary avatars request free inference and review only the exact public 
   assert.equal(request.freeOnly, true);
   assert.match(request.messages[0].content, /available WEB4 providers: HashgraphOASIS\./);
   assert.doesNotMatch(request.messages[0].content, /MongoDBOASIS/);
+  assert.match(request.messages[0].content, /Preserve every supplied key verbatim, using IN for multiple keys/);
   assert.equal(app.node('ask-preview').disabled, false);
   assert.deepEqual(app.opened, []);
   query = "SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId IN ('0.0.2','0.0.4') LIMIT 2";
   await app.node('ask-generate').click();
   assert.equal(app.node('ask-preview').disabled, true);
   assert.match(app.node('ask-status').textContent, /did not preserve the reviewed public example/);
+  assert.deepEqual(app.opened, []);
+});
+
+test('reviewed exact-key examples require the requested timeout', async () => {
+  const text = "SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId = '0.0.2' LIMIT 1";
+  let content = text;
+  const example = { provider: 'HashgraphOASIS', request: { take: 1, maximumDurationMilliseconds: 30000, filters: [
+    { metadataPath: ['HederaAccountId'], operator: 'Equal', value: '0.0.2' }
+  ] } };
+  const app = setup(() => ({ ok: true, json: async () => ({ content }) }), example, compile, ['HashgraphOASIS']);
+  app.node('ask-use-example').click();
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled, true);
+  content = text + ' TIMEOUT 30000';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled, false);
   assert.deepEqual(app.opened, []);
 });

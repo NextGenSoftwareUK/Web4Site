@@ -149,12 +149,17 @@
         const keyScope = keyProfiles.length
           ? '\nAdditional ready sources (provider:metadata key, maximum IN keys). Use SELECT * and one equality on a supplied quoted key. IN is allowed only when the bound is positive. No ORDER BY or aggregation. ' + keyProfiles.join(', ')
           : '';
+        const exampleScope = example
+          ? '\nFor this public example, select all fields and use exactly one WHERE comparison on the supplied field. ' +
+            'Preserve every supplied key verbatim, using IN for multiple keys. Include the requested LIMIT and, ' +
+            'if requested, append TIMEOUT followed by the duration in milliseconds after LIMIT.'
+          : '';
         requestKey = crypto.randomUUID();
         const response = await fetch('https://dev.api.web6.oasisomniverse.one/v1/complete', {
           method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
             'Idempotency-Key': requestKey },
-          body: JSON.stringify({ messages: [{ role: 'system', content: queryInstructions(providers) + '\n' + providerScope + keyScope },
+          body: JSON.stringify({ messages: [{ role: 'system', content: queryInstructions(providers) + '\n' + providerScope + keyScope + exampleScope },
             { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false,
             ...(isDemoSession() ? { freeOnly: true } : {}) })
@@ -190,10 +195,12 @@
           const key = filter => JSON.stringify(filter.metadataPath ?? [filter.field]);
           const values = filter => [].concat(filter.value).map(value => JSON.stringify(value)).sort();
           if (compiled.path !== 'data/query-cql' || body.provider !== example.provider
-              || body.filters?.length !== 1 || body.anyOf?.length || body.relationships?.length
+              || body.filters?.length !== 1 || body.anyOf?.length || body.anyChildren?.length || body.anyDescendants?.length
               || !['Equal', 'In'].includes(actual?.operator) || key(actual) !== key(expected)
               || JSON.stringify(values(actual)) !== JSON.stringify(values(expected))
-              || (body.skip ?? 0) !== 0 || body.take < values(expected).length
+              || body.selection || body.projection || (body.skip ?? 0) !== 0
+              || (body.maximumDurationMilliseconds ?? null) !== (example.request.maximumDurationMilliseconds ?? null)
+              || body.take < values(expected).length
               || body.take > example.request.take)
             throw new Error('The draft did not preserve the reviewed public example. Nothing was run.');
         }
