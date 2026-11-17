@@ -1347,3 +1347,15 @@ test('compiles null-safe join operators separately from SQL equality', () => {
   assert.throws(() => compile(prefix + left + ' IS DISTINCT FROM CAST(r.metadata.amount AS INT32)'), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
   assert.throws(() => compile(prefix + leftFlag + ' IS DISTINCT FROM ' + right), /matching nullable Boolean, GUID, UTC timestamp or supported exact numeric/);
 });
+
+test('compiles disjunctive joins and requires uniform ON connectors', () => {
+  const window = '(SELECT * FROM MongoDBOASIS LIMIT 3)';
+  const prefix = 'SELECT l.Id AS LeftId FROM ' + window + ' AS l INNER JOIN ' + window + ' AS r ON ';
+  const clauses = 'l.Id = r.Id OR l.Version >= r.Version';
+  const { body } = compile(prefix + clauses);
+  assert.equal(body.matchAnyKey, true);
+  assert.equal(body.keys.length, 2);
+  assert.equal(body.keys[1].operator, 'GreaterThanOrEqual');
+  assert.equal(compile(prefix + 'l.Id = r.Id AND l.Version = r.Version').body.matchAnyKey, undefined);
+  assert.throws(() => compile(prefix + clauses + ' AND l.Name = r.Name'), /either AND or OR/);
+});

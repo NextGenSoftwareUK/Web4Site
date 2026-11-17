@@ -444,6 +444,7 @@
         throw new Error('Unknown join source alias.');
       };
       const keys = [];
+      let joinConnector;
       if (!crossJoin && !childJoin) {
         expect('ON');
         do {
@@ -479,7 +480,13 @@
               selectionKey(key.right) === selectionKey(r.selection) && key.operator === operator))
             throw new Error('Use each join key pair once.');
           keys.push({ alias: 'Key' + (keys.length + 1), left: l.selection, right: r.selection, ...(ordered ? { operator } : {}) });
-        } while (accept('AND'));
+          const nextConnector = peek();
+          if (nextConnector !== 'AND' && nextConnector !== 'OR') break;
+          if (joinConnector && joinConnector !== nextConnector)
+            throw new Error('Use either AND or OR throughout the JOIN ON clause.');
+          joinConnector = nextConnector;
+          index++;
+        } while (true);
       }
       let outputOrder;
       if (accept('ORDER')) {
@@ -521,6 +528,7 @@
       return { path: 'data/query-cql/join', body: {
         provider: left.provider, kind: childJoin ? 'Child' : crossJoin ? 'Cross' : fullJoin ? 'Full' : outerJoin ? 'Left' : 'Inner',
         left: left.body, right: right.body, keys, columns, ...outputOrder, ...window,
+        ...(joinConnector === 'OR' ? { matchAnyKey: true } : {}),
         maximumLeftRows: left.body.take, maximumRightRows: right.body.take, maximumPairs,
         maximumResults: outputLimit === undefined ? maximumPairs : Math.max(1, outputLimit)
       } };
