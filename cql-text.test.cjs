@@ -1715,3 +1715,19 @@ test('mixed computed SQL still refuses unsupported input, ordering, shape and ag
     'SELECT SUM(LENGTH(Name)) FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id"
   ]) assert.throws(()=>compile(statement));
 });
+
+test('mixed computed snapshot preparation requests original fields and never computed output aliases', () => {
+  const {virtualSnapshotQuery}=require('./cql-playground.js');
+  const query=compile("SELECT Id, LENGTH(CAST(metadata.name AS STRING)) AS Units, "+
+    "LENGTH(CAST(metadata.name AS STRING)) AS Again FROM MongoDBOASIS "+
+    "WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' "+
+    "WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10");
+  const snapshot=virtualSnapshotQuery(query.body);
+  assert.deepEqual(snapshot.select,['name','tier']);
+  assert.equal(snapshot.take,100);
+  assert.deepEqual(snapshot.filters,query.body.filters);
+  assert.notStrictEqual(snapshot.filters,query.body.filters);
+  assert.notStrictEqual(snapshot.filters[0].metadataPath,query.body.filters[0].metadataPath);
+  assert.equal(snapshot.select.includes('Units'),false);
+  assert.equal(snapshot.select.includes('Again'),false);
+});
