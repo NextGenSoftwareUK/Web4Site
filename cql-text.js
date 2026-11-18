@@ -604,7 +604,7 @@
     const countValues = operation === 'LongCount' && !countDistinct && peek() !== '*' && peek() !== '1';
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection() : null;
+    const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true) : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
       if (allowComputed && accept('LENGTH')) {
@@ -636,9 +636,9 @@
       return { metadataPath, valueType: types[type], nullable: true };
     }
 
-    function readAggregateSelection() {
-      const selection = readSelection();
-      if (selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal', 'Single', 'Double'].includes(selection.valueType))
+    function readAggregateSelection(allowComputed = false) {
+      const selection = readSelection(allowComputed);
+      if (!selection.function && selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal', 'Single', 'Double'].includes(selection.valueType))
         throw new Error('Aggregate Version or exact numeric metadata using CAST.');
       return selection;
     }

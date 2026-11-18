@@ -1659,3 +1659,30 @@ test('computed SQL count accepts typed text metadata and rejects invalid nested 
   for (const input of ['Version', 'CAST(metadata.score AS INT32)', 'LENGTH(Name)'])
     assert.throws(() => compile('SELECT COUNT(LENGTH(' + input + ')) FROM MongoDBOASIS'));
 });
+
+test('SQL scalar aggregates bind computed integer lengths for each native priority store', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    for (const [name, operation] of [['SUM', 'Sum'], ['AVG', 'Average'], ['MIN', 'Min'], ['MAX', 'Max']]) {
+      const query = compile('SELECT ' + name + '(LENGTH(Name)) AS Units FROM ' + provider);
+      assert.equal(query.path, 'data/query-cql/scalar');
+      assert.equal(query.body.operation, operation);
+      assert.equal(query.scalarAlias, 'Units');
+      assert.deepEqual(query.body.selection, { field: 'Name', function: 'Utf16Length', nullable: true });
+    }
+  }
+});
+
+test('computed scalar aggregates preserve typed metadata string inputs and numeric source filters', () => {
+  const query = compile('SELECT AVG(LENGTH(CAST(metadata.label AS STRING))) FROM MongoDBOASIS WHERE Version > 2');
+  assert.equal(query.body.operation, 'Average');
+  assert.deepEqual(query.body.selection, { metadataPath: ['label'], valueType: 'String', nullable: true, function: 'Utf16Length' });
+  assert.equal(query.body.filters[0].field, 'Version');
+});
+
+test('computed scalar aggregates reject invalid input domains and unimplemented grouped functions', () => {
+  for (const name of ['SUM', 'AVG', 'MIN', 'MAX']) {
+    for (const input of ['Version', 'CAST(metadata.score AS INT32)', 'LENGTH(Name)'])
+      assert.throws(() => compile('SELECT ' + name + '(LENGTH(' + input + ')) FROM MongoDBOASIS'));
+    assert.throws(() => compile('SELECT Name, ' + name + '(LENGTH(Name)) AS Units FROM MongoDBOASIS GROUP BY Name'));
+  }
+});
