@@ -606,7 +606,15 @@
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = selectedCount ? readSelection() : hasSelection ? readAggregateSelection() : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
-    function readSelection() {
+    function readSelection(allowComputed = false) {
+      if (allowComputed && accept('LENGTH')) {
+        expect('(');
+        const input = readSelection();
+        expect(')');
+        if (input.field ? !['Name', 'Description'].includes(input.field) : input.valueType !== 'String')
+          throw new Error('Selected LENGTH requires a string field or CAST of metadata AS STRING.');
+        return { ...input, function: 'Utf16Length', nullable: true };
+      }
       if (!accept('CAST')) {
         const name = tokens[index++]?.toLowerCase();
         if (!Object.hasOwn(projectionFields, name)) throw new Error('Unknown selected field.');
@@ -635,7 +643,8 @@
       return selection;
     }
     function selectionKey(column) {
-      return column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
+      const input = column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
+      return column.function ? JSON.stringify([column.function, input]) : input;
     }
     function readGroupedAggregate(name) {
       const operation = aggregates[name];
@@ -660,9 +669,10 @@
           groupedAggregates.push({ index: columns.length + groupedAggregates.length, binding });
           continue;
         }
-        const selection = readSelection();
-        if (selection.metadataPath) expect('AS');
-        const alias = selection.metadataPath ? tokens[index++] : accept('AS') ? tokens[index++] : selection.field;
+        const selection = readSelection(true);
+        const requiresAlias = selection.metadataPath || selection.function;
+        if (requiresAlias) expect('AS');
+        const alias = requiresAlias ? tokens[index++] : accept('AS') ? tokens[index++] : selection.field;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
           throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
         if (columns.some(column => column.alias.toLowerCase() === alias.toLowerCase()))
@@ -708,7 +718,7 @@
       const id = readLiteral('Guid');
       if (/^0{8}(?:-0{4}){3}-0{12}$/.test(id))
         throw new Error('Use a nonempty Virtual Holon mapping ID.');
-      if (columns.length < 2 || columns[0].field !== 'Id' || distinct || groupedAggregates.length || operation ||
+      if (columns.some(column => column.function) || columns.length < 2 || columns[0].field !== 'Id' || distinct || groupedAggregates.length || operation ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))
         throw new Error('Virtual mapping queries must select Id first and at least one mapped metadata field.');
       body.virtualMappingId = id;
@@ -779,6 +789,8 @@
         body.anyOf || body.anyChildren || body.anyDescendants))
       throw new Error('Use one to eight supported typed metadata comparison filters with a Virtual Holon mapping.');
     if (distinct || groupedAggregates.length || peek() === 'GROUP') {
+      if (columns.some(column => column.function))
+        throw new Error('Computed SELECT grouping and DISTINCT require native grouped-function support.');
       let keys = columns;
       if (!distinct) {
         expect('GROUP');
@@ -967,8 +979,8 @@
       const order = [];
       do {
         let name;
-        if (columns.length && peek() === 'CAST' && tokens[index + 1] === '(') {
-          const expression = selectionKey(readSelection());
+        if (columns.length && ['CAST', 'LENGTH'].includes(peek()) && tokens[index + 1] === '(') {
+          const expression = selectionKey(readSelection(true));
           const selectedColumn = columns.find(column => selectionKey(column) === expression);
           if (!selectedColumn) throw new Error('Order by selected column aliases or expressions.');
           name = selectedColumn.alias;
@@ -981,7 +993,8 @@
       } while (accept(','));
       if (order.length > 1 && !columns.length) {
         bindRowOrder(order);
-      } else if (order.length > 1) {
+      } else if (order.length > 1 || order.some(term =>
+          columns.some(column => column.function && column.alias.toLowerCase() === term.name?.toLowerCase()))) {
         if (order.length > 8) throw new Error('Use up to eight selected ordering aliases.');
         selectedOrder = order.map(({ name, descending }) => {
           const column = columns.find(item => item.alias.toLowerCase() === name?.toLowerCase());

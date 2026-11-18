@@ -1603,3 +1603,38 @@ test('mixed negative LIKE retains the CQL negated string operator and escaped li
     }
   }
 });
+
+test('selected LENGTH binds nullable integer outputs and orders aliases before paging', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const query = compile('SELECT Name, LENGTH(Name) AS Units FROM ' + provider +
+      ' ORDER BY Units DESC LIMIT 1 OFFSET 2');
+    assert.equal(query.path, 'data/query-cql/projection');
+    assert.deepEqual(query.body.columns, [
+      { field: 'Name', alias: 'Name' },
+      { field: 'Name', function: 'Utf16Length', nullable: true, alias: 'Units' }
+    ]);
+    assert.equal(query.body.orderBy, 'None');
+    assert.deepEqual(query.body.selectedOrder, [{ alias: 'Units', descending: true }]);
+    assert.equal(query.body.skip, 2);
+    assert.equal(query.body.take, 1);
+  }
+});
+
+test('selected metadata LENGTH and exact repeated expression keep computed identity', () => {
+  const query = compile('SELECT LENGTH(CAST(metadata.label AS STRING)) AS Units FROM MongoDBOASIS ORDER BY Units');
+  assert.deepEqual(query.body.columns, [{
+    metadataPath: ['label'], valueType: 'String', nullable: true, function: 'Utf16Length', alias: 'Units'
+  }]);
+  const expression = compile('SELECT Name, LENGTH(Name) AS Units FROM Neo4jOASIS ORDER BY LENGTH(Name)');
+  assert.equal(expression.body.orderBy, 'None');
+  assert.deepEqual(expression.body.selectedOrder, [{ alias: 'Units', descending: false }]);
+});
+
+test('selected LENGTH refuses nonstrings, nested calls and unsupported grouped functions', () => {
+  for (const expression of ['Version', 'CAST(metadata.score AS INT32)'])
+    assert.throws(() => compile('SELECT LENGTH(' + expression + ') AS Units FROM MongoDBOASIS'), /string/);
+  assert.throws(() => compile('SELECT LENGTH(LENGTH(Name)) AS Units FROM MongoDBOASIS'));
+  assert.throws(() => compile('SELECT LENGTH(Name) FROM MongoDBOASIS'));
+  assert.throws(() => compile('SELECT DISTINCT LENGTH(Name) AS Units FROM MongoDBOASIS'), /Computed SELECT/);
+  assert.throws(() => compile('SELECT LENGTH(Name) AS Units FROM MongoDBOASIS GROUP BY Units'), /Computed SELECT/);
+});
