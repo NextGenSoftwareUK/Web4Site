@@ -1686,3 +1686,32 @@ test('computed scalar aggregates reject invalid input domains and unimplemented 
     assert.throws(() => compile('SELECT Name, ' + name + '(LENGTH(Name)) AS Units FROM MongoDBOASIS GROUP BY Name'));
   }
 });
+
+test('mixed SQL keeps independent raw and repeated LENGTH metadata aliases on all three native stores', () => {
+  const id='11000000-0000-0000-0000-000000000001';
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const query=compile('SELECT Id, CAST(metadata.name AS STRING) AS Original, '+
+      'LENGTH(CAST(metadata.name AS STRING)) AS Units, LENGTH(CAST(metadata.name AS STRING)) AS Again FROM '+
+      provider+" WITH VIRTUAL MAPPING '"+id+"' WHERE LENGTH(metadata.name) = 2 ORDER BY Id LIMIT 10");
+    assert.equal(query.path,'data/query-cql/projection/mixed');
+    assert.equal(query.body.virtualMappingId,id);
+    assert.deepEqual(query.body.columns,[
+      {field:'Id',alias:'Id'},
+      {metadataPath:['name'],valueType:'String',nullable:true,alias:'Original'},
+      {metadataPath:['name'],valueType:'String',nullable:true,function:'Utf16Length',alias:'Units'},
+      {metadataPath:['name'],valueType:'String',nullable:true,function:'Utf16Length',alias:'Again'}
+    ]);
+    assert.equal(query.body.orderBy,'Id');
+    assert.equal(query.body.selectedOrder,undefined);
+  }
+});
+
+test('mixed computed SQL still refuses unsupported input, ordering, shape and aggregates', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for (const statement of [
+    'SELECT Id, LENGTH(Name) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id",
+    'SELECT Id, LENGTH(CAST(metadata.points AS INT32)) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id",
+    'SELECT Id, LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Units",
+    'SELECT SUM(LENGTH(Name)) FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id"
+  ]) assert.throws(()=>compile(statement));
+});
