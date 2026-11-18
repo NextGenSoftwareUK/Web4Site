@@ -269,7 +269,7 @@ ORDER BY Id LIMIT 10</code></pre>
        LENGTH(CAST(metadata.name AS STRING)) AS Units
 FROM MongoDBOASIS WITH VIRTUAL MAPPING '&lt;mapping-id&gt;'
 WHERE LENGTH(metadata.name) &gt; 0
-ORDER BY Id LIMIT 10</code></pre>
+ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
         </details>
       <label for="cql-request">JSON query description</label>
       <textarea id="cql-request" spellcheck="false" rows="20" style="display:block;width:100%;margin:10px 0 16px;padding:16px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:13px/1.8 'Share Tech Mono',monospace;tab-size:2" aria-describedby="cql-help"></textarea>

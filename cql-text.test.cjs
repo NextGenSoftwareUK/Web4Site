@@ -1706,12 +1706,11 @@ test('mixed SQL keeps independent raw and repeated LENGTH metadata aliases on al
   }
 });
 
-test('mixed computed SQL still refuses unsupported input, ordering, shape and aggregates', () => {
+test('mixed computed SQL still refuses unsupported input, shape and aggregates', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
   for (const statement of [
     'SELECT Id, LENGTH(Name) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id",
     'SELECT Id, LENGTH(CAST(metadata.points AS INT32)) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id",
-    'SELECT Id, LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Units",
     'SELECT SUM(LENGTH(Name)) FROM MongoDBOASIS'+mapping+" WHERE metadata.name = 'A' ORDER BY Id"
   ]) assert.throws(()=>compile(statement));
 });
@@ -1730,4 +1729,41 @@ test('mixed computed snapshot preparation requests original fields and never com
   assert.notStrictEqual(snapshot.filters[0].metadataPath,query.body.filters[0].metadataPath);
   assert.equal(snapshot.select.includes('Units'),false);
   assert.equal(snapshot.select.includes('Again'),false);
+});
+
+test('mixed SQL orders computed and raw aliases with one global page across three providers', () => {
+  const {virtualSnapshotQuery}=require('./cql-playground.js');
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const compiled=compile('SELECT Id, CAST(metadata.name AS STRING) AS Original, '+
+      'LENGTH(CAST(metadata.name AS STRING)) AS Units FROM '+provider+
+      " WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' "+
+      'WHERE LENGTH(metadata.name) >= 2 ORDER BY Units DESC, Original ASC LIMIT 1 OFFSET 1');
+    assert.equal(compiled.path,'data/query-cql/projection/mixed');
+    assert.equal(compiled.body.orderBy,'None');
+    assert.deepEqual(compiled.body.selectedOrder,[{alias:'Units',descending:true},{alias:'Original',descending:false}]);
+    assert.equal(compiled.body.skip,1); assert.equal(compiled.body.take,1);
+    assert.equal(compiled.body.columns[2].function,'Utf16Length');
+    assert.deepEqual(virtualSnapshotQuery(compiled.body).select,['name']);
+  }
+});
+
+test('mixed SQL resolves one raw alias and repeated LENGTH expressions without changing snapshot fields', () => {
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const prefix='SELECT Id, CAST(metadata.name AS STRING) AS Original, '+
+      'LENGTH(CAST(metadata.name AS STRING)) AS Units, LENGTH(CAST(metadata.name AS STRING)) AS Again FROM '+
+      provider+" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' "+
+      "WHERE metadata.tier = 'gold' ORDER BY ";
+    assert.deepEqual(compile(prefix+'Original DESC LIMIT 2').body.selectedOrder,[{alias:'Original',descending:true}]);
+    assert.deepEqual(compile(prefix+'LENGTH(CAST(metadata.name AS STRING)) DESC, Id LIMIT 2').body.selectedOrder,
+      [{alias:'Units',descending:true},{alias:'Id',descending:false}]);
+    assert.deepEqual(compile(prefix+'Again ASC LIMIT 2').body.selectedOrder,[{alias:'Again',descending:false}]);
+  }
+});
+
+test('mixed selected ordering keeps alias uniqueness, shape and window admission', () => {
+  const prefix='SELECT Id, CAST(metadata.name AS STRING) AS Original, '+
+    'LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS '+
+    "WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold' ORDER BY ";
+  for (const suffix of ['Units, Units LIMIT 1','Unselected LIMIT 1','Units LIMIT 0','Units LIMIT 1 OFFSET 200'])
+    assert.throws(()=>compile(prefix+suffix));
 });
