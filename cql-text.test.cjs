@@ -1638,3 +1638,24 @@ test('selected LENGTH refuses nonstrings, nested calls and unsupported grouped f
   assert.throws(() => compile('SELECT DISTINCT LENGTH(Name) AS Units FROM MongoDBOASIS'), /Computed SELECT/);
   assert.throws(() => compile('SELECT LENGTH(Name) AS Units FROM MongoDBOASIS GROUP BY Units'), /Computed SELECT/);
 });
+
+test('computed SQL counts preserve LENGTH rather than counting the input text', () => {
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    for (const [prefix, operation] of [['COUNT', 'CountValues'], ['COUNT(DISTINCT', 'CountDistinct']]) {
+      const text = prefix === 'COUNT' ? 'COUNT(LENGTH(Name))' : 'COUNT(DISTINCT LENGTH(Name))';
+      const query = compile('SELECT ' + text + ' FROM ' + provider);
+      assert.equal(query.path, 'data/query-cql/scalar');
+      assert.equal(query.body.operation, operation);
+      assert.deepEqual(query.body.selection, { field: 'Name', function: 'Utf16Length', nullable: true });
+    }
+  }
+});
+
+test('computed SQL count accepts typed text metadata and rejects invalid nested inputs', () => {
+  const query = compile('SELECT COUNT(LENGTH(CAST(metadata.label AS STRING))) FROM MongoDBOASIS');
+  assert.deepEqual(query.body.selection, {
+    metadataPath: ['label'], valueType: 'String', nullable: true, function: 'Utf16Length'
+  });
+  for (const input of ['Version', 'CAST(metadata.score AS INT32)', 'LENGTH(Name)'])
+    assert.throws(() => compile('SELECT COUNT(LENGTH(' + input + ')) FROM MongoDBOASIS'));
+});

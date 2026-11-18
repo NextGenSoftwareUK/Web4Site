@@ -604,7 +604,7 @@
     const countValues = operation === 'LongCount' && !countDistinct && peek() !== '*' && peek() !== '1';
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = selectedCount ? readSelection() : hasSelection ? readAggregateSelection() : null;
+    const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection() : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
       if (allowComputed && accept('LENGTH')) {
