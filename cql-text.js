@@ -720,6 +720,11 @@
     let mixedScalar = false;
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
+    function mappedValue(column) {
+      return column && !column.field && column.metadataPath?.length === 1 &&
+        ['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) &&
+        (!column.function || column.function === 'Utf16Length' && column.valueType === 'String');
+    }
     if (accept('WITH')) {
       expect('VIRTUAL');
       expect('MAPPING');
@@ -740,12 +745,8 @@
         columns.push({field: 'Id', alias: 'Id'});
         if (operation !== 'LongCount' || selectedCount) columns.push({...scalarSelection,alias:'Value'});
       }
-      if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation && !mixedScalar ||
-          columns.slice(1).some(column => column.metadataPath?.length !== 1))
-        throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
-      if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) ||
-          column.function && (column.function !== 'Utf16Length' || column.valueType !== 'String')))
-        throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
+      if (operation && !mixedScalar)
+        throw new Error('This scalar cannot use a Virtual Holon mapping.');
       body.virtualMappingId = id;
     }
     if (!body.virtualMappingId && scalarSelection?.valueType === 'String' && ['Min','Max'].includes(operation))
@@ -803,7 +804,7 @@
       } while (accept('AND'));
     }
     if (accept('WHERE')) predicates(body, true);
-    if (body.virtualMappingId && (peek() === 'GROUP' || body.filters.length < 1 || body.filters.length > 8 ||
+    if (body.virtualMappingId && (body.filters.length < 1 || body.filters.length > 8 ||
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
@@ -985,6 +986,35 @@
       const filterCount = body.filters.length + (body.anyOf?.length ?? 0);
       if (body.anyChildren || body.anyDescendants || filterCount > 12)
         throw new Error('Grouped queries support up to twelve filters on the source records.');
+      if (body.virtualMappingId) {
+        const inputColumns = [{ field: 'Id', alias: 'Id' }];
+        const inputKeys = new Set();
+        function addMappedInput(selection) {
+          if (!mappedValue(selection))
+            throw new Error('Mapped grouping requires direct STRING, BOOLEAN, INT32, INT64 or DOUBLE metadata fields.');
+          const key = selectionKey(selection);
+          if (!inputKeys.has(key)) {
+            inputKeys.add(key);
+            inputColumns.push({ ...selection, alias: 'MixedInput' + inputKeys.size });
+          }
+        }
+        keys.forEach(addMappedInput);
+        resultColumns.forEach(column => {
+          if (column.selection) {
+            if (column.selection.function)
+              throw new Error('Computed grouped selections require native function enrollment.');
+            addMappedInput(column.selection);
+          }
+        });
+        if (inputColumns.length > 32) throw new Error('Use at most 31 different mapped grouping inputs.');
+        const grouping = { keys, columns: resultColumns, maximumGroups: grouped.maximumGroups };
+        for (const name of ['resultFilters', 'resultOrder', 'resultSkip', 'resultTake'])
+          if (Object.hasOwn(grouped, name)) grouping[name] = grouped[name];
+        return { path: 'data/query-cql/projection/mixed', body: {
+          ...body, orderBy: 'Id', skip: 0, take: 1, resultOperation: 'Group',
+          columns: inputColumns, grouping
+        } };
+      }
       return { path: 'data/query-cql/grouped', body: grouped };
     }
     const bindRowOrder = order => {
@@ -1093,6 +1123,11 @@
     if (columns.length) {
       delete body.includeMetadata;
       if (body.virtualMappingId) {
+        if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function ||
+            columns.slice(1).some(column => column.metadataPath?.length !== 1))
+          throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
+        if (columns.slice(1).some(column => !mappedValue(column)))
+          throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
         if ((!selectedOrder && body.orderBy !== 'Id') || body.skip >= 200 || body.take < 1)
           throw new Error('Order by Id or selected aliases, with a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body,

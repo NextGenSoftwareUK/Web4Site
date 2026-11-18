@@ -260,7 +260,11 @@ ORDER BY Id LIMIT 10</code></pre>
         </div>
         <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
         <p id="cql-mapping-note" class="note" role="status"></p>
-        <p class="note">Select Id first, add one to eight supported mapped metadata filters, and use ORDER BY Id. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
+        <p class="note">For row queries, select Id first, add one to eight supported mapped metadata filters, and order by Id or selected aliases. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
+        <p class="note">You can also use GROUP BY and SELECT DISTINCT with a saved mapping on MongoDB, SQLite or Neo4j.
+        Group known direct metadata fields and use COUNT, MIN, MAX, SUM or AVG over supported values.
+        Real and virtual copies of the same record count once before HAVING, ordering and paging.
+        Grouped results are read-only summaries; snapshot controls apply to individual records.</p>
       </details>
         <details>
           <summary>Query stored and mapped text in one result</summary>
@@ -2381,10 +2385,10 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-text.js?v=20261118-mixed-text-extrema-v1"></script>
+<script src="cql-text.js?v=20261118-mixed-grouping-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261118-mixed-text-extrema-v1"></script>
-<script src="cql-ask.js?v=20261118-mixed-text-extrema-v1"></script>
+<script src="cql-playground.js?v=20261118-mixed-grouping-v1"></script>
+<script src="cql-ask.js?v=20261118-mixed-grouping-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });

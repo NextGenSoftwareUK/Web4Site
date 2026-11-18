@@ -1940,3 +1940,64 @@ test('text extrema do not broaden numeric coercion canonical fields grouping or 
   assert.throws(()=>compile('SELECT MIN(CAST(metadata.region AS STRING))'+tail+' GROUP BY Id'));
   assert.throws(()=>compile('SELECT MAX(Name)'+tail));
 });
+
+
+for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+  test('mapped grouped SQL binds one mixed source for ' + provider, () => {
+    const { path, body } = compile(
+      'SELECT CAST(metadata.category AS STRING) AS Category, COUNT(*) AS Rows, ' +
+      'COUNT(CAST(metadata.amount AS INT32)) AS Present, SUM(CAST(metadata.amount AS INT32)) AS Total ' +
+      "FROM " + provider + " WITH VIRTUAL MAPPING '10101010-aaaa-bbbb-cccc-000000000001' " +
+      "WHERE metadata.tier = 'gold' GROUP BY Category HAVING Rows >= 1 ORDER BY Total DESC LIMIT 3 OFFSET 1");
+    assert.equal(path, 'data/query-cql/projection/mixed');
+    assert.equal(body.resultOperation, 'Group');
+    assert.equal(body.orderBy, 'Id'); assert.equal(body.skip, 0); assert.equal(body.take, 1);
+    assert.equal(body.columns.length, 3);
+    assert.deepEqual(body.columns.map(column => column.alias), ['Id', 'MixedInput1', 'MixedInput2']);
+    assert.deepEqual(body.grouping.keys[0].metadataPath, ['category']);
+    assert.equal(body.grouping.resultTake, 3); assert.equal(body.grouping.resultSkip, 1);
+    assert.deepEqual(body.grouping.resultOrder, [{ alias: 'Total', descending: true }]);
+    assert.deepEqual(body.grouping.resultFilters, [{ alias: 'Rows', operator: 'GreaterThanOrEqual', value: '1' }]);
+    assert.equal(body.grouping.columns[2].operation, 'LongCount');
+    assert.equal(body.grouping.columns[3].operation, 'Sum');
+    assert.equal(Object.hasOwn(body.grouping, 'provider'), false);
+    assert.equal(Object.hasOwn(body.grouping, 'filters'), false);
+    assert.equal(Object.hasOwn(body, 'includeMetadata'), false);
+  });
+}
+test('mapped grouping admits hidden keys and reuses one typed value for multiple reductions', () => {
+  const { body } = compile(
+    'SELECT SUM(CAST(metadata.amount AS INT64)) AS Total, AVG(CAST(metadata.amount AS INT64)) AS Mean ' +
+    "FROM MongoDBOASIS WITH VIRTUAL MAPPING '10101010-aaaa-bbbb-cccc-000000000001' " +
+    "WHERE metadata.tier = 'gold' GROUP BY CAST(metadata.category AS STRING) HAVING Total > 0 ORDER BY Mean LIMIT 2");
+  assert.equal(body.columns.length, 3);
+  assert.equal(body.grouping.columns.length, 2);
+  assert.equal(body.grouping.columns[0].operation, 'Sum');
+  assert.equal(body.grouping.columns[1].operation, 'Average');
+  assert.equal(body.grouping.resultTake, 2);
+});
+test('mapped DISTINCT shares the same reconcile-before-grouping transport', () => {
+  const { body } = compile(
+    'SELECT DISTINCT CAST(metadata.category AS STRING) AS Category FROM Neo4jOASIS ' +
+    "WITH VIRTUAL MAPPING '10101010-aaaa-bbbb-cccc-000000000001' WHERE metadata.tier = 'gold' ORDER BY Category LIMIT 2");
+  assert.equal(body.resultOperation, 'Group');
+  assert.equal(body.grouping.keys.length, 1);
+  assert.deepEqual(body.grouping.columns, [{ alias: 'Category', keyAlias: 'Category' }]);
+});
+for (const selection of ['Name', 'CAST(metadata.deep.value AS STRING)', 'CAST(metadata.amount AS DECIMAL)']) {
+  test('mapped grouping rejects input outside its direct mapped projection contract: ' + selection, () => {
+    assert.throws(() => compile('SELECT ' + selection + ' AS Key, COUNT(*) AS Rows FROM MongoDBOASIS ' +
+      "WITH VIRTUAL MAPPING '10101010-aaaa-bbbb-cccc-000000000001' WHERE metadata.tier = 'gold' GROUP BY Key"),
+      /Mapped grouping requires direct/);
+  });
+}
+
+test('mapped count-only grouping retains its hidden key in the input but not the output', () => {
+  const { body } = compile("SELECT COUNT(*) AS Total FROM Neo4jOASIS WITH VIRTUAL MAPPING " +
+    "'10101010-aaaa-bbbb-cccc-000000000001' WHERE metadata.tier = 'gold' " +
+    "GROUP BY CAST(metadata.region AS STRING) ORDER BY Total DESC LIMIT 3");
+  assert.equal(body.resultOperation, 'Group');
+  assert.equal(body.columns.length, 2);
+  assert.deepEqual(body.grouping.columns, [{alias:'Total',operation:'LongCount'}]);
+  assert.deepEqual(body.grouping.keys[0].metadataPath, ['region']);
+});

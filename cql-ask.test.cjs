@@ -755,3 +755,42 @@ test('a selected mapping can draft text MAX for review and keeps exact text sche
   assert.equal(app.node('ask-preview').disabled,false); assert.deepEqual(app.opened,[]);
   app.node('ask-preview').click(); assert.equal(app.opened[0],sql);
 });
+
+
+for (const distinct of [false, true]) {
+  test('a source-bound mapped ' + (distinct ? 'DISTINCT' : 'GROUP BY') + ' draft requires review before execution', async () => {
+    const sql = (distinct
+      ? 'SELECT DISTINCT CAST(metadata.region AS STRING) AS Region'
+      : 'SELECT CAST(metadata.region AS STRING) AS Region, COUNT(*) AS Total') +
+      " FROM Neo4jOASIS WITH VIRTUAL MAPPING '" + mappedId + "' WHERE metadata.tier = 'gold'" +
+      (distinct ? ' ORDER BY Region LIMIT 3' : ' GROUP BY Region HAVING Total >= 2 ORDER BY Total DESC LIMIT 3');
+    const app = setup(() => ({ok:true,json:async()=>({content:sql})}));
+    chooseMapping(app);
+    app.node('ask-question').value = 'Use the selected mapping, known STRING region and STRING tier; ' +
+      (distinct ? 'list unique regions for gold tier' : 'count gold-tier rows by region, keeping at least two, highest counts first');
+    await app.node('ask-generate').click();
+    assert.equal(app.node('ask-preview').disabled, false);
+    assert.deepEqual(app.opened, []);
+    const sent = JSON.parse(app.requests[0].options.body);
+    assert.match(sent.messages[0].content, /GROUP BY over known direct typed metadata keys/);
+    assert.match(sent.messages[0].content, /before grouping, HAVING/);
+    app.node('ask-preview').click();
+    assert.equal(app.opened[0], sql);
+    const compiled = compile(sql);
+    assert.equal(compiled.body.resultOperation, 'Group');
+    assert.equal(compiled.body.virtualMappingId, mappedId);
+    assert.equal(compiled.body.provider, 'Neo4jOASIS');
+  });
+}
+test('mapped grouped drafts cannot switch the selected mapping or provider', async () => {
+  for (const [id, provider] of [[anotherMappedId, 'Neo4jOASIS'], [mappedId, 'MongoDBOASIS']]) {
+    const sql = 'SELECT CAST(metadata.region AS STRING) AS Region, COUNT(*) AS Total FROM ' + provider +
+      " WITH VIRTUAL MAPPING '" + id + "' WHERE metadata.tier = 'gold' GROUP BY Region";
+    const app = setup(() => ({ok:true,json:async()=>({content:sql})}));
+    chooseMapping(app);
+    await app.node('ask-generate').click();
+    assert.equal(app.node('ask-preview').disabled, true);
+    assert.match(app.node('ask-status').textContent, /did not preserve the selected mapping and provider/);
+    assert.deepEqual(app.opened, []);
+  }
+});
