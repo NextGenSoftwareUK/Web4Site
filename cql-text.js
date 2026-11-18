@@ -280,12 +280,14 @@
     function filter(allowRange = false) {
       const length = accept('LENGTH');
       if (length) expect('(');
+      const cast = accept('CAST');
+      if (cast) expect('(');
       const name = tokens[index++]?.toLowerCase();
       let selector, scalar;
       if (name === 'metadata') {
         selector = { metadataPath: readMetadataPath() };
         if (accept('IS')) {
-          if (length) throw new Error('Close LENGTH before its numeric comparison.');
+          if (length || cast) throw new Error('Close the typed expression before its comparison.');
           if (accept('NULL')) return { ...selector, operator: 'IsNull' };
           if (accept('MISSING')) return { ...selector, operator: 'IsMissing' };
           if (accept('NOT')) {
@@ -296,8 +298,11 @@
           return { ...selector, operator: 'Exists' };
         }
         scalar = 'String';
-        if (accept('AS')) {
-          if (accept('INT64')) scalar = 'Integer';
+        const typed = accept('AS');
+        if (cast && !typed) throw new Error('CAST metadata requires an explicit type.');
+        if (typed) {
+          if (cast && accept('STRING')) scalar = 'String';
+          else if (accept('INT64')) scalar = 'Integer';
           else if (accept('BOOLEAN')) scalar = 'Boolean';
           else if (accept('DECIMAL')) scalar = 'Decimal';
           else if (accept('DOUBLE')) scalar = 'Double';
@@ -308,7 +313,9 @@
             scalar = 'UInt64';
           }
         }
+        if (cast) expect(')');
       } else {
+        if (cast) throw new Error('Typed CAST filters require a metadata field.');
         if (!Object.hasOwn(fields, name)) throw new Error('Unknown filter field.');
         const [field, type] = fields[name];
         selector = { field };
@@ -721,9 +728,9 @@
       if (columns.length < 2 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))
         throw new Error('Virtual mapping queries must select Id first and at least one mapped metadata field.');
-      if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64'].includes(column.valueType) ||
+      if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) ||
           column.function && (column.function !== 'Utf16Length' || column.valueType !== 'String')))
-        throw new Error('Mapped columns support STRING, BOOLEAN, INT32 and INT64; LENGTH requires STRING input.');
+        throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
       body.virtualMappingId = id;
     }
 
@@ -782,10 +789,10 @@
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
-            !['String', 'Boolean', 'Integer'].includes(filter.scalar) ||
+            !['String', 'Boolean', 'Integer', 'Double'].includes(filter.scalar) ||
             filter.function != null && (filter.function !== 'Utf16Length' || filter.scalar !== 'String' ||
               ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator)) ||
-            filter.function == null && filter.scalar !== 'Integer' &&
+            filter.function == null && !['Integer', 'Double'].includes(filter.scalar) &&
               !(filter.scalar === 'String' ? ['Equal', 'NotEqual', 'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'] :
                 ['Equal', 'NotEqual']).includes(filter.operator) ||
             ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) && filter.scalar !== 'String') ||

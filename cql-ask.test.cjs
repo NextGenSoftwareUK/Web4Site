@@ -678,3 +678,18 @@ test('a model draft cannot offer a mixed column that the native projection contr
   assert.match(app.node('ask-status').textContent,/Mapped columns support/);
   assert.deepEqual(app.opened,[]);
 });
+
+test('a source-bound known DOUBLE draft stays review-only and retains its native schema', async () => {
+  const sql='SELECT Id, CAST(metadata.rate AS DOUBLE) AS Rate FROM Neo4jOASIS '+
+    "WITH VIRTUAL MAPPING '"+mappedId+"' WHERE CAST(metadata.rate AS DOUBLE) >= 3.25 ORDER BY Rate DESC LIMIT 2";
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+  chooseMapping(app);
+  app.node('ask-question').value='Show the two highest rates; rate is a Double metadata field in this mapping.';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false);
+  assert.deepEqual(app.opened,[]);
+  const sent=JSON.parse(app.requests[0].options.body);
+  assert.match(sent.messages[0].content,/finite DOUBLE/);
+  app.node('ask-preview').click();
+  assert.equal(app.opened[0],sql);
+});

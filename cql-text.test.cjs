@@ -1770,17 +1770,50 @@ test('mixed selected ordering keeps alias uniqueness, shape and window admission
 
 test('mixed metadata columns reject domains not admitted by the native projection contract', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
-  for(const type of ['UINT64','DECIMAL','SINGLE','DOUBLE','GUID','DATETIME'])
+  for(const type of ['UINT64','DECIMAL','SINGLE','GUID','DATETIME'])
     assert.throws(()=>compile('SELECT Id, CAST(metadata.value AS '+type+') AS Value FROM MongoDBOASIS'+
       mapping+" WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 2"),/Mapped columns support/);
 });
 
-test('mixed metadata columns preserve all four admitted scalar domains', () => {
+test('mixed metadata columns preserve all five admitted scalar domains', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
-  for(const [sql,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64']]) {
+  for(const [sql,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64'],['DOUBLE','Double']]) {
     const result=compile('SELECT Id, CAST(metadata.value AS '+sql+') AS Value FROM Neo4jOASIS'+
       mapping+" WHERE metadata.tier = 'gold' ORDER BY Value LIMIT 2");
     assert.equal(result.path,'data/query-cql/projection/mixed');
     assert.equal(result.body.columns[1].valueType,type);
   }
+});
+
+test('mixed DOUBLE comparison and selected ordering preserve finite round-trip literals on all three stores', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const result=compile('SELECT Id, CAST(metadata.rate AS DOUBLE) AS Rate FROM '+provider+mapping+
+      ' WHERE CAST(metadata.rate AS DOUBLE) >= 3.25 ORDER BY Rate DESC LIMIT 2 OFFSET 1');
+    assert.equal(result.path,'data/query-cql/projection/mixed');
+    assert.equal(result.body.filters[0].scalar,'Double');
+    assert.equal(result.body.filters[0].value,'3.25');
+    assert.deepEqual(result.body.selectedOrder,[{alias:'Rate',descending:true}]);
+    assert.equal(result.body.skip,1);
+  }
+});
+test('mixed DOUBLE refuses nonfinite bounds and LENGTH on a numeric field', () => {
+  const prefix='SELECT Id, CAST(metadata.rate AS DOUBLE) AS Rate FROM MongoDBOASIS'+
+    " WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for (const value of ['1e309','NaN','Infinity'])
+    assert.throws(()=>compile(prefix+' WHERE CAST(metadata.rate AS DOUBLE) > '+value+' ORDER BY Rate LIMIT 1'));
+  assert.throws(()=>compile('SELECT Id, LENGTH(CAST(metadata.rate AS DOUBLE)) AS Units FROM MongoDBOASIS'+
+    " WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold' LIMIT 1"));
+});
+
+test('CAST metadata filters agree with existing typed comparisons and compose with LENGTH', () => {
+  const prefix='SELECT Name FROM MongoDBOASIS WHERE ';
+  for (const [cast,prior] of [
+    ["CAST(metadata.name AS STRING) = 'Case'","metadata.name = 'Case'"],
+    ["CAST(metadata.stock AS INT64) >= 7","metadata.stock AS INT64 >= 7"],
+    ["CAST(metadata.rate AS DOUBLE) < 3.25","metadata.rate AS DOUBLE < 3.25"],
+    ["LENGTH(CAST(metadata.name AS STRING)) >= 2","LENGTH(metadata.name) >= 2"]
+  ]) assert.deepEqual(compile(prefix+cast+' LIMIT 2'),compile(prefix+prior+' LIMIT 2'));
+  assert.throws(()=>compile(prefix+'CAST(metadata.rate) >= 2 LIMIT 1'),/explicit type/);
+  assert.throws(()=>compile(prefix+"CAST(Name AS STRING) = 'x' LIMIT 1"),/metadata field/);
 });
