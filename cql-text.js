@@ -611,7 +611,7 @@
     const countValues = operation === 'LongCount' && !countDistinct && peek() !== '*' && peek() !== '1';
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
-    const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true) : null;
+    const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true, operation === 'Min' || operation === 'Max') : null;
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
       if (allowComputed && accept('LENGTH')) {
@@ -643,9 +643,9 @@
       return { metadataPath, valueType: types[type], nullable: true };
     }
 
-    function readAggregateSelection(allowComputed = false) {
+    function readAggregateSelection(allowComputed = false, allowText = false) {
       const selection = readSelection(allowComputed);
-      if (!selection.function && selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal', 'Single', 'Double'].includes(selection.valueType))
+      if (!selection.function && selection.field !== 'Version' && !['Int32', 'Int64', 'UInt64', 'Decimal', 'Single', 'Double'].includes(selection.valueType) && !(allowText && selection.valueType === 'String'))
         throw new Error('Aggregate Version or exact numeric metadata using CAST.');
       return selection;
     }
@@ -733,7 +733,7 @@
         if (operation !== 'LongCount' && (!scalarSelection || scalarSelection.metadataPath?.length !== 1 ||
             (scalarSelection.function
               ? scalarSelection.function !== 'Utf16Length' || scalarSelection.valueType !== 'String'
-              : !['Int32','Int64','Double'].includes(scalarSelection.valueType))))
+              : !['Int32','Int64','Double'].includes(scalarSelection.valueType) && !(['Min','Max'].includes(operation) && scalarSelection.valueType === 'String'))))
           throw new Error('Mixed numeric aggregates require direct INT32, INT64, DOUBLE metadata or LENGTH of STRING metadata.');
         mixedScalar = true;
         body.resultOperation = countDistinct ? 'CountDistinct' : countValues ? 'CountValues' : operation; body.orderBy = 'Id'; body.take = 1;
@@ -748,6 +748,9 @@
         throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
       body.virtualMappingId = id;
     }
+    if (!body.virtualMappingId && scalarSelection?.valueType === 'String' && ['Min','Max'].includes(operation))
+      throw new Error('Text MIN/MAX currently requires a selected Virtual Holon mapping.');
+
 
     function orPredicates(first) {
       const alternatives = first.anyOf ?? [first];

@@ -979,3 +979,17 @@ test('mixed selected value count renders a scalar and offers no snapshot write',
   await h.elements.get('cql-run').listeners.click();
   assert.match(h.elements.get('cql-note').textContent,/Regions: 3/);
 });
+
+test('mixed empty text MIN renders null as a successful scalar', async () => {
+  const h=harness(async(url,options)=>{
+    const body=JSON.parse(options.body); assert.equal(body.resultOperation,'Min');
+    assert.equal(body.columns[1].valueType,'String');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'Neo4jOASIS',
+      operation:'Min',valueType:'String',value:null,canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT MIN(CAST(metadata.region AS STRING)) AS FirstRegion FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/FirstRegion: null/);
+});

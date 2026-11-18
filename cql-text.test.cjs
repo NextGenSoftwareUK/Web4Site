@@ -1921,3 +1921,22 @@ test('mixed selected counts retain computed LENGTH and reject inadmissible domai
   for (const selection of ['Id','Version','CAST(metadata.amount AS DECIMAL)','CAST(metadata.amount AS UINT64)'])
     assert.throws(()=>compile('SELECT COUNT(DISTINCT '+selection+')'+tail));
 });
+
+test('mixed text MIN and MAX retain nullable String schema on all native priority providers', () => {
+  const tail=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'])
+    for (const [name,operation] of [['MIN','Min'],['MAX','Max']]) {
+      const q=compile('SELECT '+name+'(CAST(metadata.region AS STRING)) AS Region FROM '+provider+tail);
+      assert.equal(q.path,'data/query-cql/projection/mixed'); assert.equal(q.body.resultOperation,operation);
+      assert.deepEqual(q.body.columns,[{field:'Id',alias:'Id'},
+        {metadataPath:['region'],valueType:'String',nullable:true,alias:'Value'}]);
+      assert.equal(q.scalarAlias,'Region');
+    }
+});
+test('text extrema do not broaden numeric coercion canonical fields grouping or unmapped routes', () => {
+  const tail=" FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const name of ['SUM','AVG']) assert.throws(()=>compile('SELECT '+name+'(CAST(metadata.region AS STRING))'+tail));
+  assert.throws(()=>compile('SELECT MIN(CAST(metadata.region AS STRING)) FROM MongoDBOASIS'),/selected Virtual Holon mapping/);
+  assert.throws(()=>compile('SELECT MIN(CAST(metadata.region AS STRING))'+tail+' GROUP BY Id'));
+  assert.throws(()=>compile('SELECT MAX(Name)'+tail));
+});
