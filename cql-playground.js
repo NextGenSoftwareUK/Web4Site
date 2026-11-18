@@ -94,6 +94,12 @@
     return {path: 'data/query-cql/projection/mixed', body: {...body, virtualMappingId: id}};
   }
 
+  function clearVirtualMapping(mappingInput, savedMappings, mappingNote) {
+    if (mappingInput) mappingInput.value = '';
+    if (savedMappings) savedMappings.value = '';
+    if (mappingNote) mappingNote.textContent = '';
+  }
+
   function virtualSnapshotQuery(body) {
     const { filters, columns } = body;
     const select = [...new Set([...columns.slice(1).map(column => column.metadataPath[0]),
@@ -415,12 +421,10 @@
       controller = null;
       discovery?.abort(); discovery = null;
       if (force || sessionIdentity !== identity || sessionBase !== base) {
-        const mapping = $('cql-virtual-mapping');
-        if (mapping) mapping.value = '';
+        clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note'));
         const savedMappings = $('cql-saved-mapping');
         if (savedMappings) { savedMappings.replaceChildren(); savedMappings.hidden = true; }
-        const mappingNote = $('cql-mapping-note');
-        if (mappingNote) mappingNote.textContent = '';
+
         $('cql-results').replaceChildren();
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
@@ -597,10 +601,11 @@
       controls();
     }
     return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample,
+      clearVirtualMapping: () => clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note')),
       availableQuestionProviders };
   }
 
-  const api = { providers, presets, preset, parse, withVirtualMapping, virtualSnapshotQuery, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
+  const api = { providers, presets, preset, parse, withVirtualMapping, clearVirtualMapping, virtualSnapshotQuery, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
     localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;

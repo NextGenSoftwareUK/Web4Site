@@ -1812,7 +1812,8 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     <div class="card">
       <h2>Ask Your Data</h2>
       <p>WEB6 drafts a read-only query from your question. Review it before running it on WEB4 Development.</p>
-      <label for="ask-question">Question</label>
+      <p>To include a saved virtual mapping, select it in the CQL Playground first. Public examples clear that selection.</p>
+    <label for="ask-question">Question</label>
       <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show five active Neo4j records with a descendant named Coffee or Tea"></textarea>
       <label for="ask-example-provider">Public example provider</label>
       <select id="ask-example-provider"><option value="">Any ready provider</option></select>
@@ -2380,10 +2381,10 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-text.js?v=20261118-mapped-length-results-v1"></script>
+<script src="cql-text.js?v=20261118-source-bound-drafts-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=exact-numeric-snapshot-v1-virtual-predicate-snapshot-v1-length-example-v1-distinct-example-v1-scalar-alias-v1-cql-text-v6-typed-joins-example-chooser-v1-child-join-v1-virtual-mapping-v1"></script>
-<script src="cql-ask.js?v=text-null-v1-grouped-count-values-v1-count-values-v1-draft-envelope-v1-ready-examples-v1-count-distinct-v1-quoted-metadata-v1-floating-aggregate-v1-scalar-alias-v1-floating-scalar-v1-standard-window-v1-session-reset-v1-27-floating-full-join-not-like-v1-having-not-like-v1-native-order-v1-row-order-v1-compact-prompt-v1-not-exists-v1-example-chooser-v1-child-join-v1-free-routes-v1-reviewed-keys-v1-nullable-join-v1-free-availability-v1-boolean-null-join-v1"></script>
+<script src="cql-playground.js?v=20261118-source-bound-drafts-v1"></script>
+<script src="cql-ask.js?v=20261118-source-bound-drafts-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });

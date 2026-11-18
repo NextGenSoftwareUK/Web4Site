@@ -9,6 +9,7 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   const elements = new Map();
   const requests = [], opened = [];
   let identity = 'visitor', tabOpened = false;
+  let tokenReads = 0;
   const node = id => {
     if (!elements.has(id)) elements.set(id, {
       focus() { this.focused = true; },
@@ -35,11 +36,12 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   const ask = context.CqlAsk.init({
     playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: provider => typeof example === 'function' ? example(provider) : example,
+      clearVirtualMapping() { require('./cql-playground.js').clearVirtualMapping(node('cql-virtual-mapping'), node('cql-saved-mapping'), node('cql-mapping-note')); },
       availableQuestionProviders: () => ['HashgraphOASIS', 'HoloOASIS'] },
-    isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => 'test-token', isDemoSession: () => demo
+    isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => { tokenReads++; return 'test-token'; }, isDemoSession: () => demo
   });
   node('ask-question').value = 'Count active MongoDB holons';
-  return { node, requests, opened, changeIdentity: () => { identity = 'another'; },
+  return { node, requests, opened, tokenReads: () => tokenReads, changeIdentity: () => { identity = 'another'; },
     resetSession: ask.resetSession, refreshExampleProviders: ask.refreshExampleProviders, tabOpened: () => tabOpened };
 }
 
@@ -508,4 +510,160 @@ test('reviewed exact-key examples require the requested timeout', async () => {
   await app.node('ask-generate').click();
   assert.equal(app.node('ask-preview').disabled, false);
   assert.deepEqual(app.opened, []);
+});
+
+const mappedId = '11000000-0000-0000-0000-000000000001';
+const anotherMappedId = '11000000-0000-0000-0000-000000000002';
+function mappedStatement(id = mappedId, provider = 'Neo4jOASIS') {
+  return 'SELECT Id, CAST(metadata.name AS STRING) AS Original, '+
+    'LENGTH(CAST(metadata.name AS STRING)) AS Units FROM '+provider+
+    " WITH VIRTUAL MAPPING '"+id+"' WHERE LENGTH(metadata.name) >= 2 "+
+    'ORDER BY Units DESC, Original ASC LIMIT 2 OFFSET 1';
+}
+function chooseMapping(app, id = mappedId, provider = 'Neo4jOASIS') {
+  app.node('cql-virtual-mapping').value = id;
+  app.node('cql-provider').value = provider;
+}
+
+test('grounds text length and reviews its compiled selected integer ordering', async () => {
+  const sql = 'SELECT Id, LENGTH(Name) AS Units FROM Neo4jOASIS WHERE Name IS NOT NULL ORDER BY Units DESC LIMIT 2';
+  const app = setup(() => ({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS']);
+  app.node('ask-question').value='Show two non-null Neo4j names with the greatest text length';
+  await app.node('ask-generate').click();
+  const request=JSON.parse(app.requests[0].options.body);
+  assert.match(request.messages[0].content,/UTF-16 units/);
+  assert.match(request.messages[0].content,/No virtual mapping is selected/);
+  assert.doesNotMatch(request.messages[0].content,/FROM MongoDBOASIS/);
+  assert.equal(app.node('ask-preview').disabled,false);
+  assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  assert.equal(compile(app.opened[0]).body.columns[1].function,'Utf16Length');
+});
+
+test('grounds one selected mapping/provider and reviews mixed computed ordering without running it', async () => {
+  const sql=mappedStatement();
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,
+    ['MongoDBOASIS','Neo4jOASIS'],{},true);
+  chooseMapping(app,mappedId.toUpperCase());
+  app.node('ask-question').value='Use metadata.name as STRING, order by its length and then its text, skipping one record';
+  await app.node('ask-generate').click();
+  const request=JSON.parse(app.requests[0].options.body);
+  assert.equal(request.freeOnly,true);
+  assert.equal(request.injectAvatarContext,false);
+  assert.deepEqual(request.tools,[]);
+  assert.match(request.messages[0].content,/available WEB4 providers: Neo4jOASIS\./);
+  assert.match(request.messages[0].content,new RegExp(mappedId));
+  assert.match(request.messages[0].content,/Do not invent IDs, paths or types/);
+  assert.match(request.messages[0].content,/OFFSET below 200/);
+  assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  const compiled=compile(app.opened[0]);
+  assert.equal(compiled.path,'data/query-cql/projection/mixed');
+  assert.equal(compiled.body.virtualMappingId,mappedId);
+  assert.deepEqual(compiled.body.selectedOrder,[{alias:'Units',descending:true},{alias:'Original',descending:false}]);
+});
+
+test('rejects an invented mapping, a dropped selected source and a different target provider', async () => {
+  for(const sql of [mappedStatement(anotherMappedId),mappedStatement(mappedId,'MongoDBOASIS'),
+    'SELECT Id, Name FROM Neo4jOASIS LIMIT 2']) {
+    const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+    chooseMapping(app);
+    await app.node('ask-generate').click();
+    assert.equal(app.node('ask-preview').disabled,true);
+    assert.match(app.node('ask-status').textContent,/did not preserve the selected mapping and provider/);
+    assert.deepEqual(app.opened,[]);
+  }
+});
+
+test('rejects a model-created mapping when the visitor has not selected one', async () => {
+  const app=setup(()=>({ok:true,json:async()=>({content:mappedStatement()})}));
+  await app.node('ask-generate').click();
+  assert.match(app.node('ask-status').textContent,/unselected virtual mapping/);
+  assert.equal(app.node('ask-preview').disabled,true);
+  assert.deepEqual(app.opened,[]);
+});
+
+test('validates mapping source input before obtaining a token or calling WEB6', async () => {
+  for(const [id,provider] of [['bad','Neo4jOASIS'],['00000000-0000-0000-0000-000000000000','Neo4jOASIS'],
+    [mappedId,'HoloOASIS']]) {
+    const app=setup(()=>{throw Error('An invalid mapping must not invoke WEB6');});
+    chooseMapping(app,id,provider);
+    await app.node('ask-generate').click();
+    assert.equal(app.tokenReads(),0);
+    assert.equal(app.requests.length,0);
+    assert.equal(app.node('ask-preview').disabled,true);
+  }
+});
+
+test('does not draft a mapping against a currently unavailable database', async () => {
+  const app=setup(()=>{throw Error('An unavailable target must not invoke WEB6');});
+  chooseMapping(app,mappedId,'SQLLiteDBOASIS');
+  await app.node('ask-generate').click();
+  assert.equal(app.requests.length,0);
+  assert.match(app.node('ask-status').textContent,/Wait for WEB4 provider discovery/);
+});
+
+test('a changed mapping or target cannot accept an in-flight WEB6 response', async () => {
+  for(const change of ['mapping','provider']) {
+    let respond,started;
+    const arrived=new Promise(resolve=>{started=resolve;});
+    const app=setup(()=>new Promise(resolve=>{respond=resolve;started();}));
+    chooseMapping(app);
+    const pending=app.node('ask-generate').click();
+    await arrived;
+    if(change==='mapping')app.node('cql-virtual-mapping').value=anotherMappedId;
+    else app.node('cql-provider').value='MongoDBOASIS';
+    respond({ok:true,json:async()=>({content:mappedStatement()})});
+    await pending;
+    assert.equal(app.node('ask-preview').disabled,true);
+    assert.equal(app.node('ask-draft').textContent,'');
+    assert.match(app.node('ask-status').textContent,/selected mapping changed/);
+    assert.equal(app.node('ask-generate').disabled,false);
+    assert.deepEqual(app.opened,[]);
+  }
+});
+
+test('a programmatic source change after drafting cannot open the old reviewed query', async () => {
+  const app=setup(()=>({ok:true,json:async()=>({content:mappedStatement()})}));
+  chooseMapping(app);
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false);
+  app.node('cql-virtual-mapping').value=anotherMappedId;
+  app.node('ask-preview').click();
+  assert.equal(app.node('ask-preview').disabled,true);
+  assert.match(app.node('ask-status').textContent,/selected mapping changed/);
+  assert.deepEqual(app.opened,[]);
+});
+
+test('manual mapping edits clear the draft immediately', async () => {
+  const app=setup(()=>({ok:true,json:async()=>({content:mappedStatement()})}));
+  chooseMapping(app);
+  await app.node('ask-generate').click();
+  app.node('cql-virtual-mapping').value=anotherMappedId;
+  app.node('cql-virtual-mapping').input();
+  assert.equal(app.node('ask-draft').textContent,'');
+  assert.equal(app.node('ask-preview').disabled,true);
+  assert.deepEqual(app.opened,[]);
+});
+
+test('choosing a public example clears the private mapping selection before drafting', async () => {
+  const sql="SELECT * FROM HashgraphOASIS WHERE metadata.HederaAccountId = '0.0.2' LIMIT 1";
+  const example={provider:'HashgraphOASIS',request:{take:1,filters:[
+    {metadataPath:['HederaAccountId'],operator:'Equal',value:'0.0.2'}]}};
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),example,compile,
+    ['HashgraphOASIS','Neo4jOASIS'],{},true);
+  chooseMapping(app);
+  app.node('cql-saved-mapping').value=mappedId;
+  app.node('cql-mapping-note').textContent='Using the saved private mapping';
+  app.node('ask-use-example').click();
+  assert.equal(app.node('cql-virtual-mapping').value,'');
+  assert.equal(app.node('cql-saved-mapping').value,'');
+  assert.equal(app.node('cql-mapping-note').textContent,'');
+  await app.node('ask-generate').click();
+  const request=JSON.parse(app.requests[0].options.body);
+  assert.match(request.messages[0].content,/available WEB4 providers: HashgraphOASIS\./);
+  assert.doesNotMatch(request.messages[0].content,new RegExp(mappedId));
+  assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  assert.equal(app.opened[0],sql);
 });

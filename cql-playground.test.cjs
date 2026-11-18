@@ -916,3 +916,13 @@ test('loads the displayed text length example for review without querying', asyn
     assert.equal(body.take, 10);
   }
 });
+
+
+test('clearing the selected virtual source resets its controls without discarding saved definitions', () => {
+  const mapping={value:'11000000-0000-0000-0000-000000000001'};
+  const saved={value:mapping.value,options:['saved-source']};
+  const note={textContent:'Using saved source'};
+  cql.clearVirtualMapping(mapping,saved,note);
+  assert.equal(mapping.value,'');assert.equal(saved.value,'');assert.equal(note.textContent,'');
+  assert.deepEqual(saved.options,['saved-source']);
+});

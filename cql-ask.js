@@ -21,6 +21,11 @@
     'Example: SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (metadata.category = \'coffee\' OR metadata.category = \'tea\') ORDER BY Name LIMIT 5',
   ];
 
+  databaseInstructions.push(
+    "LENGTH on known text returns .NET UTF-16 units, so a supplementary character counts as two. For known STRING metadata, use SELECT Id, LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS WHERE LENGTH(metadata.name) >= 2 ORDER BY Units DESC LIMIT 5. Use only metadata paths and types provided in the question; do not guess them. Canonical LENGTH(Name) and LENGTH(Description) require known non-null text or an explicit IS NOT NULL filter. Outside virtual mappings, COUNT, MIN, MAX, SUM and AVG may select LENGTH of admitted text.",
+    "Only when the selected-source context supplies a saved virtual mapping, query real and virtual records together with SELECT Id first, followed by direct typed metadata columns. Use WITH VIRTUAL MAPPING followed by that exact quoted mapping ID. Mapped metadata types are STRING, BOOLEAN, INT32 and INT64; LENGTH requires STRING input. Use one through eight AND filters on direct metadata, ORDER BY Id or selected raw/LENGTH aliases, LIMIT 1 through 100 and OFFSET below 200. For example: SELECT Id, CAST(metadata.name AS STRING) AS Original, LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS WITH VIRTUAL MAPPING '<selected-mapping-id>' WHERE LENGTH(metadata.name) >= 2 ORDER BY Units DESC, Original ASC LIMIT 5. Do not invent IDs, paths or types. Mixed mappings do not support DISTINCT, scalar aggregates, GROUP BY, joins, relationship filters or TIMEOUT. Return UNSUPPORTED when the question requires these."
+  );
+
   const providerInstructions = [
     [['HoloOASIS'], 'HoloOASIS supports SELECT * with optional Id equality or IN, LIMIT and OFFSET. Use IDs supplied by the user. Do not invent IDs or use other filters, COUNT, or ORDER BY with HoloOASIS.'],
     [['SolanaOASIS'], 'SolanaOASIS supports SELECT * with optional metadata.SolanaAccountAddress equality or IN, LIMIT and OFFSET. Use addresses supplied by the user. Do not invent addresses or use other filters, COUNT, or ORDER BY with SolanaOASIS.'],
@@ -64,6 +69,28 @@
     let draft, activeExample;
     const questionInput = $('ask-question');
     let questionVersion = 0;
+    const selectedMapping = () => $('cql-virtual-mapping')?.value.trim().toLowerCase() ?? '';
+    const selectedProvider = () => $('cql-provider')?.value ?? '';
+    function mappingScope(mappingId, provider) {
+      if (!mappingId) return null;
+      if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(mappingId) ||
+          /^0{8}(?:-0{4}){3}-0{12}$/.test(mappingId))
+        throw new Error('Select a valid saved virtual mapping in the CQL Playground first.');
+      if (!databaseProviders.includes(provider))
+        throw new Error('Select MongoDBOASIS, SQLLiteDBOASIS or Neo4jOASIS for this mapped draft.');
+      return { mappingId, provider };
+    }
+    function sourceChanged() {
+      clearDraft();
+      status.textContent = 'The selected mapping changed. Draft a new query.';
+    }
+    $('cql-virtual-mapping')?.addEventListener('input', sourceChanged);
+    $('cql-virtual-mapping')?.addEventListener('change', sourceChanged);
+    $('cql-saved-mapping')?.addEventListener('change', sourceChanged);
+    $('cql-provider')?.addEventListener('change', () => {
+      if (selectedMapping() || draft?.mappingId) sourceChanged();
+    });
+
 
     const exampleProvider = $('ask-example-provider');
     function refreshExampleProviders() {
@@ -114,6 +141,7 @@
       const question = `Show up to ${request.take} public records from ${provider} with ${predicate}.` +
           (timeout ? ` Use a query timeout of ${timeout} milliseconds.` : '');
         if (question.length > 1000) throw new Error('This example exceeds the question length limit.');
+        playground.clearVirtualMapping();
         clearDraft();
         questionInput.value = question;
         activeExample = { question, provider, request };
@@ -129,18 +157,23 @@
       }
       const identity = getIdentity();
       const sameSession = () => isSandbox() && getIdentity() === identity;
+      const mappingId = selectedMapping();
+      const provider = selectedProvider();
+      const sameSource = () => selectedMapping() === mappingId && (!mappingId || selectedProvider() === provider);
       clearDraft();
       const version = questionVersion;
-      const current = () => sameSession() && version === questionVersion;
+      const current = () => sameSession() && sameSource() && version === questionVersion;
       generate.disabled = true;
       status.textContent = 'Drafting with WEB6…';
       let requestKey;
       try {
+        const scope = mappingScope(mappingId, provider);
         const token = await ensureAccessToken();
         if (!current() || !token) throw new Error('Sign in to the Development sandbox first.');
         const example = activeExample?.question === question ? activeExample : null;
         const readyProviders = playground.availableTextProviders();
-        const providers = example ? readyProviders.filter(provider => provider === example.provider) : readyProviders;
+        const providers = readyProviders.filter(candidate =>
+          example ? candidate === example.provider : !scope || candidate === scope.provider);
         if (!providers.length) throw new Error('Wait for WEB4 provider discovery before drafting a query.');
         const providerScope = 'Use only these currently available WEB4 providers: ' + providers.join(', ') + '.';
         const keyProfiles = Object.entries(playground.availableTextProfiles())
@@ -154,12 +187,17 @@
             'Preserve every supplied key verbatim, using IN for multiple keys. Include the requested LIMIT and, ' +
             'if requested, append TIMEOUT followed by the duration in milliseconds after LIMIT.'
           : '';
+        const mappingInstructions = scope
+          ? '\nSelected source: the visitor chose saved virtual mapping ' + scope.mappingId +
+            ' and target provider ' + scope.provider + '. Preserve both exactly in the statement. ' +
+            'Use only logical metadata paths and types supplied in the question; otherwise return UNSUPPORTED.'
+          : '\nNo virtual mapping is selected. Do not use WITH VIRTUAL MAPPING.';
         requestKey = crypto.randomUUID();
         const response = await fetch('https://dev.api.web6.oasisomniverse.one/v1/complete', {
           method: 'POST', redirect: 'error', signal: AbortSignal.timeout(30000),
           headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json',
             'Idempotency-Key': requestKey },
-          body: JSON.stringify({ messages: [{ role: 'system', content: queryInstructions(providers) + '\n' + providerScope + keyScope + exampleScope },
+          body: JSON.stringify({ messages: [{ role: 'system', content: queryInstructions(providers) + '\n' + providerScope + keyScope + exampleScope + mappingInstructions },
             { role: 'user', content: question }], tools: [], maxTokens: 350, temperature: 0,
             useFAHRN: false, useHolonicBraid: false, injectAvatarContext: false,
             ...(isDemoSession() ? { freeOnly: true } : {}) })
@@ -188,6 +226,11 @@
         const text = content.trim();
         if (text === 'UNSUPPORTED') throw new Error('This question cannot be expressed in the sandbox query editor.');
         const compiled = playground.compileAvailableText(text);
+        const actualMapping = compiled.body.virtualMappingId?.toLowerCase();
+        if (scope ? actualMapping !== scope.mappingId || compiled.body.provider !== scope.provider : actualMapping)
+          throw new Error(scope
+            ? 'The draft did not preserve the selected mapping and provider. Nothing was run.'
+            : 'The draft used an unselected virtual mapping. Select it in the CQL Playground and draft again.');
         if (example) {
           const body = compiled.body;
           const actual = body.filters?.[0];
@@ -204,7 +247,7 @@
               || body.take > example.request.take)
             throw new Error('The draft did not preserve the reviewed public example. Nothing was run.');
         }
-        draft = { text, identity };
+        draft = { text, identity, mappingId, provider };
         $('ask-draft').textContent = text;
         preview.disabled = false;
         status.textContent = 'Review the draft and open it in the Playground to run it.';
@@ -213,6 +256,8 @@
       } finally {
         if (!sameSession() && version === questionVersion)
           status.textContent = 'The sandbox session changed. Draft a new query.';
+        else if (!sameSource() && version === questionVersion)
+          status.textContent = 'The selected mapping changed. Draft a new query.';
         generate.disabled = false;
       }
     });
@@ -220,6 +265,10 @@
       try {
         if (!draft || !isSandbox() || getIdentity() !== draft.identity)
           throw new Error('The sandbox session changed. Draft a new query.');
+        if (selectedMapping() !== draft.mappingId || (draft.mappingId && selectedProvider() !== draft.provider)) {
+          clearDraft();
+          throw new Error('The selected mapping changed. Draft a new query.');
+        }
         playground.loadText(draft.text);
         $('cql-text').value = draft.text;
         $('cql-text-editor').open = true;
