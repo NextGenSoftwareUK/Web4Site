@@ -725,9 +725,9 @@
       const id = readLiteral('Guid');
       if (/^0{8}(?:-0{4}){3}-0{12}$/.test(id))
         throw new Error('Use a nonempty Virtual Holon mapping ID.');
-      if (columns.length < 2 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation ||
+      if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))
-        throw new Error('Virtual mapping queries must select Id first and at least one mapped metadata field.');
+        throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
       if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) ||
           column.function && (column.function !== 'Utf16Length' || column.valueType !== 'String')))
         throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');

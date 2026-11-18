@@ -1817,3 +1817,21 @@ test('CAST metadata filters agree with existing typed comparisons and compose wi
   assert.throws(()=>compile(prefix+'CAST(metadata.rate) >= 2 LIMIT 1'),/explicit type/);
   assert.throws(()=>compile(prefix+"CAST(Name AS STRING) = 'x' LIMIT 1"),/metadata field/);
 });
+
+test('mixed identity-only SQL requests no native metadata columns on every priority store', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    const result=compile('SELECT Id FROM '+provider+mapping+
+      " WHERE metadata.tier = 'gold' ORDER BY Id DESC LIMIT 2 OFFSET 1");
+    assert.equal(result.path,'data/query-cql/projection/mixed');
+    assert.deepEqual(result.body.columns,[{field:'Id',alias:'Id'}]);
+    assert.equal(result.body.skip,1);
+    assert.equal(result.body.take,2);
+  }
+});
+test('identity-only mixed SQL keeps filters and aggregate admission explicit', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  assert.throws(()=>compile('SELECT Id FROM MongoDBOASIS'+mapping+' ORDER BY Id LIMIT 2'),/filter/);
+  assert.throws(()=>compile('SELECT COUNT(*) FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"));
+  assert.throws(()=>compile('SELECT Name FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"),/Id first/);
+});
