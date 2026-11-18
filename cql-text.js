@@ -727,7 +727,7 @@
       if (/^0{8}(?:-0{4}){3}-0{12}$/.test(id))
         throw new Error('Use a nonempty Virtual Holon mapping ID.');
       if (operation) {
-        if (!['LongCount','Min','Max','Sum','Average'].includes(operation) || selectedCount ||
+        if (!['LongCount','Min','Max','Sum','Average'].includes(operation) ||
             !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider))
           throw new Error('Choose a supported mixed count or numeric aggregate.');
         if (operation !== 'LongCount' && (!scalarSelection || scalarSelection.metadataPath?.length !== 1 ||
@@ -736,9 +736,9 @@
               : !['Int32','Int64','Double'].includes(scalarSelection.valueType))))
           throw new Error('Mixed numeric aggregates require direct INT32, INT64, DOUBLE metadata or LENGTH of STRING metadata.');
         mixedScalar = true;
-        body.resultOperation = operation; body.orderBy = 'Id'; body.take = 1;
+        body.resultOperation = countDistinct ? 'CountDistinct' : countValues ? 'CountValues' : operation; body.orderBy = 'Id'; body.take = 1;
         columns.push({field: 'Id', alias: 'Id'});
-        if (operation !== 'LongCount') columns.push({...scalarSelection,alias:'Value'});
+        if (operation !== 'LongCount' || selectedCount) columns.push({...scalarSelection,alias:'Value'});
       }
       if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation && !mixedScalar ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))

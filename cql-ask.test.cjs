@@ -734,3 +734,14 @@ test('a selected mapping can draft native computed SUM for explicit review', asy
   assert.equal(app.node('ask-preview').disabled,false); assert.deepEqual(app.opened,[]);
   app.node('ask-preview').click(); assert.equal(app.opened[0],sql);
 });
+
+test('a selected mapping can draft an exact distinct value count for review without executing it', async () => {
+  const sql='SELECT COUNT(DISTINCT CAST(metadata.region AS STRING)) AS Regions FROM Neo4jOASIS WITH VIRTUAL MAPPING '+ "'"+mappedId+
+    "' WHERE metadata.tier = 'gold'";
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+  chooseMapping(app);
+  app.node('ask-question').value='Count distinct mapped STRING region values, excluding null.';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false); assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click(); assert.equal(app.opened[0],sql);
+});

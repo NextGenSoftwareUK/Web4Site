@@ -965,3 +965,17 @@ test('mixed AVG renders the exact Decimal result without a native snapshot actio
   await h.elements.get('cql-run').listeners.click();
   assert.match(h.elements.get('cql-note').textContent,/Mean: 9007199254740994/);
 });
+
+test('mixed selected value count renders a scalar and offers no snapshot write', async () => {
+  const h=harness(async (url,options)=>{
+    const body=JSON.parse(options.body); assert.ok(url.endsWith('/query-cql/projection/mixed'));
+    assert.equal(body.resultOperation,'CountDistinct');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'MongoDBOASIS',
+      operation:'CountDistinct',valueType:'Int64',value:'3',canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT COUNT(DISTINCT CAST(metadata.region AS STRING)) AS Regions FROM MongoDBOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/Regions: 3/);
+});

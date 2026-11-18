@@ -1857,7 +1857,7 @@ test('mixed COUNT accepts only its single-result window and retains unsupported 
   assert.deepEqual(compile('SELECT COUNT(*)'+prefix+' LIMIT 1'),normal);
   for (const suffix of [' LIMIT 2',' LIMIT 1 OFFSET 1',' ORDER BY Id',' TIMEOUT 1000'])
     assert.throws(()=>compile('SELECT COUNT(*)'+prefix+suffix));
-  for (const select of ['COUNT(DISTINCT CAST(metadata.tier AS STRING))','COUNT(CAST(metadata.tier AS STRING))',
+  for (const select of ['COUNT(DISTINCT CAST(metadata.tier AS DECIMAL))','COUNT(CAST(metadata.tier AS UINT64))',
       'SUM(CAST(metadata.stock AS DECIMAL))','ANY(*)'])
     assert.throws(()=>compile('SELECT '+select+prefix));
   assert.equal(compile('SELECT COUNT(*) FROM MongoDBOASIS').path,'data/query-cql/scalar');
@@ -1892,4 +1892,32 @@ test('mixed numeric aggregate refuses unsupported source fields domains and pagi
     assert.throws(()=>compile('SELECT SUM('+selection+')'+tail));
   const valid='SELECT SUM(CAST(metadata.amount AS INT64))'+tail;
   assert.throws(()=>compile(valid+' LIMIT 2')); assert.throws(()=>compile(valid+' ORDER BY Id'));
+});
+
+test('mixed selected counts keep nullable exact values on all priority native stores', () => {
+  const tail=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'])
+    for (const distinct of [false,true])
+      for (const [token,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64'],['DOUBLE','Double']]) {
+        const sql='SELECT COUNT('+(distinct?'DISTINCT ':'')+'CAST(metadata.amount AS '+token+')) AS Total FROM '+provider+tail;
+        const q=compile(sql);
+        assert.equal(q.path,'data/query-cql/projection/mixed');
+        assert.equal(q.body.resultOperation,distinct?'CountDistinct':'CountValues');
+        assert.deepEqual(q.body.columns,[{field:'Id',alias:'Id'},
+          {metadataPath:['amount'],valueType:type,nullable:true,alias:'Value'}]);
+        assert.equal(q.body.take,1); assert.equal(q.scalarAlias,'Total');
+        assert.deepEqual(compile(sql+' LIMIT 1'),q);
+      }
+});
+test('mixed selected counts retain computed LENGTH and reject inadmissible domains windows or source fields', () => {
+  const tail=" FROM Neo4jOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const distinct of [false,true]) {
+    const sql='SELECT COUNT('+(distinct?'DISTINCT ':'')+'LENGTH(CAST(metadata.name AS STRING)))'+tail;
+    const q=compile(sql);
+    assert.equal(q.body.columns[1].function,'Utf16Length');
+    assert.equal(q.body.columns[1].valueType,'String');
+    for (const suffix of [' LIMIT 2',' OFFSET 1',' ORDER BY Id']) assert.throws(()=>compile(sql+suffix));
+  }
+  for (const selection of ['Id','Version','CAST(metadata.amount AS DECIMAL)','CAST(metadata.amount AS UINT64)'])
+    assert.throws(()=>compile('SELECT COUNT(DISTINCT '+selection+')'+tail));
 });
