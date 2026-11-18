@@ -926,3 +926,27 @@ test('clearing the selected virtual source resets its controls without discardin
   assert.equal(mapping.value,'');assert.equal(saved.value,'');assert.equal(note.textContent,'');
   assert.deepEqual(saved.options,['saved-source']);
 });
+
+test('a reviewed mixed count renders its exact scalar and never offers snapshot writes', async () => {
+  let queries=0, writes=0;
+  const h=harness(async (url, options) => {
+    queries++;
+    assert.ok(url.endsWith('/query-cql/projection/mixed'));
+    const body=JSON.parse(options.body);
+    assert.equal(body.resultOperation,'LongCount'); assert.equal(body.take,1);
+    assert.deepEqual(body.columns,[{field:'Id',alias:'Id'}]);
+    assert.equal(body.scalarAlias,undefined);
+    return {ok:true,status:200,json:async()=>({result:{
+      version:'cql-scalar-v1',provider:'Neo4jOASIS',operation:'LongCount',valueType:'Int64',
+      value:'198',canPrepareSnapshot:false
+    }})};
+  },undefined,{canPrepare:true,request:async()=>{writes++;throw new Error('Count cannot save data.');}});
+  await h.ui.ready;
+  h.ui.loadText("SELECT COUNT(*) AS Total FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  assert.equal(queries,0);
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(queries,1); assert.equal(writes,0);
+  assert.match(h.elements.get('cql-note').textContent,/Total: 198/);
+  assert.equal(h.elements.get('cql-results').children.length,0);
+});

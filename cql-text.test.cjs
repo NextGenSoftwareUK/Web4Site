@@ -1835,3 +1835,30 @@ test('identity-only mixed SQL keeps filters and aggregate admission explicit', (
   assert.throws(()=>compile('SELECT COUNT(*) FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"));
   assert.throws(()=>compile('SELECT Name FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"),/Id first/);
 });
+
+test('mixed COUNT uses the existing three-attempt projection route and a single scalar result', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    for (const argument of ['*','1']) {
+      const value=compile('SELECT COUNT('+argument+') AS Total FROM '+provider+mapping+
+        " WHERE metadata.tier = 'gold'");
+      assert.equal(value.path,'data/query-cql/projection/mixed');
+      assert.equal(value.body.resultOperation,'LongCount');
+      assert.equal(value.body.orderBy,'Id'); assert.equal(value.body.skip,0); assert.equal(value.body.take,1);
+      assert.deepEqual(value.body.columns,[{field:'Id',alias:'Id'}]);
+      assert.equal(value.scalarAlias,'Total');
+      assert.equal(value.body.operation,undefined);
+    }
+  }
+});
+test('mixed COUNT accepts only its single-result window and retains unsupported aggregate refusals', () => {
+  const prefix=" FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  const normal=compile('SELECT COUNT(*)'+prefix);
+  assert.deepEqual(compile('SELECT COUNT(*)'+prefix+' LIMIT 1'),normal);
+  for (const suffix of [' LIMIT 2',' LIMIT 1 OFFSET 1',' ORDER BY Id',' TIMEOUT 1000'])
+    assert.throws(()=>compile('SELECT COUNT(*)'+prefix+suffix));
+  for (const select of ['COUNT(DISTINCT CAST(metadata.tier AS STRING))','COUNT(CAST(metadata.tier AS STRING))',
+      'SUM(CAST(metadata.stock AS INT64))','ANY(*)'])
+    assert.throws(()=>compile('SELECT '+select+prefix));
+  assert.equal(compile('SELECT COUNT(*) FROM MongoDBOASIS').path,'data/query-cql/scalar');
+});

@@ -708,3 +708,18 @@ test('a source-bound identity-only draft stays review-only and selects no data f
   app.node('ask-preview').click();
   assert.equal(app.opened[0],sql);
 });
+
+test('a source-bound mixed count is drafted for review without fetching or materializing data', async () => {
+  const sql='SELECT COUNT(*) AS Total FROM Neo4jOASIS WITH VIRTUAL MAPPING '+ "'"+mappedId+
+    "' WHERE metadata.tier = 'gold'";
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+  chooseMapping(app);
+  app.node('ask-question').value='Count my real and virtual records where the known tier text equals gold.';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false);
+  assert.deepEqual(app.opened,[]);
+  const sent=JSON.parse(app.requests[0].options.body);
+  assert.match(sent.messages[0].content,/complete deduplicated identity union/);
+  app.node('ask-preview').click();
+  assert.equal(app.opened[0],sql);
+});
