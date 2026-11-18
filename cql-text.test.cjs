@@ -1767,3 +1767,20 @@ test('mixed selected ordering keeps alias uniqueness, shape and window admission
   for (const suffix of ['Units, Units LIMIT 1','Unselected LIMIT 1','Units LIMIT 0','Units LIMIT 1 OFFSET 200'])
     assert.throws(()=>compile(prefix+suffix));
 });
+
+test('mixed metadata columns reject domains not admitted by the native projection contract', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for(const type of ['UINT64','DECIMAL','SINGLE','DOUBLE','GUID','DATETIME'])
+    assert.throws(()=>compile('SELECT Id, CAST(metadata.value AS '+type+') AS Value FROM MongoDBOASIS'+
+      mapping+" WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 2"),/Mapped columns support/);
+});
+
+test('mixed metadata columns preserve all four admitted scalar domains', () => {
+  const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
+  for(const [sql,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64']]) {
+    const result=compile('SELECT Id, CAST(metadata.value AS '+sql+') AS Value FROM Neo4jOASIS'+
+      mapping+" WHERE metadata.tier = 'gold' ORDER BY Value LIMIT 2");
+    assert.equal(result.path,'data/query-cql/projection/mixed');
+    assert.equal(result.body.columns[1].valueType,type);
+  }
+});

@@ -667,3 +667,14 @@ test('choosing a public example clears the private mapping selection before draf
   app.node('ask-preview').click();
   assert.equal(app.opened[0],sql);
 });
+
+test('a model draft cannot offer a mixed column that the native projection contract rejects', async () => {
+  const sql='SELECT Id, CAST(metadata.amount AS DECIMAL) AS Amount FROM Neo4jOASIS '+
+    "WITH VIRTUAL MAPPING '"+mappedId+"' WHERE metadata.tier = 'gold' ORDER BY Amount DESC LIMIT 2";
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+  chooseMapping(app);
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,true);
+  assert.match(app.node('ask-status').textContent,/Mapped columns support/);
+  assert.deepEqual(app.opened,[]);
+});

@@ -721,6 +721,9 @@
       if (columns.length < 2 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))
         throw new Error('Virtual mapping queries must select Id first and at least one mapped metadata field.');
+      if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64'].includes(column.valueType) ||
+          column.function && (column.function !== 'Utf16Length' || column.valueType !== 'String')))
+        throw new Error('Mapped columns support STRING, BOOLEAN, INT32 and INT64; LENGTH requires STRING input.');
       body.virtualMappingId = id;
     }
 
