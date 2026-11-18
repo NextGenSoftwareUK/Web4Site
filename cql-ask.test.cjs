@@ -723,3 +723,14 @@ test('a source-bound mixed count is drafted for review without fetching or mater
   app.node('ask-preview').click();
   assert.equal(app.opened[0],sql);
 });
+
+test('a selected mapping can draft native computed SUM for explicit review', async () => {
+  const sql='SELECT SUM(LENGTH(CAST(metadata.name AS STRING))) AS Total FROM Neo4jOASIS WITH VIRTUAL MAPPING '+ "'"+mappedId+
+    "' WHERE LENGTH(metadata.name) >= 2";
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}));
+  chooseMapping(app);
+  app.node('ask-question').value='Sum the UTF16 lengths of my mapped String name values with at least two units.';
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false); assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click(); assert.equal(app.opened[0],sql);
+});

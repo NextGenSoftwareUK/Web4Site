@@ -717,7 +717,7 @@
     if (nativeKeys.size > 1)
       throw new Error('These providers require different key fields. Run separate queries for each key field.');
 
-    let mixedCount = false;
+    let mixedScalar = false;
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
     if (accept('WITH')) {
@@ -727,14 +727,20 @@
       if (/^0{8}(?:-0{4}){3}-0{12}$/.test(id))
         throw new Error('Use a nonempty Virtual Holon mapping ID.');
       if (operation) {
-        if (operation !== 'LongCount' || selectedCount || scalarSelection ||
+        if (!['LongCount','Min','Max','Sum','Average'].includes(operation) || selectedCount ||
             !['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider))
-          throw new Error('Mixed mappings support COUNT(*) or COUNT(1), without selected-value aggregates.');
-        mixedCount = true;
-        body.resultOperation = 'LongCount'; body.orderBy = 'Id'; body.take = 1;
+          throw new Error('Choose a supported mixed count or numeric aggregate.');
+        if (operation !== 'LongCount' && (!scalarSelection || scalarSelection.metadataPath?.length !== 1 ||
+            (scalarSelection.function
+              ? scalarSelection.function !== 'Utf16Length' || scalarSelection.valueType !== 'String'
+              : !['Int32','Int64','Double'].includes(scalarSelection.valueType))))
+          throw new Error('Mixed numeric aggregates require direct INT32, INT64, DOUBLE metadata or LENGTH of STRING metadata.');
+        mixedScalar = true;
+        body.resultOperation = operation; body.orderBy = 'Id'; body.take = 1;
         columns.push({field: 'Id', alias: 'Id'});
+        if (operation !== 'LongCount') columns.push({...scalarSelection,alias:'Value'});
       }
-      if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation && !mixedCount ||
+      if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function || distinct || groupedAggregates.length || operation && !mixedScalar ||
           columns.slice(1).some(column => column.metadataPath?.length !== 1))
         throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
       if (columns.slice(1).some(column => !['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) ||
@@ -1038,7 +1044,7 @@
         }
       }
     }
-    if (mixedCount) {
+    if (mixedScalar) {
       const window = readWindow(1, 0);
       if (window.skip !== undefined && window.skip !== 0)
         throw new Error('A mixed count returns one scalar without a result offset.');
@@ -1088,7 +1094,7 @@
           throw new Error('Order by Id or selected aliases, with a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body,
           ...(selectedOrder ? { orderBy: 'None', selectedOrder } : {}), columns },
-          ...(mixedCount && scalarAlias ? {scalarAlias} : {}) };
+          ...(mixedScalar && scalarAlias ? {scalarAlias} : {}) };
       }
       if (selectedOrder) {
         return { path: 'data/query-cql/projection',

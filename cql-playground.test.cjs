@@ -950,3 +950,18 @@ test('a reviewed mixed count renders its exact scalar and never offers snapshot 
   assert.match(h.elements.get('cql-note').textContent,/Total: 198/);
   assert.equal(h.elements.get('cql-results').children.length,0);
 });
+
+test('mixed AVG renders the exact Decimal result without a native snapshot action', async () => {
+  const h=harness(async (url, options)=>{
+    const body=JSON.parse(options.body);
+    assert.ok(url.endsWith('/query-cql/projection/mixed')); assert.equal(body.resultOperation,'Average');
+    assert.equal(body.columns[1].valueType,'Int64');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'Neo4jOASIS',
+      operation:'Average',valueType:'Decimal',value:'9007199254740994',canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT AVG(CAST(metadata.amount AS INT64)) AS Mean FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/Mean: 9007199254740994/);
+});

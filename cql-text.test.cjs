@@ -1858,7 +1858,38 @@ test('mixed COUNT accepts only its single-result window and retains unsupported 
   for (const suffix of [' LIMIT 2',' LIMIT 1 OFFSET 1',' ORDER BY Id',' TIMEOUT 1000'])
     assert.throws(()=>compile('SELECT COUNT(*)'+prefix+suffix));
   for (const select of ['COUNT(DISTINCT CAST(metadata.tier AS STRING))','COUNT(CAST(metadata.tier AS STRING))',
-      'SUM(CAST(metadata.stock AS INT64))','ANY(*)'])
+      'SUM(CAST(metadata.stock AS DECIMAL))','ANY(*)'])
     assert.throws(()=>compile('SELECT '+select+prefix));
   assert.equal(compile('SELECT COUNT(*) FROM MongoDBOASIS').path,'data/query-cql/scalar');
+});
+
+test('mixed numeric aggregates compile exact metadata input domains on all priority stores', () => {
+  const tail=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'])
+    for (const [sql,operation] of [['MIN','Min'],['MAX','Max'],['SUM','Sum'],['AVG','Average']])
+      for (const [token,type] of [['INT32','Int32'],['INT64','Int64'],['DOUBLE','Double']]) {
+        const query=compile('SELECT '+sql+'(CAST(metadata.amount AS '+token+')) AS Total FROM '+provider+tail);
+        assert.equal(query.path,'data/query-cql/projection/mixed');
+        assert.equal(query.body.resultOperation,operation); assert.equal(query.body.take,1);
+        assert.deepEqual(query.body.columns,[{field:'Id',alias:'Id'},
+          {metadataPath:['amount'],valueType:type,nullable:true,alias:'Value'}]);
+        assert.equal(query.scalarAlias,'Total');
+      }
+});
+test('mixed computed numeric aggregates keep the String input and native UTF16 function', () => {
+  const tail=" FROM Neo4jOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE LENGTH(metadata.name) >= 2";
+  for (const sql of ['MIN','MAX','SUM','AVG']) {
+    const query=compile('SELECT '+sql+'(LENGTH(CAST(metadata.name AS STRING))) AS Total'+tail);
+    assert.equal(query.body.columns[1].function,'Utf16Length');
+    assert.equal(query.body.columns[1].valueType,'String');
+    assert.equal(query.body.filters[0].function,'Utf16Length');
+  }
+});
+test('mixed numeric aggregate refuses unsupported source fields domains and paging', () => {
+  const tail=" FROM MongoDBOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'";
+  for (const selection of ['Version','CAST(metadata.amount AS DECIMAL)','CAST(metadata.amount AS SINGLE)',
+      'CAST(metadata.amount AS UINT64)'])
+    assert.throws(()=>compile('SELECT SUM('+selection+')'+tail));
+  const valid='SELECT SUM(CAST(metadata.amount AS INT64))'+tail;
+  assert.throws(()=>compile(valid+' LIMIT 2')); assert.throws(()=>compile(valid+' ORDER BY Id'));
 });
