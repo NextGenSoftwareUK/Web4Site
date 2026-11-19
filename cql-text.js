@@ -656,11 +656,17 @@
     function readGroupedAggregate(name) {
       const operation = aggregates[name];
       expect('(');
+      const distinct = operation === 'LongCount' && accept('DISTINCT');
       const selection = operation === 'LongCount'
-        ? (accept('*') || accept('1') ? null : readSelection())
+        ? (!distinct && (accept('*') || accept('1')) ? null : readSelection())
         : readAggregateSelection();
       expect(')');
-      return selection ? { operation, selection } : { operation };
+      if (distinct) {
+        const type = selection.field ? projectionFields[selection.field.toLowerCase()][1] : selection.valueType;
+        if (!['String', 'Boolean', 'Int32', 'Int64', 'Single', 'Double'].includes(type))
+          throw new Error('Grouped COUNT DISTINCT requires an admitted direct text, boolean or signed integer/floating value.');
+      }
+      return selection ? { operation, selection, ...(distinct ? { distinct: true } : {}) } : { operation };
     }
     const columns = [];
     const groupedAggregates = [];
@@ -876,6 +882,7 @@
           const expression = readGroupedAggregate(name);
           const input = expression.selection ? selectionKey(expression.selection) : null;
           aggregate = groupedAggregates.find(({ binding }) => binding.operation === expression.operation &&
+            Boolean(binding.distinct) === Boolean(expression.distinct) &&
             (binding.selection ? selectionKey(binding.selection) : null) === input)?.binding;
         } else if (name === 'CAST' && tokens[index + 1] === '(') {
           const expression = selectionKey(readSelection());
@@ -932,7 +939,7 @@
             else if (aggregate.operation === 'Average' && !['Single', 'Double'].includes(inputType)) type = 'Decimal';
             else type = inputType;
           }
-          const nullable = aggregate ? aggregate.selection?.nullable === true : key.nullable || type === 'String';
+          const nullable = aggregate ? aggregate.operation !== 'LongCount' && aggregate.selection?.nullable === true : key.nullable || type === 'String';
           if (key && accept('NOT')) {
             expect('LIKE');
             const match = readLike(type, true);
