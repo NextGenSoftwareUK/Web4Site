@@ -211,11 +211,12 @@ WHERE IsActive = TRUE</code></pre>
         </details>
         <details>
           <summary>Compare populated values and unique labels in each category</summary>
-          <p>Use the <code>category</code> and <code>label</code> fields from your dataset, or edit the fields below. This compares rows with a label against different labels, then filters and sorts the complete groups. MongoDB, SQLite and Neo4j support this example.</p>
+          <p>Use the <code>category</code> and <code>label</code> fields from your dataset, or edit the fields below. This excludes empty categories, compares rows with a label against different labels, then filters and sorts the complete groups. MongoDB, SQLite and Neo4j support this example.</p>
           <pre><code id="cql-grouped-distinct-example">SELECT CAST(metadata.category AS STRING) AS Category,
        COUNT(CAST(metadata.label AS STRING)) AS Present,
        COUNT(DISTINCT CAST(metadata.label AS STRING)) AS UniqueLabels
 FROM MongoDBOASIS
+WHERE metadata.category &lt;&gt; ''
 GROUP BY Category
 HAVING Present &gt;= 1 AND UniqueLabels &gt;= 1
 ORDER BY UniqueLabels DESC, Category ASC LIMIT 5</code></pre>

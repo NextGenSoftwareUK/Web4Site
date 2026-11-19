@@ -998,7 +998,7 @@ test('loads the grouped distinct demo for review without querying WEB4', async (
   const h = harness(async () => assert.fail('Loading an example must not query WEB4.'));
   await h.ui.ready;
   const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
-  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>').replaceAll('&lt;', '<');
   h.elements.set('cql-grouped-distinct-example', { textContent: sql });
   h.elements.get('cql-load-grouped-distinct-example').listeners.click();
   const editor = h.elements.get('cql-text');
@@ -1015,7 +1015,7 @@ test('loads the grouped distinct demo for review without querying WEB4', async (
 
 test('loads the grouped distinct demo with the documented mixed mapping syntax', () => {
   const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
-  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>').replaceAll('&lt;', '<');
   const mapping = '764b78ae-df26-4637-9bbd-1d0530954fea';
   for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
     const text = sql.replace('FROM MongoDBOASIS', "FROM " + provider + " WITH VIRTUAL MAPPING '" + mapping + "'");
