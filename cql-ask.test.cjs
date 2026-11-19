@@ -794,3 +794,52 @@ test('mapped grouped drafts cannot switch the selected mapping or provider', asy
     assert.deepEqual(app.opened, []);
   }
 });
+
+
+test('grouped distinct WEB6 draft retains both counts and requires review before explicit execution', async () => {
+  const text = 'SELECT Version, COUNT(Description) AS Present, COUNT(DISTINCT Description) AS UniqueValues ' +
+    'FROM Neo4jOASIS GROUP BY Version HAVING COUNT(DISTINCT Description) > 1 ' +
+    'ORDER BY COUNT(DISTINCT Description) DESC LIMIT 5';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }),
+    null, compile, ['Neo4jOASIS']);
+  const actions = [];
+  app.node('cql-run').click = () => actions.push('run');
+  app.node('ask-question').value = 'Count unique and present descriptions per version in Neo4j';
+  await app.node('ask-generate').click();
+  assert.equal(app.requests.length, 1);
+  assert.equal(app.requests[0].url, 'https://dev.api.web6.oasisomniverse.one/v1/complete');
+  assert.deepEqual(app.opened, []);
+  assert.deepEqual(actions, []);
+  assert.equal(app.node('ask-draft').textContent, text);
+  assert.equal(app.node('ask-preview').disabled, false);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [text]);
+  assert.deepEqual(actions, []);
+  assert.equal(app.node('cql-text').value, text);
+  const query = compile(app.node('cql-text').value);
+  assert.equal(query.body.columns[1].distinct, undefined);
+  assert.equal(query.body.columns[2].distinct, true);
+  assert.equal(query.body.resultFilters[0].alias, 'UniqueValues');
+  assert.equal(query.body.resultOrder[0].alias, 'UniqueValues');
+  app.node('cql-run-text').click();
+  assert.deepEqual(actions, ['run']);
+  assert.equal(app.requests.length, 1);
+});
+
+test('grouped distinct WEB6 rejects unproved normalized domains before editor or execution', async () => {
+  const text = 'SELECT Version, COUNT(DISTINCT CAST(metadata.owner AS GUID)) AS Owners ' +
+    'FROM Neo4jOASIS GROUP BY Version';
+  const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }),
+    null, compile, ['Neo4jOASIS']);
+  const actions = [];
+  app.node('cql-run').click = () => actions.push('run');
+  app.node('ask-question').value = 'Count different owner GUIDs per version in Neo4j';
+  await app.node('ask-generate').click();
+  assert.equal(app.requests.length, 1);
+  assert.match(app.node('ask-status').textContent, /Grouped COUNT DISTINCT requires/);
+  assert.equal(app.node('ask-preview').disabled, true);
+  assert.equal(app.node('ask-draft').textContent, '');
+  assert.equal(app.node('cql-text').value, '');
+  assert.deepEqual(app.opened, []);
+  assert.deepEqual(actions, []);
+});
