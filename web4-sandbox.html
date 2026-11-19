@@ -210,6 +210,19 @@ WHERE IsActive = TRUE</code></pre>
           <button type="button" id="cql-load-distinct-count-example">Load unique category count</button>
         </details>
         <details>
+          <summary>Compare populated values and unique labels in each category</summary>
+          <p>Use the <code>category</code> and <code>label</code> fields from your dataset, or edit the fields below. This compares rows with a label against different labels, then filters and sorts the complete groups. MongoDB, SQLite and Neo4j support this example.</p>
+          <pre><code id="cql-grouped-distinct-example">SELECT CAST(metadata.category AS STRING) AS Category,
+       COUNT(CAST(metadata.label AS STRING)) AS Present,
+       COUNT(DISTINCT CAST(metadata.label AS STRING)) AS UniqueLabels
+FROM MongoDBOASIS
+GROUP BY Category
+HAVING Present &gt;= 1 AND UniqueLabels &gt;= 1
+ORDER BY UniqueLabels DESC, Category ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-distinct-example">Load grouped unique labels</button>
+          <p>To query stored and virtual holons together, add <code>WITH VIRTUAL MAPPING 'your saved mapping ID'</code> after the provider name. Use fields exposed by that mapping. The mapping reads the original source; this query does not import or update it. Preview the request, then choose Run CQL.</p>
+        </details>
+        <details>
           <summary>Example joining records to active records</summary>
           <pre><code id="cql-join-example">SELECT l.Id AS RecordId, r.Name AS ActiveName
 FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
@@ -2387,7 +2400,7 @@ function renderMetrics(metrics, connections, best){
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-text.js?v=20261118-mixed-grouping-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261118-mixed-grouping-v1"></script>
+<script src="cql-playground.js?v=20261119-grouped-distinct-demo-v1"></script>
 <script src="cql-ask.js?v=20261118-mixed-grouping-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,

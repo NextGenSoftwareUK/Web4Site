@@ -993,3 +993,40 @@ test('mixed empty text MIN renders null as a successful scalar', async () => {
   await h.elements.get('cql-run').listeners.click();
   assert.match(h.elements.get('cql-note').textContent,/FirstRegion: null/);
 });
+
+test('loads the grouped distinct demo for review without querying WEB4', async () => {
+  const h = harness(async () => assert.fail('Loading an example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-grouped-distinct-example', { textContent: sql });
+  h.elements.get('cql-load-grouped-distinct-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.columns.map(c => [c.alias, c.distinct === true]),
+    [['Category', false], ['Present', false], ['UniqueLabels', true]]);
+  assert.deepEqual(body.resultFilters.map(c => [c.alias, c.value]), [['Present', '1'], ['UniqueLabels', '1']]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'UniqueLabels', descending: true }, { alias: 'Category', descending: false }]);
+  assert.equal(body.resultTake, 5);
+});
+
+test('loads the grouped distinct demo with the documented mixed mapping syntax', () => {
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  const mapping = '764b78ae-df26-4637-9bbd-1d0530954fea';
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const text = sql.replace('FROM MongoDBOASIS', "FROM " + provider + " WITH VIRTUAL MAPPING '" + mapping + "'");
+    const { path, body } = require('./cql-text.js').compile(text);
+    assert.equal(path, 'data/query-cql/projection/mixed');
+    assert.equal(body.provider, provider);
+    assert.equal(body.virtualMappingId, mapping);
+    assert.equal(body.resultOperation, 'Group');
+    assert.equal(body.take, 1);
+    assert.equal(body.grouping.resultTake, 5);
+    assert.equal(body.grouping.columns[2].distinct, true);
+    assert.deepEqual(body.grouping.columns[2].selection, { metadataPath: ['label'], valueType: 'String', nullable: true });
+  }
+});
