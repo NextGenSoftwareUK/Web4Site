@@ -843,3 +843,26 @@ test('grouped distinct WEB6 rejects unproved normalized domains before editor or
   assert.deepEqual(app.opened, []);
   assert.deepEqual(actions, []);
 });
+
+test('grounds and reviews typed UUID mapping filters without executing data', async () => {
+  const identity = 'AB8079E8-5E72-4FF9-81B7-8FECE973C50A';
+  const sql = 'SELECT Id, CAST(metadata.identity AS GUID) AS Identity FROM Neo4jOASIS ' +
+    "WITH VIRTUAL MAPPING '" + mappedId + "' WHERE CAST(metadata.identity AS GUID) = '" + identity + "' ORDER BY Id LIMIT 2";
+  const app = setup(() => ({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS']);
+  chooseMapping(app);
+  app.node('ask-question').value = 'Use the selected mapping. metadata.identity is GUID. Find identity ' + identity;
+  await app.node('ask-generate').click();
+  assert.equal(app.requests.length, 1);
+  const request = JSON.parse(app.requests[0].options.body);
+  assert.match(request.messages[0].content, /Mapped metadata types are STRING, BOOLEAN, GUID/);
+  assert.match(request.messages[0].content, /GUID range comparisons, IN and LENGTH\(GUID\) are unsupported/);
+  assert.equal(app.node('ask-preview').disabled, false);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened, [sql]);
+  const compiled = compile(app.opened[0]);
+  assert.equal(compiled.path, 'data/query-cql/projection/mixed');
+  assert.equal(compiled.body.virtualMappingId, mappedId);
+  assert.deepEqual(compiled.body.filters, [{metadataPath:['identity'],scalar:'Guid',operator:'Equal',value:identity}]);
+  assert.equal(app.requests.length, 1, 'Review must not send an automatic data query.');
+});
