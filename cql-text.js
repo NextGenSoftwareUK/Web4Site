@@ -304,6 +304,7 @@
           if (cast && accept('STRING')) scalar = 'String';
           else if (accept('INT64')) scalar = 'Integer';
           else if (accept('BOOLEAN')) scalar = 'Boolean';
+            else if (accept('GUID')) scalar = 'Guid';
           else if (accept('DECIMAL')) scalar = 'Decimal';
           else if (accept('DOUBLE')) scalar = 'Double';
           else if (accept('SINGLE')) scalar = 'Single';
@@ -815,7 +816,7 @@
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
-            !['String', 'Boolean', 'Integer', 'Double'].includes(filter.scalar) ||
+            !['String', 'Boolean', 'Guid', 'Integer', 'Double'].includes(filter.scalar) ||
             filter.function != null && (filter.function !== 'Utf16Length' || filter.scalar !== 'String' ||
               ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator)) ||
             filter.function == null && !['Integer', 'Double'].includes(filter.scalar) &&
@@ -999,7 +1000,7 @@
         const inputKeys = new Set();
         function addMappedInput(selection) {
           if (!mappedValue(selection))
-            throw new Error('Mapped grouping requires direct STRING, BOOLEAN, INT32, INT64 or DOUBLE metadata fields.');
+            throw new Error('Mapped grouping requires direct STRING, BOOLEAN, GUID, INT32, INT64 or DOUBLE metadata fields.');
           const key = selectionKey(selection);
           if (!inputKeys.has(key)) {
             inputKeys.add(key);
@@ -1135,7 +1136,7 @@
             columns.slice(1).some(column => column.metadataPath?.length !== 1))
           throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
         if (columns.slice(1).some(column => !mappedValue(column)))
-          throw new Error('Mapped columns support STRING, BOOLEAN, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
+          throw new Error('Mapped columns support STRING, BOOLEAN, GUID, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
         if ((!selectedOrder && body.orderBy !== 'Id') || body.skip >= 200 || body.take < 1)
           throw new Error('Order by Id or selected aliases, with a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body,
