@@ -66,8 +66,8 @@ test('grouped distinct retains exact direct primitive metadata domains', () => {
 });
 
 test('grouped distinct refuses invalid row, computed and unproved normalization domains', () => {
-  for (const expression of ['COUNT(DISTINCT *)', 'COUNT(DISTINCT 1)', 'COUNT(DISTINCT Id)',
-    'COUNT(DISTINCT LENGTH(Description))', 'COUNT(DISTINCT CAST(metadata.value AS GUID))',
+  for (const expression of ['COUNT(DISTINCT *)', 'COUNT(DISTINCT 1)',
+    'COUNT(DISTINCT LENGTH(Description))',
     'COUNT(DISTINCT CAST(metadata.value AS DATETIME))', 'COUNT(DISTINCT CAST(metadata.value AS DECIMAL))',
     'COUNT(DISTINCT CAST(metadata.value AS UINT64))', 'MIN(DISTINCT Version)']) {
     assert.throws(() => compile('SELECT Version, ' + expression +

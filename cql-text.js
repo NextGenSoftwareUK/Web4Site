@@ -662,9 +662,10 @@
         : readAggregateSelection();
       expect(')');
       if (distinct) {
-        const type = selection.field ? projectionFields[selection.field.toLowerCase()][1] : selection.valueType;
-        if (!['String', 'Boolean', 'Int32', 'Int64', 'Single', 'Double'].includes(type))
-          throw new Error('Grouped COUNT DISTINCT requires an admitted direct text, boolean or signed integer/floating value.');
+        const type = selection.field === 'Version' ? 'Int32'
+          : selection.field ? projectionFields[selection.field.toLowerCase()][1] : selection.valueType;
+        if (!['String', 'Boolean', 'Guid', 'Int32', 'Int64', 'Single', 'Double'].includes(type))
+          throw new Error('Grouped COUNT DISTINCT requires an admitted direct text, GUID, boolean or signed integer/floating value.');
       }
       return selection ? { operation, selection, ...(distinct ? { distinct: true } : {}) } : { operation };
     }
@@ -728,7 +729,7 @@
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
     function mappedValue(column) {
       return column && !column.field && column.metadataPath?.length === 1 &&
-        ['String', 'Boolean', 'Int32', 'Int64', 'Double'].includes(column.valueType) &&
+        ['String', 'Boolean', 'Guid', 'Int32', 'Int64', 'Double'].includes(column.valueType) &&
         (!column.function || column.function === 'Utf16Length' && column.valueType === 'String');
     }
     if (accept('WITH')) {
