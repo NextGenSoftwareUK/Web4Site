@@ -1,0 +1,5 @@
+# Virtual mapping acknowledgement and selection
+
+The import demo now selects a new mapping only after data/save-holon acknowledges isSaved=true, the exact mapping identity, private visibility and the prepared owner. An incomplete acknowledgement retains the operation key in the error for reconciliation and never triggers a retry. A source/session/connection change before saving prevents the write; a source change during an acknowledged save leaves the saved mapping unselected and reports what happened.
+
+Two new regressions failed on the previous actual event handler (false save acknowledgement and source selection changed during preparation). All11 new cases pass against the actual modified handler with controlled API responses: successful acknowledgement, five invalid save outcomes, invalid prepared owner, and four source/context transitions. Existing tests were not rerun. This is browser-handler contract evidence, not a real hosted API or model walkthrough. No live records/API calls, dependency installation, environment or generated test artifacts.

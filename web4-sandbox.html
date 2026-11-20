@@ -2238,11 +2238,21 @@ $('im-save-virtual').addEventListener('click', async () => {
     const id = crypto.randomUUID(), operationId = crypto.randomUUID();
     const prepared = await call('POST', 'native-data/' + native() + '/virtual-mappings/prepare',
       {id, sourceName, connectionName: virtualConnectionName(), fields});
-    if (virtualSourceContext() !== context) throw new Error('The active connection changed. List sources again.');
-    if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false)
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('The active source changed. List sources again. No save was sent.');
+    const ownerId = prepared.result?.createdByAvatarId;
+    if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false ||
+        typeof ownerId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ownerId) ||
+        /^0{8}(?:-0{4}){3}-0{12}$/.test(ownerId))
       throw new Error('WEB4 did not prepare the expected private mapping.');
-    await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
+    const saved = await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
       expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+    if (saved?.isSaved !== true || saved.result?.id?.toLowerCase() !== id ||
+        saved.result?.isPublic !== false || saved.result?.createdByAvatarId?.toLowerCase() !== ownerId.toLowerCase())
+      throw new Error('Mapping save acknowledgement is incomplete. Retain request key ' +
+        operationId + ' for reconciliation; do not repeat the save.');
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('Mapping ' + id + ' was saved for the original source. The selection changed, so it was not selected for CQL.');
     $('cql-virtual-mapping').value = id;
     setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in their database.`, 'ok');
   });
