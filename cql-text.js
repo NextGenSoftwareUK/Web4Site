@@ -165,6 +165,7 @@
     }
     function readLiteral(scalar, wideInteger = false) {
       const token = tokens[index++];
+      if (scalar === 'Int32') return integer(token, -2147483648, 2147483647);
       if (scalar === 'Integer') {
           if (!wideInteger) return integer(token, -2147483648, 2147483647);
           if (!/^(?:0|-?[1-9][0-9]{0,18})$/.test(token ?? '') ||
@@ -302,7 +303,8 @@
         if (cast && !typed) throw new Error('CAST metadata requires an explicit type.');
         if (typed) {
           if (cast && accept('STRING')) scalar = 'String';
-          else if (accept('INT64')) scalar = 'Integer';
+          else if (accept('INT32')) scalar = 'Int32';
+            else if (accept('INT64')) scalar = 'Integer';
           else if (accept('BOOLEAN')) scalar = 'Boolean';
             else if (accept('GUID')) scalar = 'Guid';
           else if (accept('DECIMAL')) scalar = 'Decimal';
@@ -367,7 +369,7 @@
       if (negated) expect('BETWEEN');
       if (negated || accept('BETWEEN')) {
         if (!allowRange && !negated) throw new Error('BETWEEN needs an AND clause outside OR alternatives.');
-        if (!['Integer', 'Decimal', 'UInt64', 'Double', 'Single', 'DateTime'].includes(scalar))
+        if (!['Int32', 'Integer', 'Decimal', 'UInt64', 'Double', 'Single', 'DateTime'].includes(scalar))
           throw new Error('BETWEEN requires a numeric or UTC timestamp field.');
         const lower = literal();
         expect('AND');
@@ -384,8 +386,8 @@
       const comparison = tokens[index++]?.toUpperCase();
       const operator = Object.hasOwn(comparisons, comparison) ? comparisons[comparison] : null;
       if (!operator) throw new Error('Expected a supported comparison.');
-      if (!['Integer', 'UInt64', 'Decimal', 'Double', 'Single', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
-        throw new Error('Ordered comparisons require Version or metadata typed AS INT64, AS UINT64, AS DECIMAL, AS DOUBLE, AS SINGLE, or AS DATETIME.');
+      if (!['Int32', 'Integer', 'UInt64', 'Decimal', 'Double', 'Single', 'DateTime'].includes(scalar) && ['<', '<=', '>', '>='].includes(comparison))
+        throw new Error('Ordered comparisons require Version or metadata typed AS INT32, AS INT64, AS UINT64, AS DECIMAL, AS DOUBLE, AS SINGLE, or AS DATETIME.');
       if (['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(operator) && scalar !== 'String')
         throw new Error('Text matching requires a string field.');
       return { ...selector, scalar, operator, value: literal() };
@@ -816,10 +818,10 @@
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
-            !['String', 'Boolean', 'Guid', 'Integer', 'Double'].includes(filter.scalar) ||
+            !['String', 'Boolean', 'Guid', 'Int32', 'Integer', 'Double'].includes(filter.scalar) ||
             filter.function != null && (filter.function !== 'Utf16Length' || filter.scalar !== 'String' ||
               ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator)) ||
-            filter.function == null && !['Integer', 'Double'].includes(filter.scalar) &&
+            filter.function == null && !['Int32', 'Integer', 'Double'].includes(filter.scalar) &&
               !(filter.scalar === 'String' ? ['Equal', 'NotEqual', 'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'] :
                 ['Equal', 'NotEqual']).includes(filter.operator) ||
             ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) && filter.scalar !== 'String') ||

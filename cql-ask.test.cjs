@@ -866,3 +866,21 @@ test('grounds and reviews typed UUID mapping filters without executing data', as
   assert.deepEqual(compiled.body.filters, [{metadataPath:['identity'],scalar:'Guid',operator:'Equal',value:identity}]);
   assert.equal(app.requests.length, 1, 'Review must not send an automatic data query.');
 });
+
+test('grounds exact mapped Int32 filters and retains review before data execution', async () => {
+  const sql = 'SELECT Id, CAST(metadata.stock AS INT32) AS Stock FROM Neo4jOASIS ' +
+    "WITH VIRTUAL MAPPING '" + mappedId + "' WHERE CAST(metadata.stock AS INT32) > 0 ORDER BY Stock DESC, Id LIMIT 2";
+  const app = setup(() => ({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS']);
+  chooseMapping(app);
+  app.node('ask-question').value = 'metadata.stock is INT32. Show two positive stock values in the selected mapping.';
+  await app.node('ask-generate').click();
+  const request = JSON.parse(app.requests[0].options.body);
+  assert.match(request.messages[0].content, /do not substitute INT64 for a declared INT32 field/);
+  assert.equal(app.node('ask-preview').disabled, false);
+  assert.deepEqual(app.opened, []);
+  app.node('ask-preview').click();
+  const query = compile(app.opened[0]);
+  assert.equal(query.body.virtualMappingId, mappedId);
+  assert.deepEqual(query.body.filters, [{metadataPath:['stock'],scalar:'Int32',operator:'GreaterThan',value:0}]);
+  assert.equal(app.requests.length, 1, 'Opening review must not run an automatic data query.');
+});
