@@ -898,3 +898,21 @@ test('editor parameter preview binds JSON and refuses malformed JSON before open
   assert.ok(h.node('cql-note').textContent);
   assert.equal(h.requests.length,0);
 });
+
+
+test('parameter example loads the selected ready provider and stays review-only', () => {
+  const h=setup(() => { throw new Error('No WEB6 call expected'); });
+  h.node('cql-provider').value='Neo4jOASIS';
+  h.node('cql-load-parameter-example').click();
+  assert.match(h.node('cql-text').value,/FROM Neo4jOASIS WHERE Version >= @minimum/);
+  assert.deepEqual(JSON.parse(h.node('cql-text-parameters').value),{minimum:1,active:true});
+  assert.equal(h.opened.length,0);assert.equal(h.requests.length,0);
+  h.node('cql-compile').click();
+  assert.equal(h.opened.length,1);
+  const previous=h.node('cql-text').value;
+  h.node('cql-provider').value='HashgraphOASIS';
+  h.node('cql-load-parameter-example').click();
+  assert.equal(h.node('cql-text').value,previous);
+  assert.match(h.node('cql-note').textContent,/ready MongoDB/);
+  assert.equal(h.opened.length,1);assert.equal(h.requests.length,0);
+});

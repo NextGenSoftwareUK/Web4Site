@@ -120,6 +120,18 @@
       clearDraft();
       status.textContent = '';
     });
+    $('cql-load-parameter-example')?.addEventListener('click', () => {
+      const provider = $('cql-provider').value;
+      if (!databaseProviders.includes(provider) || !playground.availableTextProviders().includes(provider)) {
+        $('cql-note').textContent = 'Select a ready MongoDB, SQLite or Neo4j provider before loading this example.';
+        return;
+      }
+      $('cql-text').value = 'SELECT Id, Name, Version FROM ' + provider +
+        ' WHERE Version >= @minimum AND IsActive = @active ORDER BY Name LIMIT 5';
+      $('cql-text-parameters').value = JSON.stringify({ minimum: 1, active: true }, null, 2);
+      $('cql-text').focus();
+      $('cql-note').textContent = 'Review the query and parameter values, then preview its request.';
+    });
     function editorParameters() {
       const text = $('cql-text-parameters')?.value?.trim();
       if (!text) return {};
