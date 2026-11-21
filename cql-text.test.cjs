@@ -406,7 +406,11 @@ test('compiles a direct child existence predicate independently of the root filt
   assert.deepEqual(body.anyChildren[0].anyOf.map(filter => filter.value), ['Coffee', 'Tea']);
   const alternatives = compile("SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (Name = 'Coffee' OR Name = 'Tea')");
   assert.deepEqual(alternatives.body.anyChildren[0].anyOf.map(filter => filter.value), ['Coffee', 'Tea']);
-  assert.throws(() => compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (EXISTS CHILD (Version = 1))'));
+  const nested = compile('SELECT * FROM Neo4jOASIS WHERE EXISTS CHILD (EXISTS CHILD (Version = 1))').body.where;
+  assert.equal(nested.kind, 'Child');
+  assert.equal(nested.match.kind, 'Child');
+  assert.equal(nested.match.match.filter.field, 'Version');
+  assert.equal(nested.match.match.filter.value, 1);
 });
 
 test('compiles bounded nested metadata presence and null predicates without a value', () => {
