@@ -578,9 +578,9 @@
       return discovery || !getToken() ? {} : discoveredTextProfiles;
     }
 
-    function compileAvailableText(text) {
+    function compileAvailableText(text, parameters = {}) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
-      const query = root.CqlText.compile(text, discoveredTextProfiles);
+      const query = root.CqlText.compile(text, discoveredTextProfiles, parameters);
       const selected = query.body.providers ?? [query.body.provider];
       if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
         (selected.length === 1 || row.federationAvailable))))
@@ -588,8 +588,8 @@
       return query;
     }
 
-    function loadText(text) {
-      const query = compileAvailableText(text);
+    function loadText(text, parameters = {}) {
+      const query = compileAvailableText(text, parameters);
       $('cql-provider').value = query.body.providers?.[0] ?? query.body.provider;
       chooseProvider();
       preparation = null;

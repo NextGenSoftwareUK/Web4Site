@@ -120,13 +120,19 @@
       clearDraft();
       status.textContent = '';
     });
+    function editorParameters() {
+      const text = $('cql-text-parameters')?.value?.trim();
+      if (!text) return {};
+      if (text.length > 16384) throw new Error('Parameter JSON may contain up to 16,384 characters.');
+      return JSON.parse(text);
+    }
     $('cql-compile').addEventListener('click', () => {
-      try { playground.loadText($('cql-text').value); }
+      try { playground.loadText($('cql-text').value, editorParameters()); }
       catch (error) { $('cql-note').textContent = error.message; }
     });
     $('cql-run-text').addEventListener('click', () => {
       try {
-        playground.loadText($('cql-text').value);
+        playground.loadText($('cql-text').value, editorParameters());
         $('cql-run').click();
       } catch (error) { $('cql-note').textContent = error.message; }
     });

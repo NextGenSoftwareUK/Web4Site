@@ -79,18 +79,68 @@
     return profiles;
   }
 
-  function compile(text, discoveredProfiles = {}) {
+  function compile(text, discoveredProfiles = {}, parameters = {}) {
     const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
     const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
-    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|"(?:[^"]|"")*"|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    const lexer = /\s+|--[^\r\n]*|\/\*[\s\S]*?\*\/|'(?:[^']|'')*'|"(?:[^"]|"")*"|@[A-Za-z_][A-Za-z_0-9]*|[A-Za-z_][A-Za-z_0-9]*|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?|<=|>=|<>|!=|[(),.*=<>;]/gy;
+    if (!parameters || typeof parameters !== 'object' || Array.isArray(parameters))
+      throw new Error('Parameters must be a JSON object keyed by parameter name.');
+    const parameterNames = Object.keys(parameters);
+    if (parameterNames.length > 64 || parameterNames.some(name => !/^[A-Za-z_][A-Za-z_0-9]{0,63}$/.test(name)))
+      throw new Error('Use up to 64 named parameters, each with at most 64 letters, digits or underscores.');
+    let boundCharacters = 0;
+    function parameterToken(token) {
+      const name = token.slice(1);
+      const property = Object.getOwnPropertyDescriptor(parameters, name);
+      if (!property || !Object.hasOwn(property, 'value'))
+        throw new Error('Missing data value for parameter @' + name + '.');
+      const value = property.value;
+      let literal;
+      if (value === null) literal = 'NULL';
+      else if (typeof value === 'boolean') literal = value ? 'TRUE' : 'FALSE';
+      else if (typeof value === 'string') {
+        if (value.length > 512) throw new Error('String parameter values may contain up to 512 characters.');
+        literal = "'" + value.replace(/'/g, "''") + "'";
+      } else if (typeof value === 'number') {
+        if (!Number.isFinite(value) || Number.isInteger(value) && !Number.isSafeInteger(value))
+          throw new Error('Use a finite safe JSON number or an exact numeric parameter object.');
+        literal = Object.is(value, -0) ? '-0' : String(value);
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const type = Object.getOwnPropertyDescriptor(value, 'type');
+        const exact = Object.getOwnPropertyDescriptor(value, 'value');
+        if (Object.keys(value).length !== 2 || !type || !exact ||
+            !Object.hasOwn(type, 'value') || !Object.hasOwn(exact, 'value') ||
+            typeof type.value !== 'string' || typeof exact.value !== 'string')
+          throw new Error('Exact numeric parameters require only type and string value.');
+        const domain = type.value.toUpperCase(), digits = exact.value;
+        if (domain === 'INT64') {
+          if (!/^(?:0|-?[1-9][0-9]{0,18})$/.test(digits) ||
+              BigInt(digits) < -9223372036854775808n || BigInt(digits) > 9223372036854775807n)
+            throw new Error('Expected an exact INT64 parameter.');
+        } else if (domain === 'UINT64') {
+          if (!/^(?:0|[1-9][0-9]{0,19})$/.test(digits) || BigInt(digits) > 18446744073709551615n)
+            throw new Error('Expected an exact UINT64 parameter.');
+        } else if (domain === 'DECIMAL') exactDecimal(digits);
+        else if (domain === 'SINGLE' || domain === 'DOUBLE') {
+          if (digits.length > 32 || !/^-?[0-9]+(?:[.][0-9]+)?(?:[eE][+-]?[0-9]+)?$/.test(digits) ||
+              !Number.isFinite(Number(digits)))
+            throw new Error('Expected a finite exact floating parameter spelling.');
+        } else throw new Error('Use INT64, UINT64, DECIMAL, SINGLE or DOUBLE for exact numeric parameters.');
+        literal = digits;
+      } else throw new Error('Parameters accept scalar JSON values or exact numeric objects.');
+      boundCharacters += literal.length;
+      if (boundCharacters > 16384) throw new Error('Bound parameter values exceed the query value budget.');
+      return literal;
+    }
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
       const match = lexer.exec(text);
       if (!match) throw new Error('Unexpected character at position ' + (position + 1) + '.');
       const token = match[0];
-      if (token.trim() && !token.startsWith('--') && !token.startsWith('/*')) tokens.push(token);
+      if (token.trim() && !token.startsWith('--') && !token.startsWith('/*'))
+        tokens.push(token.startsWith('@') ? parameterToken(token) : token);
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();

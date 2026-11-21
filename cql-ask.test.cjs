@@ -35,7 +35,7 @@ function setup(reply, example = null, compileAvailableText = compile, providers 
   };
   runInNewContext(readFileSync(join(__dirname, 'cql-ask.js'), 'utf8'), context);
   const ask = context.CqlAsk.init({
-    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text) { compileAvailableText(text); opened.push(text); }, publicQuestionExample: provider => typeof example === 'function' ? example(provider) : example,
+    playground: { availableTextProviders: () => providers, availableTextProfiles: () => textProfiles, compileAvailableText, loadText(text, parameters = {}) { compileAvailableText(text, textProfiles, parameters); opened.push(text); }, publicQuestionExample: provider => typeof example === 'function' ? example(provider) : example,
       clearVirtualMapping() { require('./cql-playground.js').clearVirtualMapping(node('cql-virtual-mapping'), node('cql-saved-mapping'), node('cql-mapping-note')); },
       availableQuestionProviders: () => ['HashgraphOASIS', 'HoloOASIS'] },
     isSandbox: () => true, getIdentity: () => identity, ensureAccessToken: async () => { tokenReads++; return 'test-token'; }, isDemoSession: () => demo
@@ -883,4 +883,18 @@ test('grounds exact mapped Int32 filters and retains review before data executio
   assert.equal(query.body.virtualMappingId, mappedId);
   assert.deepEqual(query.body.filters, [{metadataPath:['stock'],scalar:'Int32',operator:'GreaterThan',value:0}]);
   assert.equal(app.requests.length, 1, 'Opening review must not run an automatic data query.');
+});
+
+
+test('editor parameter preview binds JSON and refuses malformed JSON before opening a request', () => {
+  const h=setup(() => { throw new Error('No WEB6 call expected'); });
+  h.node('cql-text').value='SELECT * FROM MongoDBOASIS WHERE Name = @name LIMIT 5';
+  h.node('cql-text-parameters').value=JSON.stringify({name:"Coffee'; DROP TABLE x"});
+  h.node('cql-compile').click();
+  assert.equal(h.opened.length,1);
+  h.node('cql-text-parameters').value='{';
+  h.node('cql-compile').click();
+  assert.equal(h.opened.length,1);
+  assert.ok(h.node('cql-note').textContent);
+  assert.equal(h.requests.length,0);
 });
