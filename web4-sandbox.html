@@ -297,7 +297,7 @@ ORDER BY Id LIMIT 10</code></pre>
         </div>
         <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
         <p id="cql-mapping-note" class="note" role="status"></p>
-        <p class="note">For row queries, select Id first, add one to eight supported mapped metadata filters, and order by Id or selected aliases. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
+        <p class="note">For row queries, select Id first, optionally add up to eight supported mapped metadata filters, and order by Id or selected aliases. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
         <p class="note">You can also use GROUP BY and SELECT DISTINCT with a saved mapping on MongoDB, SQLite or Neo4j.
         Group known direct metadata fields and use COUNT, MIN, MAX, SUM or AVG over supported values.
         Real and virtual copies of the same record count once before HAVING, ordering and paging.

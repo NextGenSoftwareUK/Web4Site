@@ -105,7 +105,7 @@
     const select = [...new Set([...columns.slice(1).map(column => column.metadataPath[0]),
       ...filters.map(filter => filter.metadataPath[0])])];
     const captured = filters.map(filter => ({...filter, metadataPath: filter.metadataPath.slice()}));
-    return { filters: captured, select, take: 100 };
+    return { filters: captured, select, take: 200 };
   }
 
   function requestTimeout(body) {
