@@ -1081,16 +1081,16 @@
       if (body.virtualMappingId) {
         const inputColumns = [{ field: 'Id', alias: 'Id' }];
         const inputKeys = new Set();
-        function addMappedInput(selection) {
-          if (!mappedValue(selection))
-            throw new Error('Mapped grouping requires direct STRING, BOOLEAN, GUID, INT32, INT64 or DOUBLE metadata fields.');
+        function addMappedInput(selection, groupingKey = false) {
+          if (!mappedValue(selection, groupingKey))
+            throw new Error('Mapped grouping requires direct STRING, BOOLEAN, GUID, INT32, INT64 or DOUBLE metadata fields; DATETIME is also admitted for grouping keys.');
           const key = selectionKey(selection);
           if (!inputKeys.has(key)) {
             inputKeys.add(key);
             inputColumns.push({ ...selection, alias: 'MixedInput' + inputKeys.size });
           }
         }
-        keys.forEach(addMappedInput);
+        keys.forEach(key => addMappedInput(key, true));
         resultColumns.forEach(column => {
           if (column.selection) {
             if (column.selection.function)
@@ -1170,6 +1170,7 @@
       }
     }
     if (mixedScalar) {
+      if (scalarSelection?.valueType === 'DateTime') throw new Error('Mapped DateTime selected-value aggregates are not admitted.');
       const window = readWindow(1, 0);
       if (window.skip !== undefined && window.skip !== 0)
         throw new Error('A mixed count returns one scalar without a result offset.');
