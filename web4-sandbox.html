@@ -80,6 +80,13 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   .nav-links .hide-sm{display:none}
   .row input{flex:1 1 100%}
 }
+/* Keep the question and review controls usable on desktop and mobile. */
+#panel-ask label[for="ask-question"]{display:block;margin:16px 0 6px}
+#ask-question{display:block;box-sizing:border-box;width:100%;min-height:140px;padding:14px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit;line-height:1.5;resize:vertical}
+#ask-question:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.ask-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.ask-controls select{max-width:100%;flex:1 1 180px}
+#ask-draft{min-height:44px}
 </style>
 </head>
 <body>
@@ -1849,10 +1856,12 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>To include a saved virtual mapping, select it in the CQL Playground first. Public examples clear that selection.</p>
     <label for="ask-question">Question</label>
       <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show five active Neo4j records with a descendant named Coffee or Tea"></textarea>
+      <div class="ask-controls">
       <label for="ask-example-provider">Public example provider</label>
       <select id="ask-example-provider"><option value="">Any ready provider</option></select>
       <button type="button" id="ask-use-example">Use a public example</button>
       <button type="button" id="ask-generate">Draft query</button>
+      </div>
       <p id="ask-status" role="status" aria-live="polite"></p>
       <pre id="ask-draft"></pre>
       <button type="button" id="ask-preview" disabled>Open in CQL Playground</button>
