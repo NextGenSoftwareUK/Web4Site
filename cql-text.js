@@ -94,6 +94,18 @@
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();
+    const aliasBoundaries = new Set(['FROM','WHERE','GROUP','HAVING','ORDER','LIMIT','OFFSET','TIMEOUT',
+      'JOIN','INNER','LEFT','RIGHT','FULL','CROSS','CHILD','ON','UNION','INTERSECT','EXCEPT']);
+    function readColumnAlias(defaultAlias) {
+      const explicit = accept('AS');
+      if (!explicit && (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(tokens[index] ?? '') || aliasBoundaries.has(peek())))
+        return defaultAlias;
+      const alias = tokens[index++];
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
+        throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
+      return alias;
+    }
+
     function readSelectPosition(columns, clause) {
       if (!/^-?\d+$/.test(tokens[index] ?? '')) return undefined;
       const position = Number(tokens[index++]);
@@ -440,7 +452,7 @@
       const fieldsToSelect = [];
       do {
         const field = qualifiedField();
-        const alias = accept('AS') ? identifier('column') : field.selection.field;
+        const alias = readColumnAlias(field.selection.field);
         if (!alias) throw new Error('Use AS to name a joined metadata column.');
         fieldsToSelect.push({ ...field, alias });
       } while (accept(','));
@@ -679,7 +691,7 @@
         if (peek() !== 'ANY' && Object.hasOwn(aggregates, peek())) {
           const name = tokens[index++].toUpperCase();
           const binding = readGroupedAggregate(name);
-          const alias = accept('AS') ? tokens[index++] : name[0] + name.slice(1).toLowerCase();
+          const alias = readColumnAlias(name[0] + name.slice(1).toLowerCase());
           if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
             throw new Error('Expected a column alias for the grouped aggregate.');
           binding.alias = alias;
@@ -688,8 +700,8 @@
         }
         const selection = readSelection(true);
         const requiresAlias = selection.metadataPath || selection.function;
-        if (requiresAlias) expect('AS');
-        const alias = requiresAlias ? tokens[index++] : accept('AS') ? tokens[index++] : selection.field;
+        const alias = readColumnAlias(requiresAlias ? undefined : selection.field);
+        if (requiresAlias && alias === undefined) throw new Error('Expected AS or a column alias.');
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
           throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
         if (columns.some(column => column.alias.toLowerCase() === alias.toLowerCase()))
@@ -700,8 +712,9 @@
     let scalarAlias;
     if (operation) {
       expect(')');
-      if (accept('AS')) {
-        scalarAlias = tokens[index++];
+      const resultAlias = readColumnAlias();
+      if (resultAlias !== undefined) {
+        scalarAlias = resultAlias;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(scalarAlias ?? ''))
           throw new Error('Expected a scalar result alias of up to 64 letters, digits or underscores.');
       }
