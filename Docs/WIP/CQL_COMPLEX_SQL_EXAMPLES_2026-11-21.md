@@ -1,0 +1,1 @@
+Three review-only SQL examples added: exact live-verified nested Boolean COUNT, TOP selected page, timezone TIMESTAMP filter. All three displayed statements compiled with current shipping parser in RAM; playground syntax passed. No automatic execution or business-data write. Preview/publication/browser acceptance for this UI change remains open. Full EF61/168+4/13 unchanged.

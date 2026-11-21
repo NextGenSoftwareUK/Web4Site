@@ -258,7 +258,23 @@ WHERE IsActive = TRUE AND LENGTH(Name) &gt;= 4
 ORDER BY Id LIMIT 10</code></pre>
             <button type="button" id="cql-load-length-example">Load text length example</button>
           </details>
-        <button type="button" id="cql-load-text-example" disabled>Load public example</button>
+                  <p>These examples only fill the editor. Review the provider and query before running. Counts and rows depend on records visible to your account; an empty result is valid. Clear any selected virtual mapping before using these stored-Holon examples. The timestamp example assumes a DateTime metadata field named occurredAt; replace it with your known field.</p>
+<details><summary>Nested AND / OR / NOT</summary>
+<pre><code id="cql-boolean-example">SELECT COUNT(*) Total FROM Neo4jOASIS
+WHERE (Name = &#x27;Coffee&#x27; AND Version &gt;= 1)
+   OR (Name = &#x27;Tea&#x27; AND NOT EXISTS CHILD (IsActive = FALSE))</code></pre>
+<button type="button" id="cql-load-boolean-example">Load nested and / or / not example</button></details>
+<details><summary>Top five selected records</summary>
+<pre><code id="cql-top-example">SELECT TOP 5 Id, Name AS Label, Version FROM MongoDBOASIS
+WHERE IsActive = TRUE
+ORDER BY Version DESC, Id ASC</code></pre>
+<button type="button" id="cql-load-top-example">Load top five selected records example</button></details>
+<details><summary>Timezone timestamp on metadata.occurredAt</summary>
+<pre><code id="cql-timestamp-example">SELECT Id, Name FROM SQLLiteDBOASIS
+WHERE metadata.occurredAt AS DATETIME &gt;= TIMESTAMP &#x27;2026-11-01T00:00:00-05:00&#x27;
+ORDER BY Id LIMIT 10</code></pre>
+<button type="button" id="cql-load-timestamp-example">Load timezone timestamp on metadata.occurredat example</button></details>
+<button type="button" id="cql-load-text-example" disabled>Load public example</button>
         <button type="button" id="cql-run-text">Run CQL</button>
           <button type="button" id="cql-compile">Preview request</button>
       </details>
@@ -2411,7 +2427,7 @@ function renderMetrics(metrics, connections, best){
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
 <script src="cql-text.js?v=20261121-boolean-where-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261119-grouped-distinct-demo-v1"></script>
+<script src="cql-playground.js?v=20261121-complex-sql-examples-v1"></script>
 <script src="cql-ask.js?v=20261121-boolean-where-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
