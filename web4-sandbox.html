@@ -194,7 +194,7 @@ WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = '
 ORDER BY Name LIMIT 10</textarea>
         <details>
           <summary>Query parameters (optional)</summary>
-          <p id="cql-text-parameters-help">Use values such as <code>WHERE Name = @name AND Version &gt;= @minimum</code>, with JSON <code>{"name":"Coffee","minimum":2}</code>. Names are case-sensitive; parameters supply literal values, not field names or SQL fragments. Exact numeric example: <code>{"sequence":{"type":"INT64","value":"9007199254740993"}}</code>. Use DECIMAL for exact decimal digits. Preview shows the bound typed request before you run it.</p>
+          <p id="cql-text-parameters-help">Use values such as <code>WHERE Name = @name AND Version &gt;= @minimum</code>, with JSON <code>{"name":"Coffee","minimum":2}</code>. Names are case-sensitive; parameters supply literal values, not field names or SQL fragments. For a bounded list, use <code>Name IN (@names)</code> with <code>{"names":["Coffee","Tea"]}</code>. Lists must be the entire IN list; empty lists and null elements are refused. Exact numeric example: <code>{"sequence":{"type":"INT64","value":"9007199254740993"}}</code>. Use DECIMAL for exact decimal digits. Preview shows the bound typed request before you run it.</p>
           <label for="cql-text-parameters">Parameter values as JSON</label>
           <textarea id="cql-text-parameters" aria-describedby="cql-text-parameters-help" rows="3" maxlength="16384" spellcheck="false">{}</textarea>
           <button type="button" id="cql-load-parameter-example">Load parameter example</button>

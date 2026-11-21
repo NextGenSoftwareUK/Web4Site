@@ -90,12 +90,7 @@
     if (parameterNames.length > 64 || parameterNames.some(name => !/^[A-Za-z_][A-Za-z_0-9]{0,63}$/.test(name)))
       throw new Error('Use up to 64 named parameters, each with at most 64 letters, digits or underscores.');
     let boundCharacters = 0;
-    function parameterToken(token) {
-      const name = token.slice(1);
-      const property = Object.getOwnPropertyDescriptor(parameters, name);
-      if (!property || !Object.hasOwn(property, 'value'))
-        throw new Error('Missing data value for parameter @' + name + '.');
-      const value = property.value;
+    function scalarParameterToken(value) {
       let literal;
       if (value === null) literal = 'NULL';
       else if (typeof value === 'boolean') literal = value ? 'TRUE' : 'FALSE';
@@ -133,14 +128,43 @@
       if (boundCharacters > 16384) throw new Error('Bound parameter values exceed the query value budget.');
       return literal;
     }
+    function parameterTokens(token, arrayAllowed) {
+      const name = token.slice(1);
+      const property = Object.getOwnPropertyDescriptor(parameters, name);
+      if (!property || !Object.hasOwn(property, 'value'))
+        throw new Error('Missing data value for parameter @' + name + '.');
+      const value = property.value;
+      if (!Array.isArray(value)) return [scalarParameterToken(value)];
+      if (!arrayAllowed) throw new Error('A list parameter must be the complete value list in IN (@name).');
+      if (value.length < 1 || value.length > 40)
+        throw new Error('List parameters require between one and forty non-null scalar values.');
+      const result = [];
+      for (let position = 0; position < value.length; position++) {
+        const item = Object.getOwnPropertyDescriptor(value, String(position));
+        if (!item || !Object.hasOwn(item, 'value') || item.value === null || Array.isArray(item.value))
+          throw new Error('List parameters require present non-null scalar values.');
+        if (position) result.push(',');
+        result.push(scalarParameterToken(item.value));
+      }
+      return result;
+    }
+
     const tokens = [];
     while (lexer.lastIndex < text.length) {
       const position = lexer.lastIndex;
       const match = lexer.exec(text);
       if (!match) throw new Error('Unexpected character at position ' + (position + 1) + '.');
       const token = match[0];
-      if (token.trim() && !token.startsWith('--') && !token.startsWith('/*'))
-        tokens.push(token.startsWith('@') ? parameterToken(token) : token);
+      if (token.trim() && !token.startsWith('--') && !token.startsWith('/*')) tokens.push(token);
+    }
+    const rawTokens = tokens.slice();
+    tokens.length = 0;
+    for (let position = 0; position < rawTokens.length; position++) {
+      const token = rawTokens[position];
+      if (!token.startsWith('@')) tokens.push(token);
+      else tokens.push(...parameterTokens(token,
+        rawTokens[position - 2]?.toUpperCase() === 'IN' &&
+        rawTokens[position - 1] === '(' && rawTokens[position + 1] === ')'));
     }
     let index = 0;
     const peek = () => tokens[index]?.toUpperCase();

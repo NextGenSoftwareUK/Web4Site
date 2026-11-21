@@ -30,3 +30,29 @@ test('parameter admission rejects missing and lossy values without evaluating ac
   assert.deepEqual(compile("SELECT * FROM MongoDBOASIS WHERE Name = '@literal' LIMIT 5"),
     compile("SELECT * FROM MongoDBOASIS WHERE Name = @name LIMIT 5", {}, {name:'@literal'}));
 });
+
+
+test('list parameters preserve typed IN and NOT IN requests across ready databases', () => {
+  for (const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+    for (const operator of ['IN','NOT IN']) {
+      const query='SELECT * FROM '+provider+' WHERE Name '+operator+' (@names) LIMIT 5';
+      const names=["Coffee'; DELETE FROM x", 'Tea'];
+      assert.deepEqual(compile(query, {}, {names}),
+        compile(query.replace('@names',names.map(value=>"'"+value.replace(/'/g,"''")+"'").join(','))));
+    }
+    const query='SELECT * FROM '+provider+' WHERE metadata.sequence AS INT64 IN (@ids) LIMIT 5';
+    assert.deepEqual(compile(query, {}, {ids:[
+      {type:'INT64',value:'9007199254740993'},{type:'INT64',value:'9007199254740994'}]}),
+      compile(query.replace('@ids','9007199254740993,9007199254740994')));
+  }
+});
+
+test('list parameter admission refuses empty nested null and structural substitutions', () => {
+  const query='SELECT * FROM MongoDBOASIS WHERE Name IN (@names) LIMIT 5';
+  for (const names of [[],Array(41).fill('x'),[null],[['x']]])
+    assert.throws(()=>compile(query, {}, {names}), /List parameters/);
+  assert.throws(()=>compile(query.replace('IN (@names)','= @names'), {}, {names:['x']}), /complete value list/);
+  assert.throws(()=>compile(query.replace('(@names)',"(@names, 'y')"), {}, {names:['x']}), /complete value list/);
+  assert.deepEqual(compile(query.replace('@names','/* value */ @names /* end */'), {}, {names:['x','y']}),
+    compile(query.replace('@names',"'x','y'")));
+});
