@@ -81,6 +81,33 @@
 
   // Keep the browser alive through the admitted server budget plus transport
   // time. This does not extend the server deadline or retry uncertain work.
+  function withVirtualMapping(body, endpoint, mappingInput) {
+    const id = mappingInput?.trim() || body.virtualMappingId;
+    if (id === undefined || id === '') return {path: endpoint, body};
+    if (endpoint !== 'data/query-cql/projection' && endpoint !== 'data/query-cql/projection/mixed')
+      throw new Error('Use a selected-column projection to include a Virtual Holon mapping.');
+    if (typeof id !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id) ||
+        /^0{8}(?:-0{4}){3}-0{12}$/.test(id))
+      throw new Error('Enter a valid Virtual Holon mapping ID.');
+    if (body.virtualMappingId && String(body.virtualMappingId).toLowerCase() !== id.toLowerCase())
+      throw new Error('The mapping IDs in the editor and mapping field differ.');
+    return {path: 'data/query-cql/projection/mixed', body: {...body, virtualMappingId: id}};
+  }
+
+  function clearVirtualMapping(mappingInput, savedMappings, mappingNote) {
+    if (mappingInput) mappingInput.value = '';
+    if (savedMappings) savedMappings.value = '';
+    if (mappingNote) mappingNote.textContent = '';
+  }
+
+  function virtualSnapshotQuery(body) {
+    const { filters, columns } = body;
+    const select = [...new Set([...columns.slice(1).map(column => column.metadataPath[0]),
+      ...filters.map(filter => filter.metadataPath[0])])];
+    const captured = filters.map(filter => ({...filter, metadataPath: filter.metadataPath.slice()}));
+    return { filters: captured, select, take: 100 };
+  }
+
   function requestTimeout(body) {
     const duration = body.maximumDurationMilliseconds ?? 5000;
     if (!Number.isInteger(duration) || duration < 1 || duration > 30000)
@@ -131,7 +158,7 @@
         return { id: row.id, label: row.label, request, operation, available: row.available !== false };
       });
       return { provider: source.provider, available: source.available, queryOnly: source.queryOnly,
-        federationAvailable: source.federationAvailable, examples };
+        federationAvailable: source.federationAvailable, textKeyProfile: source.textKeyProfile, examples };
     });
   }
 
@@ -166,14 +193,16 @@
     return selected;
   }
 
-  function init({ getToken, getBase, getIdentity = getToken, ensureAccessToken = async () => getToken(), request = null, canPrepare = () => false }) {
+  function init({ getToken, getBase, getIdentity = getToken, ensureAccessToken = async () => getToken(), request = null, canPrepare = () => false, onCatalogueChanged = () => {} }) {
     const $ = id => document.getElementById(id);
     let controller = null;
     let generation = 0;
     let endpoint = '';
+    let namedScalar = null;
     let sessionIdentity = null;
     let sessionBase = null;
     let sources = null;
+    let discoveredTextProfiles = {};
     let discovery = null;
     let preparation = null;
     let preparing = false;
@@ -186,6 +215,7 @@
     function controls() {
       const busy = controller !== null || preparing;
       const ready = sources !== null && endpoint !== '';
+      $('cql-load-text-example').disabled = busy || discovery !== null || !getToken() || !ready;
       $('cql-run').disabled = busy || discovery !== null || !getToken() || !ready;
       $('cql-cancel').disabled = controller === null;
       $('cql-preset').disabled = busy || !ready || discovery !== null;
@@ -199,6 +229,7 @@
     }
 
     function loadPreset() {
+      namedScalar = null;
       const selected = sources?.find(row => row.provider === $('cql-provider').value);
       if (!selected || !profileChoices(selected, sources).some(choice => !choice.disabled)) {
         preparation = null;
@@ -229,23 +260,63 @@
       loadPreset();
     }
 
-    function render(result) {
+    function render(result, scalarAlias, onSnapshot = null) {
       const payload = result.result;
       $('cql-response').textContent = JSON.stringify(result, null, 2);
       if (payload && Object.hasOwn(payload, 'value')) {
-        note(`${payload.provider} · ${payload.operation}: ${payload.value}`);
+        note(`${payload.provider} · ${scalarAlias ?? payload.operation}: ${payload.value}`);
         return;
       }
       if (!payload || !Array.isArray(payload.rows)) throw new Error('The API returned no CQL rows envelope. See the response.');
+      const joined = payload.version === 'cql-join-v1';
+      const showRightMatch = joined && payload.kind === 'Left';
+      const showPairSource = joined && payload.kind === 'Full';
+      const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version))
+        ? payload.columns : null;
+      const provenance = payload.provenance;
+      if (provenance !== undefined && (!Array.isArray(provenance) || provenance.length !== payload.rows.length ||
+          provenance.some(source => !source || !['Virtual', 'Materialized'].includes(source.representation))))
+        throw new Error('The API returned incomplete row provenance.');
       const table = document.createElement('table');
       const header = table.createTHead().insertRow();
-      for (const label of ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata']) {
+      const labels = columns ? columns.map(column => column.alias) : ['Provider', 'Name', 'Description', 'Version', 'ID', 'Metadata'];
+      if (showRightMatch) labels.push('Matched');
+      if (showPairSource) labels.push('Source rows');
+      if (provenance) labels.push('Source');
+      const showSnapshot = !!onSnapshot && provenance?.some(row => row.representation === 'Virtual');
+      if (showSnapshot) labels.push('Snapshot');
+      for (const label of labels) {
         const th = document.createElement('th');
         th.textContent = label;
         header.append(th);
       }
       const tbody = table.createTBody();
-      for (const item of payload.rows) {
+      for (const [index, item] of payload.rows.entries()) {
+        if (columns) {
+          const tr = tbody.insertRow();
+          for (const value of joined ? item.values : item) tr.insertCell().textContent = value === null ? 'NULL' : String(value);
+          if (showRightMatch) tr.insertCell().textContent = item.hasRight ? 'Yes' : 'No';
+          if (showPairSource) tr.insertCell().textContent = item.hasLeft
+            ? (item.hasRight ? 'Both' : 'Left only') : 'Right only';
+          if (provenance) {
+            const source = provenance[index];
+            tr.insertCell().textContent = source.representation === 'Virtual'
+              ? (source.alsoMaterialized ? 'Live mapping · stored copy exists' : 'Live mapping')
+              : 'Stored Holon';
+            if (showSnapshot) {
+              const action = tr.insertCell();
+              if (source.representation === 'Virtual' && !source.alsoMaterialized) {
+                const save = document.createElement('button');
+                save.type = 'button';
+                save.className = 'ghost';
+                save.textContent = 'Save snapshot';
+                save.addEventListener('click', () => onSnapshot(source, item[0], save));
+                action.append(save);
+              }
+            }
+          }
+          continue;
+        }
         const row = item.selected ? item.selected.row : item;
         const provider = item.selected ? item.selected.provider : payload.provider;
         const tr = tbody.insertRow();
@@ -261,13 +332,15 @@
     async function run() {
       if (controller || preparing || discovery || !getToken() || !endpoint) return;
       let body;
+      let requestPath;
       let timeoutMilliseconds;
       try {
-        body = parse($('cql-request').value);
+        ({path: requestPath, body} = withVirtualMapping(parse($('cql-request').value), endpoint, $('cql-virtual-mapping')?.value));
         timeoutMilliseconds = requestTimeout(body);
       }
       catch (error) { note(error.message, true); return; }
 
+      const scalarAlias = namedScalar?.request === $('cql-request').value ? namedScalar.alias : undefined;
       const identity = getIdentity();
       const base = getBase();
       const current = ++generation;
@@ -284,7 +357,7 @@
       try {
         const token = await ensureAccessToken();
         if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
-        const response = await fetch(`${base}/api/${endpoint}`, {
+        const response = await fetch(`${base}/api/${requestPath}`, {
           method: 'POST', signal: pending.signal,
           headers: { Accept: 'application/json', 'Content-Type': 'application/json',
             Authorization: 'Bearer ' + token, 'Idempotency-Key': requestKey },
@@ -298,11 +371,38 @@
         if (current !== generation || identity !== getIdentity() || base !== getBase()) return;
         const result = unwrap(data);
         $('cql-response').textContent = JSON.stringify(data, null, 2);
+        if ((endpoint === 'data/query-cql/scalar' || body.resultOperation) && result?.errorCode === 'CQL_EMPTY_SEQUENCE') {
+          note('No records matched. This aggregate needs at least one value.');
+          return;
+        }
         if (!response.ok || !result || result.isError) {
           throw new Error(`HTTP ${response.status}${result?.errorCode ? ' · ' + result.errorCode : ''}: ` +
             (result?.message || data?.message || 'The API rejected this query.'));
         }
-        render(result);
+        const canSnapshot = requestPath === 'data/query-cql/projection/mixed' && canPrepare() &&
+          typeof request === 'function' && result.result?.canPrepareSnapshot === true;
+        render(result, scalarAlias, canSnapshot ? async (source, id, button) => {
+          const stillCurrent = () => current === generation && identity === getIdentity() && base === getBase();
+          if (button.disabled || controller || !stillCurrent()) return;
+          button.disabled = true;
+          try {
+            const prepared = await request('POST',
+              `native-data/${encodeURIComponent(source.provider)}/virtual-mappings/${encodeURIComponent(source.mappingId)}/snapshot/prepare`,
+              {rowId: id, query: virtualSnapshotQuery(body)}, {preserveMetadata: true});
+            if (!stillCurrent()) return;
+            const holon = prepared.result;
+            if (holon?.id !== id || holon.isPublic !== false)
+              throw new Error('WEB4 did not prepare the expected private snapshot.');
+            await request('POST', 'data/save-holon', {holon, providerType: result.result.provider,
+              operationId: crypto.randomUUID(), expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+            if (stillCurrent()) {
+              button.textContent = 'Snapshot saved';
+              note('Private snapshot saved. Run the query again to see that a stored copy exists.');
+            }
+          } catch (error) {
+            if (stillCurrent()) note(error.message, true);
+          }
+        } : null);
       } catch (error) {
         if (current === generation) note(pending.signal.aborted
           ? (timedOut ? 'Request timed out. No automatic retry was made.' : 'Request cancelled. Server work may already have executed.')
@@ -321,15 +421,21 @@
       controller = null;
       discovery?.abort(); discovery = null;
       if (force || sessionIdentity !== identity || sessionBase !== base) {
+        clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note'));
+        const savedMappings = $('cql-saved-mapping');
+        if (savedMappings) { savedMappings.replaceChildren(); savedMappings.hidden = true; }
+
         $('cql-results').replaceChildren();
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
       }
-      sessionIdentity = identity; sessionBase = base; sources = null; endpoint = '';
+      sessionIdentity = identity; sessionBase = base; sources = null; discoveredTextProfiles = {}; endpoint = '';
+      namedScalar = null;
       $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
       $('cql-sources').textContent = '';
       controls();
+      onCatalogueChanged();
       if (!token) { note('Start a demo session or sign in above to load live providers.'); return; }
       const current = generation;
       const pending = new AbortController(); discovery = pending;
@@ -348,6 +454,7 @@
         if (!response.ok || result?.isError)
           throw new Error(`Provider discovery failed: HTTP ${response.status} · ${result?.errorCode || 'CQL_CATALOGUE_UNAVAILABLE'}`);
         sources = catalogue(result);
+        discoveredTextProfiles = root.CqlText.discoverKeyProfiles(sources);
         for (const source of sources) {
           const playable = profileChoices(source, sources).length > 0;
           const option = new Option(source.provider + (!source.available ? ' · unavailable' : !playable ? ' · examples pending' : ''), source.provider);
@@ -364,7 +471,11 @@
           ? 'Provider discovery stopped. No automatic retry was made.' : error.message, true);
       } finally {
         clearTimeout(timeout);
-        if (current === generation) { discovery = null; controls(); }
+        if (current === generation) {
+          discovery = null;
+          controls();
+          onCatalogueChanged();
+        }
       }
     }
 
@@ -409,10 +520,92 @@
     $('cql-oracle-preset').addEventListener('change', chooseOracleExample);
     chooseOracleExample();
     const ready = syncAuth();
-    return { syncAuth, ready };
+    function publicExampleFor(source, selectedPreset = null) {
+      if (!source?.available || discovery || !getToken()) return null;
+      const example = source.examples?.find(row =>
+        (selectedPreset === null || 'host:' + row.id === selectedPreset) &&
+        ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
+        row.available !== false && row.operation === 'Rows' &&
+        root.CqlText.publicExample(source.provider, row.request, discoveredTextProfiles));
+      return example ? { provider: source.provider, request: example.request } : null;
+    }
+
+    function selectedPublicExample() {
+      const source = sources?.find(row => row.provider === $('cql-provider').value);
+      return publicExampleFor(source, $('cql-preset').value);
+    }
+
+    function availableQuestionProviders() {
+      return (sources ?? []).filter(source => publicExampleFor(source)).map(source => source.provider);
+    }
+
+    function publicQuestionExample(provider) {
+      if (provider) return publicExampleFor(sources?.find(source => source.provider === provider));
+      const selected = selectedPublicExample();
+      if (selected) return selected;
+      for (const source of sources ?? []) {
+        const example = publicExampleFor(source);
+        if (example) return example;
+      }
+      return null;
+    }
+
+    for (const example of ['grouped', 'grouped-distinct', 'join', 'distinct-count', 'child-join', 'version-join', 'length']) {
+      $('cql-load-' + example + '-example').addEventListener('click', () => {
+        const editor = $('cql-text');
+        editor.value = $('cql-' + example + '-example').textContent.trim();
+        editor.focus();
+        note('Review the example, then preview its request.');
+      });
+    }
+
+    $('cql-load-text-example').addEventListener('click', () => {
+      try {
+        const example = selectedPublicExample();
+        if (!example) throw new Error('This provider has no SQL-like public example on this host.');
+        $('cql-text').value = root.CqlText.publicExample(example.provider, example.request, discoveredTextProfiles);
+        note('Review the SQL-like example, then preview its request.');
+      } catch (error) { note(error.message, true); }
+    });
+
+    function availableTextProviders() {
+      if (discovery || !getToken()) return [];
+      return [...root.CqlText.providers, ...Object.keys(discoveredTextProfiles)].filter(provider =>
+        sources?.some(source => source.provider === provider && source.available));
+    }
+
+    function availableTextProfiles() {
+      return discovery || !getToken() ? {} : discoveredTextProfiles;
+    }
+
+    function compileAvailableText(text) {
+      if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
+      const query = root.CqlText.compile(text, discoveredTextProfiles);
+      const selected = query.body.providers ?? [query.body.provider];
+      if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
+        (selected.length === 1 || row.federationAvailable))))
+        throw new Error('A requested provider is unavailable for this query on the selected WEB4 host.');
+      return query;
+    }
+
+    function loadText(text) {
+      const query = compileAvailableText(text);
+      $('cql-provider').value = query.body.providers?.[0] ?? query.body.provider;
+      chooseProvider();
+      preparation = null;
+      endpoint = query.path;
+      $('cql-endpoint').textContent = 'POST /api/' + endpoint;
+      $('cql-request').value = JSON.stringify(query.body, null, 2);
+      namedScalar = query.scalarAlias ? { request: $('cql-request').value, alias: query.scalarAlias } : null;
+      note('Review the compiled request, then run it on WEB4.');
+      controls();
+    }
+    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample,
+      clearVirtualMapping: () => clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note')),
+      availableQuestionProviders };
   }
 
-  const api = { providers, presets, preset, parse, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
+  const api = { providers, presets, preset, parse, withVirtualMapping, clearVirtualMapping, virtualSnapshotQuery, requestTimeout, unwrap, catalogue, profileChoices, profilePreset,
     localOraclePresets, localOraclePreset, init };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlPlayground = api;

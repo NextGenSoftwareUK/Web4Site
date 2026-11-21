@@ -120,7 +120,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <button class="tab" data-tab="failover" role="tab">Failover &amp; Replication</button>
     <button class="tab" data-tab="import" role="tab">Import Your Data<span class="soon" style="background:var(--green)">NEW</span></button>
     <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM</button>
-    <button class="tab" data-tab="ask" role="tab">Ask Your Data<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="ask" role="tab">Ask Your Data</button>
   </div>
 
   <!-- HyperDrive Live -->
@@ -159,6 +159,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
       <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata, Azure Blob properties and Solana account metadata. The provider list shows what is ready on this host.</p>
+      <p class="note">Jump to a walkthrough: <a href="#cql-eosio-catalogue">EOSIO / Vaulta</a> · <a href="#cql-solid-catalogue">SOLID</a> · <a href="#cql-ton-catalogue">TON</a> · <a href="#cql-hedera-catalogue">Hedera</a>.</p>
       <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
@@ -176,6 +177,118 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>2 · Read and edit the request</h2>
       <p class="mono" id="cql-endpoint" style="margin-bottom:12px"></p>
+      <details id="cql-text-editor" open>
+        <summary>Write a SQL-like CQL query</summary>
+        <p>On MongoDB, SQLite and Neo4j, select computed text lengths with <code>SELECT Name, LENGTH(Name) AS Units FROM MongoDBOASIS ORDER BY Units DESC LIMIT 10</code>. Count different lengths with <code>SELECT COUNT(DISTINCT LENGTH(Name)) FROM MongoDBOASIS</code>, or use <code>SUM(LENGTH(Name))</code>, <code>AVG(LENGTH(Name))</code>, <code>MIN(LENGTH(Name))</code> and <code>MAX(LENGTH(Name))</code> as the single selected aggregate. For string metadata, use <code>LENGTH(CAST(metadata.label AS STRING))</code> on stored Holons or a saved mapping. LENGTH counts UTF-16 units; missing or null text remains null.</p>
+      <p id="cql-text-help">On MongoDB, SQLite and Neo4j, AND binds before OR; parentheses and NOT preserve nested Boolean intent, including nested child/descendant tests. Advanced typed WHERE support requires the qualified backend release. Use <code>SELECT TOP 5 Id, Name FROM MongoDBOASIS ORDER BY Name</code> or <code>TOP(5)</code> to bound rows, DISTINCT results, grouped results or joined output. Join inputs accept up to ten rows. Choose either TOP or LIMIT/OFFSET/FETCH for each query window. Scalar queries already return one value. Column aliases may omit <code>AS</code>, for example <code>SELECT Name Label FROM MongoDBOASIS</code>. Use <code>SELECT *</code> for full rows, <code>SELECT Id, Name AS DisplayName, Version</code> for selected columns on one database, or SELECT COUNT(*), ANY(*), MIN(Version), MAX(Version), SUM(Version), or AVG(Version) for one database. List multiple providers for a federated row query. Use <code>ParentHolonId</code> with a quoted GUID to filter by direct parent. Use <code>EXISTS CHILD</code> or <code>EXISTS DESCENDANT</code> to filter by related records. Add a predicate in parentheses to filter the related records, or omit it to match any visible related record. Use <code>CHILD JOIN</code> between bounded sources on the same database to select fields from visible children. The relationship supplies the keys. In an explicit <code>ON</code> clause, compare matching signed integer fields with operators such as <code>l.Version &lt; r.Version</code>. After the join, use <code>ORDER BY ChildName DESC, ParentName ASC</code> to sort by selected columns, then <code>LIMIT 3 OFFSET 1</code> to page the joined results independently of the input limits. Prefix EXISTS with <code>NOT</code> to require absence of a visible match. TIMEOUT sets the row query budget in milliseconds (up to 30,000). Filter signed 64-bit metadata with <code>metadata.Sequence AS INT64 &gt;= -9007199254740993</code>. Filter unsigned 64-bit metadata with <code>metadata.Sequence AS UINT64 &gt;= 9007199254740993</code>. Filter exact decimal metadata with <code>metadata.amount AS DECIMAL &gt;= 0.10</code>. Filter floating-point metadata with <code>metadata.reading AS DOUBLE &gt;= 1e-5</code> or <code>metadata.reading AS SINGLE IN (0.25, 0.5)</code>. Use <code>CAST(metadata.reading AS DOUBLE)</code> or <code>CAST(metadata.reading AS SINGLE)</code> to select those values. Filter Boolean metadata with <code>metadata.someFlag AS BOOLEAN = TRUE</code>. Filter UTC timestamp metadata with <code>metadata.observedAt AS DATETIME &gt;= '2026-11-13T12:00:00Z'</code> for fields stored as timestamps. Use <code>TIMESTAMP '2026-11-21T12:00:00.1234567+02:00'</code> for an explicit timezone offset. The query uses the equivalent UTC instant and retains all seven fractional digits. Use a quoted string comparison for a timestamp stored as text. Use <code>Version BETWEEN 2 AND 5</code> for an inclusive range in an AND clause. Use <code>Version NOT BETWEEN 2 AND 5</code> for values strictly outside that range. Use <code>metadata.category NOT IN ('archived', 'draft')</code> to exclude values and omit null or missing categories. For MongoDB, SQLite and Neo4j, <code>SELECT Id, Version FROM Neo4jOASIS ORDER BY Version DESC, Id ASC LIMIT 5 OFFSET 1</code> orders matching records by selected aliases in the provider before applying LIMIT and OFFSET. A selected description can also be sorted with <code>SELECT Id, Description AS Detail FROM SQLLiteDBOASIS ORDER BY Detail DESC LIMIT 3</code> before applying the page limit. With an explicit column list, use <code>ORDER BY 2 DESC</code> to sort by the second selected column. Use <code>GROUP BY 2</code> when that selected column is a grouping field. For full rows on these stores, use <code>ORDER BY Name ASC, Id ASC</code> to sort by multiple fields. Filter text length with <code>LENGTH(Name) &gt;= 4</code> or <code>LENGTH(metadata.label) &gt;= 4</code>. LENGTH counts UTF-16 units, matching C#. For MongoDB, SQLite and Neo4j text fields, use <code>Name LIKE 'Coffee%'</code> for a prefix, <code>Name LIKE '%Coffee'</code> for a suffix, or <code>Name LIKE '%Coffee%'</code> for a substring. Use <code>Name LIKE '%100!%%' ESCAPE '!'</code> to match a literal <code>100%</code> anywhere in a name. Use <code>Name NOT LIKE '%Coffee%'</code> to exclude matching text and nulls. Test nested metadata with <code>metadata.location.city IS PRESENT</code> or <code>metadata.location.zip IS NULL</code>.</p>
+          <label for="cql-text">Query</label>
+        <textarea id="cql-text" aria-describedby="cql-text-help" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
+WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = 'tea')
+ORDER BY Name LIMIT 10</textarea>
+        <details>
+          <summary>Example with child and descendant filters</summary>
+          <pre><code id="cql-relationship-example">SELECT Id, Name, Version FROM MongoDBOASIS
+WHERE IsActive = TRUE
+  AND EXISTS CHILD (Version &gt;= 2)
+  AND EXISTS DESCENDANT (IsActive = TRUE)
+ORDER BY Name LIMIT 5</code></pre>
+        </details>
+        <details>
+          <summary>Example filtering grouped records by average and total version</summary>
+          <pre><code id="cql-grouped-example">SELECT IsActive, COUNT(*) AS Total, AVG(Version) AS AverageVersion, SUM(Version) AS TotalVersion
+FROM MongoDBOASIS
+GROUP BY IsActive
+HAVING AVG(Version) &gt;= 1.0 AND SUM(Version) &gt;= 1
+ORDER BY COUNT(*) DESC, IsActive ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-example">Load grouped example</button>
+        </details>
+        <details>
+          <summary>Example counting unique categories</summary>
+          <pre><code id="cql-distinct-count-example">SELECT COUNT(DISTINCT CAST(metadata.category AS STRING)) AS UniqueCategories
+FROM MongoDBOASIS
+WHERE IsActive = TRUE</code></pre>
+          <button type="button" id="cql-load-distinct-count-example">Load unique category count</button>
+        </details>
+        <details>
+          <summary>Compare populated values and unique labels in each category</summary>
+          <p>Use the <code>category</code> and <code>label</code> fields from your dataset, or edit the fields below. This excludes empty categories, compares rows with a label against different labels, then filters and sorts the complete groups. MongoDB, SQLite and Neo4j support this example.</p>
+          <pre><code id="cql-grouped-distinct-example">SELECT CAST(metadata.category AS STRING) AS Category,
+       COUNT(CAST(metadata.label AS STRING)) AS Present,
+       COUNT(DISTINCT CAST(metadata.label AS STRING)) AS UniqueLabels
+FROM MongoDBOASIS
+WHERE metadata.category &lt;&gt; ''
+GROUP BY Category
+HAVING Present &gt;= 1 AND UniqueLabels &gt;= 1
+ORDER BY UniqueLabels DESC, Category ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-distinct-example">Load grouped unique labels</button>
+          <p>To query stored and virtual holons together, add <code>WITH VIRTUAL MAPPING 'your saved mapping ID'</code> after the provider name. Use fields exposed by that mapping. The mapping reads the original source; this query does not import or update it. Preview the request, then choose Run CQL.</p>
+        </details>
+        <details>
+          <summary>Example joining records to active records</summary>
+          <pre><code id="cql-join-example">SELECT l.Id AS RecordId, r.Name AS ActiveName
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
+LEFT JOIN (SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE ORDER BY Id LIMIT 5) AS r
+ON l.Id = r.Id</code></pre>
+          <button type="button" id="cql-load-join-example">Load join example</button>
+        </details>
+        <details>
+          <summary>Example comparing record versions</summary>
+          <p>For nullable signed integer join keys, use <code>IS NOT DISTINCT FROM</code> to match two missing values, or <code>IS DISTINCT FROM</code> to match a missing value with a present value.</p>
+          <pre><code id="cql-version-join-example">SELECT l.Name AS EarlierRecord, l.Version AS EarlierVersion,
+       r.Name AS LaterRecord, r.Version AS LaterVersion
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
+INNER JOIN (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS r
+ON r.Version &gt; l.Version
+ORDER BY LaterVersion DESC, EarlierVersion ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-version-join-example">Load version comparison</button>
+        </details>
+        <details>
+          <summary>Example listing active children of selected records</summary>
+          <pre><code id="cql-child-join-example">SELECT p.Name AS ParentName, c.Name AS ChildName
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Name LIMIT 5) AS p
+CHILD JOIN (SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE ORDER BY Name LIMIT 5) AS c
+ORDER BY ParentName ASC, ChildName ASC LIMIT 3</code></pre>
+          <button type="button" id="cql-load-child-join-example">Load child join example</button>
+        </details>
+          <details>
+            <summary>Example filtering records by text length</summary>
+            <p>Try this on MongoDB, SQLite or Neo4j by changing the provider name. LENGTH counts UTF-16 units: an emoji such as &#x1F600; counts as two. This example reads stored Holons. With a saved mapping, use LENGTH(metadata.name) to filter mapped names at their source.</p>
+            <pre><code id="cql-length-example">SELECT Id, Name FROM MongoDBOASIS
+WHERE IsActive = TRUE AND LENGTH(Name) &gt;= 4
+ORDER BY Id LIMIT 10</code></pre>
+            <button type="button" id="cql-load-length-example">Load text length example</button>
+          </details>
+        <button type="button" id="cql-load-text-example" disabled>Load public example</button>
+        <button type="button" id="cql-run-text">Run CQL</button>
+          <button type="button" id="cql-compile">Preview request</button>
+      </details>
+      <details>
+        <summary>Include a Virtual Holon mapping</summary>
+        <label for="cql-virtual-mapping">Virtual mapping ID</label>
+        <div class="row">
+          <input id="cql-virtual-mapping" placeholder="Paste a saved mapping ID" autocomplete="off">
+          <button type="button" class="ghost" id="cql-virtual-example">Load customer query</button>
+          <button type="button" class="ghost" id="cql-sqlite-virtual-example">Load supplier query</button>
+          <button type="button" class="ghost" id="cql-neo-virtual-example">Load loyalty query</button>
+          <button type="button" class="ghost" id="cql-list-mappings">List my mappings</button>
+        </div>
+        <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
+        <p id="cql-mapping-note" class="note" role="status"></p>
+        <p class="note">For row queries, select Id first, add one to eight supported mapped metadata filters, and order by Id or selected aliases. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
+        <p class="note">You can also use GROUP BY and SELECT DISTINCT with a saved mapping on MongoDB, SQLite or Neo4j.
+        Group known direct metadata fields and use COUNT, MIN, MAX, SUM or AVG over supported values.
+        Real and virtual copies of the same record count once before HAVING, ordering and paging.
+        Grouped results are read-only summaries; snapshot controls apply to individual records.</p>
+      </details>
+        <details>
+          <summary>Query stored and mapped text in one result</summary>
+          <p>Replace &lt;mapping-id&gt; with your saved customer mapping ID. This selects each name and its length, with one logical row when a stored copy also exists.</p>
+          <pre><code>SELECT Id, CAST(metadata.name AS STRING) AS Original,
+       LENGTH(CAST(metadata.name AS STRING)) AS Units
+FROM MongoDBOASIS WITH VIRTUAL MAPPING '&lt;mapping-id&gt;'
+WHERE LENGTH(metadata.name) &gt; 0
+ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
+        </details>
       <label for="cql-request">JSON query description</label>
       <textarea id="cql-request" spellcheck="false" rows="20" style="display:block;width:100%;margin:10px 0 16px;padding:16px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:13px/1.8 'Share Tech Mono',monospace;tab-size:2" aria-describedby="cql-help"></textarea>
       <p class="note" id="cql-help">filters are combined with AND. anyOf adds an OR group. In selects an array of exact values. metadataPath selects a metadata key. skip and take page the results. This editor accepts JSON, not executable C#, SQL or Cypher. The server checks permissions, bounds and provider capabilities.</p>
@@ -223,7 +336,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <p>Three selected IPFS records plus two MongoDB records: five physical copies.</p>
       </details>
       <details style="margin-top:20px">
-        <summary>SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
+        <summary id="cql-solid-catalogue">SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
         <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider SOLID -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected Pod records plus two MongoDB records: five physical copies.</p>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/SolidPointWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# resource-selection example ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLID_CQL_HOST_CONFIGURATION.md" target="_blank" rel="noopener noreferrer">HTTP example and host guide ↗</a></p>
@@ -242,7 +355,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>6 · Solana public accounts + MongoDB</h2>
       <p>In the hosted playground above, select a Solana public-account example. Read three configured mainnet accounts, then select the two-account subset. These are account metadata reads; no wallet, payment or transaction is required.</p>
       <p>Choose the Solana + Mongo federation example, prepare your two private Mongo records, then run it. The full query returns five physical rows (three Solana and two Mongo); the subset returns four. Other visitors can read the public accounts but cannot read your private copies.</p>
-      <p class="note">The source is a bounded account catalogue, not arbitrary chain search or transaction history. Browser acceptance of this provider remains pending; its hosted HTTP query, isolation and replica checks have passed.</p>
+      <p class="note">The source is a bounded account catalogue, not arbitrary chain search or transaction history. The public browser presets, hosted HTTP query, isolation and replica checks have passed.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLANA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Solana CQL guide and HTTP requests ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d4cde8226/Examples/CosmicCqlDemo/NativeKeySetWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# example ↗</a></p>
       <details style="margin-top:20px">
         <summary>Historical local indexed-holon demo — unavailable</summary>
@@ -266,7 +379,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>8 · Ethereum public balances and local storage demos</h2>
       <h3>Public mainnet balances · no wallet needed</h3>
       <p>The read-only C# demo queries three configured Ethereum addresses, then a two-address subset, through HolonManager and LINQ. It shows exact balances in wei and the selected finalized block hash. It creates no transaction or local database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing checks pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. This command runs the local console walkthrough.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing checks pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. This command runs the local console walkthrough.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --ethereum-public LocalState/COSMIC/HostedEthereumPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/ETHEREUM_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Ethereum setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e9283978b39936d705debc2a7668a9115ec622f7/Examples/CosmicCqlDemo/EthereumPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Owned-record demo · local chain + MongoDB</h3>
@@ -285,27 +398,27 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>9 · Polygon, Arbitrum, Cosmos, Polkadot and NEAR demos</h2>
       <h3>Public Polygon balances · no wallet needed</h3>
       <p>The read-only C# example queries three configured Polygon mainnet addresses, then a two-address subset, through HolonManager and LINQ. It prints exact native balances and the selected finalized block hash without creating transactions or a database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. This command runs the local console walkthrough.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. This command runs the local console walkthrough.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polygon-public LocalState/COSMIC/HostedPolygonPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/POLYGON_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polygon setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8c1473758e0f86e9d9204513d406c0f9af77a51e/Examples/CosmicCqlDemo/PolygonPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Arbitrum balances · official free RPC</h3>
       <p>The read-only C# example queries three configured Arbitrum One addresses, then a two-address subset. It uses the official RPC with the selected finalized block hash, prints exact native balances and creates no transaction or database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo checks pass; browser verification remains open. RPC-reported finality is not independent rollup-settlement verification.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo checks pass; the public browser presets pass. RPC-reported finality is not independent rollup-settlement verification.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --arbitrum-public LocalState/COSMIC/HostedArbitrumPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/ARBITRUM_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Arbitrum setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2c06411c062c284fb61918be1e3534273c925382/Examples/CosmicCqlDemo/ArbitrumPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Cosmos Hub validators · no wallet needed</h3>
       <p>The C# demo reads three configured validators, then a two-validator subset through HolonManager and LINQ. It prints exact token counts and the pinned application state height without transactions or database setup.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. State is reported by the REST server, not independently verified consensus.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. State is reported by the REST server, not independently verified consensus.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --cosmos-public LocalState/COSMIC/HostedCosmosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/COSMOS_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Cosmos setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e5bc96173/Examples/CosmicCqlDemo/CosmosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Polkadot block headers · no wallet needed</h3>
       <p>The C# walkthrough reads three configured block headers, then a two-hash subset through HolonManager and LINQ. Each header content hash is checked locally; no transaction, block body or database setup is needed.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. Canonical history and finality are RPC-reported, not independently verified GRANDPA proofs.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. Canonical history and finality are RPC-reported, not independently verified GRANDPA proofs.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polkadot-public LocalState/COSMIC/HostedPolkadotPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/POLKADOT_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polkadot setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/03db9a052/Examples/CosmicCqlDemo/PolkadotPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public NEAR account data · no wallet needed</h3>
       <p>The C# walkthrough reads three configured public accounts, then a two-account subset through HolonManager and LINQ. Balances stay exact strings in yoctoNEAR and each selection is pinned to one reported final block.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass with the explicitly selected free FastNear endpoint. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. No transaction, contract execution or database setup is needed for the console demo.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass with the explicitly selected free FastNear endpoint. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. No transaction, contract execution or database setup is needed for the console demo.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --near-public LocalState/COSMIC/HostedNearPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/NEAR_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">NEAR setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/0487d9656/Examples/CosmicCqlDemo/NearPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Base balances · no wallet needed</h3>
@@ -378,7 +491,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public Stellar ledger headers · no wallet needed</h3>
       <p>Query three configured ledgers, then filter to two with HolonManager and LINQ. Complete native XDR and hashes are checked before metadata is returned; this is not independent SCP consensus verification.</p>
-      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. Browser acceptance remains pending. No Stellar transaction is submitted.</p>
+      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. The live browser check passed for the public and paired Stellar presets. No Stellar transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --stellar-public LocalState/COSMIC/HostedStellarPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/STELLAR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/637a6d49f/Examples/CosmicCqlDemo/StellarPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
@@ -400,7 +513,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --aptos-public LocalState/COSMIC/HostedAptosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cbba242f7/Docs/Devs/APTOS_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/73cf8abb7/Examples/CosmicCqlDemo/AptosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
-      <h3>Public Hedera mirror accounts · no wallet needed</h3>
+      <h3 id="cql-hedera-catalogue">Public Hedera mirror accounts · no wallet needed</h3>
       <p>Query three configured accounts, then filter to two with HolonManager and LINQ. Tinybar balances stay exact and each row preserves the mirror's balance timestamp.</p>
       <p class="note">Live HTTP checks pass: three accounts or a two-account subset, paired with two private Mongo snapshots. Repeat setup reuses both snapshots; visitor isolation and SQLite/Neo4j replicas are verified. Select HashgraphOASIS in the CQL tab. Reads overlap up to three per native query while preserving timestamps; no freshness, shared-snapshot or consensus-proof promise. Browser verification remains open. No SDK payment or Hedera transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
@@ -411,7 +524,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public TON headers · no wallet needed</h3>
       <p>Use HolonManager and LINQ to query three configured Mainnet headers, then select two by root hash. Logical times and large counters retain their exact values.</p>
-      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. Browser verification remains open; no wallet, funding or chain transaction is needed.</p>
+      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. The public browser presets passed. The original owner's private paired browser presets remain open. No wallet, funding or chain transaction is needed.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap"># Follow the setup guide once to create your reusable catalogue and build.
 
 dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
@@ -720,7 +833,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-eosio-catalogue">
       <h2>EOSIO / Vaulta native accounts + MongoDB</h2>
       <p>Query three public native accounts, then filter to two. Select <strong>EOSIOOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Account creation times, RAM quotas and per-response head markers are exposed without a wallet or funded account.</p>
-      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. Browser interaction verification remains open.</p>
+      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. The public browser presets passed. The original owner's private paired browser presets remain open.</p>
       <p class="note">Each account read reports its own head; these records do not establish a common finalized snapshot. Private Mongo demo copies retain source identity, name and description, not the full native payload. This is a native EOSIO/Vaulta profile, separate from Telos EVM and signed EOSIO storage.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -1525,7 +1638,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
     <div class="card" id="cql-dapr-catalogue">
       <h2>77 &middot; Dapr stored records + MongoDB</h2>
-      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. The public browser presets returned three or two rows. The original owner's private paired browser presets still need verification.</p>
       <p>Select <strong>DaprOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
       <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public Dapr records from your private MongoDB snapshots.</p>
       <p>Query the sandbox's enrolled Dapr state records. The verified flow preserves source values and checks snapshot privacy and SQLite/Neo4j replicas. Broader ORM operations remain on the roadmap.</p>
@@ -1563,6 +1676,46 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively. The provider column distinguishes public configuration from your private snapshots.</p>
       <p>Inspect each network name, network ID and the Polygon block reported for that observation. Public rows can advance to newer blocks; your prepared snapshots retain their first observation. Personal verification and pass issuance remain separate features.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/843620f4978e1a8854db7b1809bb06508def43e3/Docs/WIP/COSMIC%20ORM/CIVIC_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/88c378c1e08ee270365b760c9d3abc29b629a0f4/Providers/Network/NextGenSoftware.OASIS.API.Providers.CivicOASIS/CivicNetworkQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-maplibre-catalogue">
+      <h2>82 &middot; MapLibre public styles + MongoDB</h2>
+      <p class="note">Explore three complete public map style documents or a two-style subset. Paired queries combine those records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>MapLibreOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each style name, source count, layer count and complete compact style JSON. The original response hash and byte count describe the fetched document; the compact JSON has its own hash. Your snapshots retain their first observation. Map rendering and tile downloads are separate features.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/39fc64ba7/Docs/WIP/COSMIC%20ORM/MAPLIBRE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/23532a6fc9146d5535152c182e61ec21d8889d6e/Providers/Maps/NextGenSoftware.OASIS.API.Providers.MapLibreOASIS/MapLibreStyleQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-the-sandbox-catalogue">
+      <h2>83 &middot; The Sandbox token contracts + MongoDB</h2>
+      <p class="note">Explore public LAND, SAND and ASSET contract metadata on Polygon, or a two-contract subset. Paired queries combine these observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>TheSandboxOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each contract address, native token name and symbol, reported Polygon block and observed contract-code hash. Your snapshots retain their first observation as public blocks advance. LAND holdings, transfers and game assets have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e263340738adc83bb882f64dab7dcc5132318654/Docs/WIP/COSMIC%20ORM/THE_SANDBOX_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e6263111241a01a5fd2d1649ec0ea2d3afeaf41a/Providers/Maps/NextGenSoftware.OASIS.API.Providers.TheSandboxOASIS/SandboxContractQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-polygon-id-catalogue">
+      <h2>84 &middot; Polygon ID public schemas + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three complete published credential schemas or a two-schema subset. Paired queries combine these documents with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>PolygonIDOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each schema key, full JSON document, pinned source revision and original content hash. Schema references are preserved in the document. Credential issuance and proof verification have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/POLYGON_ID_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/35808de0d67544c6cd8a0006c2678a20bd24961b/Providers/Identity/NextGenSoftware.OASIS.API.Providers.PolygonIDOASIS/PolygonIdSchemaQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-seeds-catalogue">
+      <h2>85 &middot; SEEDS public settings + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore the current high, medium and low unity thresholds on Telos, or a two-setting subset. Paired queries combine those observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>SEEDSOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each setting, description and exact integer value. These are current table observations; the reported chain header does not pin the table data to that block. Your snapshots retain their first observation as public settings change.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/SEEDS_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/61481c28bc0d54c8662b3d2d975dd78dbb63381b/Providers/Other/NextGenSoftware.OASIS.API.Providers.SEEDSOASIS/SeedsSettingsQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-openvino-catalogue">
+      <h2>86 &middot; OpenVINO model metadata + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three versions of one owned teaching model or a two-version subset. Paired queries combine their native metadata with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>IntelOpenVINOOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect the requested model version, complete advertised version list and native input/output tensor details. The same tiny add-one model is served at all three versions. CQL reads metadata; running inference and using trained models are separate operations.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/OPENVINO_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9c20d06ad6326d31e564c3c150b72a68e25da070/Providers/Other/NextGenSoftware.OASIS.API.Providers.IntelOpenVINOOASIS/OpenVinoVersionQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
   </section>
   <section class="panel" id="panel-failover">
@@ -1648,10 +1801,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div id="im-previews"></div>
     </div>
     <div class="card">
-      <h2>3 · Import it, then import it again</h2>
-      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Imported holons are ordinary OASIS data: they replicate to every provider.</p>
-      <div class="row"><button id="im-import" disabled>IMPORT SOURCE</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
-      <p class="note" id="im-import-note"></p>
+      <h2>3 · Full import or virtual mapping</h2>
+      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Full import saves the selected rows as Holons. HyperDrive can replicate them to eligible providers.</p>
+      <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
+        <details id="im-virtual-panel" hidden>
+          <summary>Virtual mapping</summary>
+          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB, Neo4j or Azure Cosmos DB connection. Cosmos DB containers must use /id as their only partition key for virtual mapping. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
+          <div class="row">
+            <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
+              aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
+            <button id="im-save-virtual" disabled>CREATE VIRTUAL MAPPING</button>
+          </div>
+          <p class="note" id="im-virtual-note" role="status"></p>
+        </details>
+        <p class="note" id="im-import-note"></p>
       <div class="table-wrap" id="im-report"></div>
       <div class="table-wrap" id="im-copies"></div>
     </div>
@@ -1664,7 +1827,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
   </section>
   <section class="panel" id="panel-ask">
-    <div class="soon-box"><b>FLAGSHIP · COMING LATER</b><p>Ask a question in plain English across your Web2, Web3 and app data. AI writes a read-only, permission-checked CQL plan, WEB4 runs it across providers, and an Explain panel shows exactly where every answer came from.</p></div>
+    <div class="card">
+      <h2>Ask Your Data</h2>
+      <p>WEB6 drafts a read-only query from your question. Review it before running it on WEB4 Development.</p>
+      <p>To include a saved virtual mapping, select it in the CQL Playground first. Public examples clear that selection.</p>
+    <label for="ask-question">Question</label>
+      <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show five active Neo4j records with a descendant named Coffee or Tea"></textarea>
+      <label for="ask-example-provider">Public example provider</label>
+      <select id="ask-example-provider"><option value="">Any ready provider</option></select>
+      <button type="button" id="ask-use-example">Use a public example</button>
+      <button type="button" id="ask-generate">Draft query</button>
+      <p id="ask-status" role="status" aria-live="polite"></p>
+      <pre id="ask-draft"></pre>
+      <button type="button" id="ask-preview" disabled>Open in CQL Playground</button>
+    </div>
   </section>
 </main>
 
@@ -1672,16 +1848,21 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
   OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
 </footer>
 
-<script src="web4-session.js?v=session-renewal-lifetime-v2"></script>
+<script src="web4-session.js?v=session-renewal-status-v3-virtual-mapping-v1"></script>
 <script src="web4-tabs.js?v=provider-card-links-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
 let jwt = null;
+let demoSessionIdentity = null;
 let timer = null;
 
 function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function base(){return $('env').value}
-const session = Web4Session.create({ getBase: base, onToken: token => { jwt = token; } });
+const session = Web4Session.create({
+  getBase: base,
+  onToken: token => { jwt = token; },
+  onRenewalFailure: error => setNote($('auth-note'), error.message, 'err')
+});
 function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
 
 // Tabs
@@ -1706,6 +1887,7 @@ async function signOut(){
   try { await session.signOut(); }
   catch { confirmed = false; }
   stopAuto(); $('auto').checked = false;
+  window.cqlAsk?.resetSession();
   window.cqlPlayground?.syncAuth();
   $('signout-btn').hidden = true; $('refresh-btn').disabled = true;
   setNote($('auth-note'), confirmed ? 'Signed out.' : 'Signed out here. The server could not confirm sign-out.', confirmed ? undefined : 'err');
@@ -1718,6 +1900,7 @@ const SANDBOX = 'https://dev.api.web4.oasisomniverse.one';
 const PROVIDERS = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
 function isSandbox(){ return base() === SANDBOX; }
 function onSignedIn(name){
+  window.cqlAsk?.resetSession();
   window.cqlPlayground?.syncAuth();
   setNote($('auth-note'), `Signed in as ${name}.`, 'ok');
   $('signout-btn').hidden = false; $('refresh-btn').disabled = false;
@@ -1735,6 +1918,7 @@ async function startDemo(){
   setNote($('auth-note'), 'Creating your demo avatar…');
   try {
     const avatar = await session.startDemo();
+    demoSessionIdentity = session.identity();
     onSignedIn(`${avatar.username} (demo avatar)`);
   } catch (e) {
     setNote($('auth-note'), 'Could not start a demo session: ' + e.message, 'err');
@@ -1742,7 +1926,7 @@ async function startDemo(){
 }
 $('demo-btn').addEventListener('click', startDemo);
 
-async function call(method, path, body){
+async function call(method, path, body, options = {}){
   const context = await session.accessContext();
   const { base: origin, token } = context;
   // One click is one logical request. Retain its identity on an uncertain outcome;
@@ -1758,7 +1942,9 @@ async function call(method, path, body){
     throw new Error(`${error.message}. Request key: ${key}. Outcome unknown; do not repeat a write.`);
   }
   const operation = response.headers.get('X-OASIS-Operation-Id');
-  const data = await response.json().catch(() => null);
+  const data = options.preserveMetadata
+    ? CqlLosslessMetadata.parse(await response.text())
+    : await response.json().catch(() => null);
   session.assertContext(context, key, operation || data?.operationId);
   // Data endpoints wrap OASISResult; sandbox endpoints return it directly.
   const r = data && data.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
@@ -1857,6 +2043,7 @@ $('fo-load').addEventListener('click', async () => {
 // Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
 const native = () => $('im-provider').value;
 let firstImportedId = null;
+let virtualListedContext = null;
 let sqliteUpload = null; // {fileName, fileBase64} once a SQLite file is chosen
 
 const importMode = () => document.querySelector('input[name="im-mode"]:checked').value;
@@ -1930,6 +2117,22 @@ $('im-delete-conn').addEventListener('click', () => busy($('im-delete-conn'), $(
   await refreshSaved(); setNote($('im-saved-note'), `Deleted '${name}'.`, 'ok');
 }));
 // Shows only the fields the chosen database type needs, and enables the controls that can work right now.
+function virtualConnectionName(){
+  const provider = native();
+  if (importMode() === 'demo')
+    return isSandbox() && ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider) ? 'oasis-sandbox-native-fixture' : null;
+  return ['MongoDBOASIS', 'Neo4jOASIS', 'AzureCosmosDBOASIS'].includes(provider) ? savedName() : null;
+}
+function virtualSourceContext(){
+  const connectionName = virtualConnectionName();
+  return jwt && connectionName
+    ? JSON.stringify([session.identity(), importMode(), native(), connectionName]) : null;
+}
+function syncVirtualControls(){
+  const context = virtualSourceContext();
+  $('im-virtual-panel').hidden = !context;
+  $('im-save-virtual').disabled = !context || context !== virtualListedContext;
+}
 function syncImportControls(){
   const own = importMode() === 'own', select = $('im-provider');
   [...select.options].forEach(o => { o.hidden = o.disabled = !own && !DEMO_TYPES.includes(o.value); });
@@ -1948,6 +2151,7 @@ function syncImportControls(){
   $('im-saved-row').hidden = !own;
   $('im-save-conn').disabled = !(jwt && own) || saved;
   $('im-delete-conn').disabled = !saved;
+  syncVirtualControls();
   $('im-seed').disabled = !(jwt && isSandbox());
   $('im-sources').disabled = !(jwt && (own || isSandbox()));
 }
@@ -1987,11 +2191,16 @@ $('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'
   await loadSources();
 }));
 async function loadSources(){
+  const virtualContext = virtualSourceContext();
+  virtualListedContext = null;
+  syncVirtualControls();
   const conn = importMode() === 'own';
   const r = conn ? await call('POST', `native-data/${native()}/sources`, connRef()) : await call('GET', `native-data/${native()}/sources`);
   const sources = r.result || [];
   $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
   const ok = sources.length > 0;
+  virtualListedContext = ok ? virtualContext : null;
+  syncVirtualControls();
   ['im-source','im-preview','im-import','im-save-mapping'].forEach(id => $(id).disabled = !ok);
   setNote($('im-preview-note'), ok ? `${sources.length} sources found${conn ? ' in your database' : ' in the shop database'}.` : (conn ? 'Connected, but no sources were found.' : 'Create the demo shop data first.'), ok ? 'ok' : '');
 }
@@ -2009,6 +2218,46 @@ $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-prev
       <div><div class="list-title">OASIS HOLON · ${esc(p.holonType)}</div>${p.error ? `<p class="note err">${esc(p.error)}</p>` :
         `<pre>${esc(JSON.stringify({id: p.holonId, name: p.holonName, description: p.holonDescription, metaData: p.holonMetaData}, null, 2))}</pre>`}</div></div>`).join('');
 }));
+$('im-save-virtual').addEventListener('click', async () => {
+  const context = virtualSourceContext();
+  if (!context || context !== virtualListedContext) return;
+  await busy($('im-save-virtual'), $('im-virtual-note'), 'Creating mapping…', async () => {
+    const sourceName = $('im-source').value;
+    const fields = Object.create(null);
+    const nativeFields = new Set();
+    for (const pair of $('im-virtual-fields').value.split(',')) {
+      const [alias, field, unexpected] = pair.split('=').map(value => value.trim());
+      if (!alias || alias.length > 64 || /[\u0000-\u001f\u007f-\u009f]/.test(alias) || /^oasis\.(native|virtual)\./i.test(alias) ||
+          !field || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(field) || field === '_id' ||
+          unexpected !== undefined || Object.hasOwn(fields, alias) || nativeFields.has(field))
+        throw new Error('Enter unique bindings in the form CQL field=source field.');
+      fields[alias] = field;
+      nativeFields.add(field);
+    }
+    if (nativeFields.size > 32) throw new Error('Use at most 32 field bindings.');
+    const id = crypto.randomUUID(), operationId = crypto.randomUUID();
+    const prepared = await call('POST', 'native-data/' + native() + '/virtual-mappings/prepare',
+      {id, sourceName, connectionName: virtualConnectionName(), fields});
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('The active source changed. List sources again. No save was sent.');
+    const ownerId = prepared.result?.createdByAvatarId;
+    if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false ||
+        typeof ownerId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ownerId) ||
+        /^0{8}(?:-0{4}){3}-0{12}$/.test(ownerId))
+      throw new Error('WEB4 did not prepare the expected private mapping.');
+    const saved = await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
+      expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+    if (saved?.isSaved !== true || saved.result?.id?.toLowerCase() !== id ||
+        saved.result?.isPublic !== false || saved.result?.createdByAvatarId?.toLowerCase() !== ownerId.toLowerCase())
+      throw new Error('Mapping save acknowledgement is incomplete. Retain request key ' +
+        operationId + ' for reconciliation; do not repeat the save.');
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('Mapping ' + id + ' was saved for the original source. The selection changed, so it was not selected for CQL.');
+    $('cql-virtual-mapping').value = id;
+    setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in their database.`, 'ok');
+  });
+  syncVirtualControls();
+});
 $('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
   const source = $('im-source').value;
   const t0 = performance.now();
@@ -2088,7 +2337,10 @@ renderOrm();
 
 $('signout-btn').addEventListener('click', signOut);
 $('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
-$('env').addEventListener('change', () => { if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); } });
+$('env').addEventListener('change', () => {
+  window.cqlAsk?.resetSession();
+  if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); }
+});
 
 async function api(path){
   const context = await session.accessContext();
@@ -2157,9 +2409,52 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-playground.js?v=cql-preset-labels-v1"></script>
+<script src="cql-text.js?v=20261121-boolean-where-v1"></script>
+<script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
+<script src="cql-playground.js?v=20261119-grouped-distinct-demo-v1"></script>
+<script src="cql-ask.js?v=20261121-boolean-where-v1"></script>
 <script>
-window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
+window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
+  onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });
+  $('cql-list-mappings').addEventListener('click', () =>
+    busy($('cql-list-mappings'), $('cql-mapping-note'), 'Loading mappings…', async () => {
+      const actor = session.avatarId();
+      if (!actor) throw new Error('Sign in to list your mappings.');
+      const response = await call('POST', 'data/query-cql/projection', {
+        filters: [{metadataPath:['oasis.virtual.mapping'], scalar:'Boolean', operator:'Equal', value:true},
+          {field:'IsActive', scalar:'Boolean', operator:'Equal', value:true}],
+        orderBy:'Id', take:100,
+        columns:[{field:'Id', alias:'Id'}, {field:'Name', alias:'Source'}, {field:'CreatedByAvatarId', alias:'Owner'}]
+      });
+      const choices = $('cql-saved-mapping');
+      choices.replaceChildren(new Option('Choose a saved mapping', ''));
+      for (const [id, source, owner] of response.result.rows) {
+        if (String(owner).toLowerCase() === actor.toLowerCase())
+          choices.add(new Option(source, id));
+      }
+      choices.hidden = choices.options.length === 1;
+      setNote($('cql-mapping-note'), choices.hidden ? 'No mappings found for this avatar.' :
+        (response.result.rows.length === 100 ? 'Showing mappings from the first 100 matching results.' : 'Choose a mapping.'), 'ok');
+    }));
+  $('cql-saved-mapping').addEventListener('change', () => {
+    $('cql-virtual-mapping').value = $('cql-saved-mapping').value;
+  });
+  function loadVirtualExample(sql) {
+    try {
+      window.cqlPlayground.loadText(sql);
+      $('cql-text').value = sql;
+    } catch (error) {
+      setNote($('cql-note'), error.message, 'err');
+    }
+  }
+  $('cql-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
+  $('cql-sqlite-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Supplier FROM MongoDBOASIS WHERE metadata.country = 'United Kingdom' ORDER BY Id LIMIT 10"));
+  $('cql-neo-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Member FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
+window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken,
+  isDemoSession: () => demoSessionIdentity !== null && demoSessionIdentity === session.identity() });
 </script>
 </body>
 </html>
