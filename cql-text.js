@@ -360,8 +360,15 @@
         scalar = type;
         if (accept('IS')) {
           if (length) throw new Error('Close LENGTH before its numeric comparison.');
-          if (scalar !== 'String') throw new Error('Canonical null tests require a text field.');
           const negated = accept('NOT');
+          if (scalar === 'Boolean') {
+            let value;
+            if (accept('TRUE')) value = true;
+            else if (accept('FALSE')) value = false;
+            else throw new Error('Canonical Boolean IS tests require TRUE or FALSE.');
+            return { ...selector, scalar, operator: 'Equal', value: negated ? !value : value };
+          }
+          if (scalar !== 'String') throw new Error('Canonical null tests require a text field.');
           expect('NULL');
           return { ...selector, operator: negated ? 'IsNotNull' : 'IsNull' };
         }

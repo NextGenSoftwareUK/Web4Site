@@ -21,6 +21,8 @@
     'Example: SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE AND (metadata.category = \'coffee\' OR metadata.category = \'tea\') ORDER BY Name LIMIT 5',
   ];
 
+  databaseInstructions.push('For the non-null canonical Boolean fields IsActive, IS TRUE, IS FALSE, IS NOT TRUE and IS NOT FALSE are supported and preserve their exact Boolean comparison. Use typed equality for mapped Boolean metadata; do not apply these canonical IS forms to metadata.');
+
   databaseInstructions.push(
     "When a saved virtual mapping is selected, keep its admitted flat AND metadata filters. Do not use nested Boolean WHERE or relationship predicates with WITH VIRTUAL MAPPING.",
     "LENGTH on known text returns .NET UTF-16 units, so a supplementary character counts as two. For known STRING metadata, use SELECT Id, LENGTH(CAST(metadata.name AS STRING)) AS Units FROM MongoDBOASIS WHERE LENGTH(metadata.name) >= 2 ORDER BY Units DESC LIMIT 5. Use only metadata paths and types provided in the question; do not guess them. Canonical LENGTH(Name) and LENGTH(Description) require known non-null text or an explicit IS NOT NULL filter. Outside virtual mappings, COUNT, MIN, MAX, SUM and AVG may select LENGTH of admitted text.",
