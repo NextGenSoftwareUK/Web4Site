@@ -168,9 +168,9 @@ test('compiles a plain OR list as the same typed request as a parenthesized OR g
   const unwrapped = compile(prefix + alternatives + suffix);
   assert.deepEqual(unwrapped, compile(prefix + '(' + alternatives + ')' + suffix));
   assert.deepEqual(unwrapped.body.anyOf.map(filter => filter.value), ['Coffee', 'Tea', true]);
-  assert.throws(() => compile(prefix + alternatives + " AND Version = 2"), /Parenthesize the OR group/);
-  assert.throws(() => compile(prefix + "EXISTS CHILD (Version = 2) AND " + alternatives));
-  assert.throws(() => compile(prefix + "Version BETWEEN 1 AND 5 OR IsActive = TRUE"), /outside OR/);
+  assert.equal(compile(prefix + alternatives + " AND Version = 2").body.where.terms[2].kind, "And");
+  assert.equal(compile(prefix + "EXISTS CHILD (Version = 2) AND " + alternatives).body.where.terms[0].terms[0].kind, "Child");
+  assert.equal(compile(prefix + "Version BETWEEN 1 AND 5 OR IsActive = TRUE").body.where.terms[0].kind, "And");
 });
 
 test('preserves the difference between missing and non-null metadata', () => {
@@ -329,7 +329,7 @@ test('compiles inclusive ranges without rounding typed bounds', () => {
     "BETWEEN '2026-11-13T12:00:00.0000001Z' AND '2026-11-13T12:00:00.0000002Z'");
   assert.equal(date.body.filters[0].value, '2026-11-13T12:00:00.0000001Z');
   assert.equal(date.body.filters[1].value, '2026-11-13T12:00:00.0000002Z');
-  assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE (Version BETWEEN 2 AND 5 OR IsActive = TRUE)"), /outside OR/);
+  assert.equal(compile("SELECT * FROM MongoDBOASIS WHERE (Version BETWEEN 2 AND 5 OR IsActive = TRUE)").body.where.terms[0].terms.length, 2);
   assert.throws(() => compile("SELECT * FROM MongoDBOASIS WHERE Name BETWEEN 'a' AND 'b'"), /numeric or UTC timestamp/);
 });
 
@@ -769,7 +769,7 @@ test('lowers bounded NOT IN with SQL null exclusion and typed literals', () => {
     { field: 'Version', scalar: 'Integer', operator: 'NotEqual', value: 1 },
     { field: 'Version', scalar: 'Integer', operator: 'NotEqual', value: 2 }
   ]);
-  assert.throws(() => compile(prefix + "Description NOT IN ('a') OR Version = 1"), /outside OR/);
+  assert.equal(compile(prefix + "Description NOT IN ('a') OR Version = 1").body.where.terms[0].terms[0].filter.operator, "IsNotNull");
   assert.deepEqual(compile(prefix + "metadata.category NOT IN ('a')").body.filters, [
     { metadataPath: ['category'], operator: 'IsNotNull' },
     { metadataPath: ['category'], scalar: 'String', operator: 'NotEqual', value: 'a' }
@@ -1150,7 +1150,7 @@ test('compiles NOT BETWEEN to two strict ordered alternatives in the same scope'
     [['LessThan', 2], ['GreaterThan', 5], ['Equal', 'Example']]);
   const plain = compile(head + "Version NOT BETWEEN 2 AND 5 OR Name = 'Example'");
   assert.deepEqual(plain, parenthesized);
-  assert.throws(() => compile(head + 'Version NOT BETWEEN 2 AND 5 AND Version NOT BETWEEN 7 AND 9'), /one OR group/);
+  assert.ok(compile(head + "Version NOT BETWEEN 2 AND 5 AND Version NOT BETWEEN 7 AND 9").body.where.terms.every(term => term.kind === "Or"));
   assert.throws(() => compile(head + "Name NOT BETWEEN 'A' AND 'B'"), /requires a numeric or UTC timestamp/);
 });
 
