@@ -200,12 +200,21 @@
           return token;
         }
       if (scalar === 'DateTime') {
-        const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(?:\.\d{1,7})?Z'$/.exec(token ?? '');
-        const utcSeconds = match && new Date(match[1] + 'Z');
-        if (!utcSeconds || match[1].startsWith('0000') || !Number.isFinite(utcSeconds.getTime())
-            || utcSeconds.toISOString().slice(0, 19) !== match[1])
-          throw new Error('Expected a quoted UTC timestamp with up to seven fractional digits.');
-        return token.slice(1, -1);
+        // Date stores milliseconds; keep fractional ticks outside its conversion.
+        const literal = token?.toUpperCase() === 'TIMESTAMP' ? tokens[index++] : token;
+        const match = /^'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})(\.\d{1,7})?(Z|([+-])(\d{2}):(\d{2}))'$/.exec(literal ?? '');
+        const localSeconds = match && new Date(match[1] + 'Z');
+        if (!localSeconds || match[1].startsWith('0000') || !Number.isFinite(localSeconds.getTime())
+            || localSeconds.toISOString().slice(0, 19) !== match[1])
+          throw new Error('Expected a quoted ISO timestamp with Z or an explicit timezone offset and up to seven fractional digits.');
+        const hours = Number(match[5] ?? 0), minutes = Number(match[6] ?? 0);
+        if (hours > 14 || minutes > 59 || hours === 14 && minutes !== 0)
+          throw new Error('Timestamp timezone offsets must be within minus or plus 14 hours.');
+        const offsetMinutes = (hours * 60 + minutes) * (match[4] === '-' ? -1 : 1);
+        const utc = new Date(localSeconds.getTime() - offsetMinutes * 60000);
+        if (utc.getUTCFullYear() < 1 || utc.getUTCFullYear() > 9999)
+          throw new Error('The UTC timestamp must remain within years 0001 through 9999.');
+        return utc.toISOString().slice(0, 19) + (match[2] ?? '') + 'Z';
       }
       if (scalar === 'Decimal') {
         return exactDecimal(token);
