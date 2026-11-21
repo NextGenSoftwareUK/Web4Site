@@ -612,7 +612,9 @@
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected join clause.');
       const filterCount = left.body.filters.length + right.body.filters.length +
-        (left.body.anyOf?.length ?? 0) + (right.body.anyOf?.length ?? 0);
+        (left.body.anyOf?.length ?? 0) + (right.body.anyOf?.length ?? 0) +
+        (left.body.where ? whereStats(left.body.where).filters : 0) +
+        (right.body.where ? whereStats(right.body.where).filters : 0);
       if (keys.length > 8 || filterCount > 12)
         throw new Error('Use up to eight join keys and twelve input filters.');
       const columns = fieldsToSelect.map(field => {
@@ -805,58 +807,86 @@
       throw new Error('Text MIN/MAX currently requires a selected Virtual Holon mapping.');
 
 
-    function orPredicates(first) {
-      const alternatives = first.anyOf ?? [first];
-      while (accept('OR')) {
-        const alternative = filter();
-        alternatives.push(...(alternative.anyOf ?? [alternative]));
+    function whereStats(node, depth = 1) {
+      if (depth > 8) throw new Error('Use at most eight WHERE levels.');
+      let filters = node.kind === 'Filter' ? 1 : 0;
+      let relationships = ['Child', 'Descendant'].includes(node.kind) ? 1 : 0;
+      let nodes = 1;
+      for (const term of [...(node.terms ?? []), ...(node.match ? [node.match] : [])]) {
+        const child = whereStats(term, depth + 1);
+        filters += child.filters; relationships += child.relationships; nodes += child.nodes;
       }
-      return alternatives;
+      if (filters > 12 || relationships > 4 || nodes > 31)
+        throw new Error('WHERE supports twelve filters, four relationships and 31 nodes.');
+      return { filters, relationships, nodes };
     }
-
+    function combineWhere(kind, terms) {
+      const flat = terms.flatMap(term => term.kind === kind ? term.terms : [term]);
+      return flat.length === 1 ? flat[0] : { kind, terms: flat };
+    }
+    function flatWhere(node) {
+      const target = { filters: [] };
+      function add(current) {
+        if (current.kind === 'Filter') { target.filters.push(current.filter); return true; }
+        if (current.kind === 'And') return current.terms.every(add);
+        if (current.kind === 'Or' && !target.anyOf && current.terms.every(term => term.kind === 'Filter')) {
+          target.anyOf = current.terms.map(term => term.filter); return true;
+        }
+        const negated = current.kind === 'Not';
+        const related = negated ? current.terms[0] : current;
+        if (!['Child', 'Descendant'].includes(related.kind)) return false;
+        const match = related.match ? flatWhere(related.match) : { filters: [] };
+        if (!match || match.anyChildren || match.anyDescendants) return false;
+        if (negated) match.negated = true;
+        if (related.kind === 'Descendant') {
+          Object.assign(match, { maximumDepth: 8, maximumNodes: 1000 });
+          (target.anyDescendants ??= []).push(match);
+        } else (target.anyChildren ??= []).push(match);
+        return true;
+      }
+      return add(node) ? target : null;
+    }
     function predicates(target, allowChildren) {
-      do {
+      function term(depth) {
+        if (depth > 16) throw new Error('WHERE parentheses are nested too deeply.');
+        if (accept('NOT')) return { kind: 'Not', terms: [term(depth + 1)] };
         if (accept('(')) {
-          if (target.anyOf) throw new Error('Use one parenthesized OR group per scope.');
-          target.anyOf = orPredicates(filter());
-          expect(')');
-        } else if (allowChildren && (peek() === 'EXISTS'
-            || peek() === 'NOT' && tokens[index + 1]?.toUpperCase() === 'EXISTS')) {
-          const negated = accept('NOT');
-          expect('EXISTS');
+          const node = alternatives(depth + 1); expect(')'); return node;
+        }
+        if (allowChildren && accept('EXISTS')) {
           const descendant = accept('DESCENDANT');
           if (!descendant) expect('CHILD');
-          const relationship = { filters: [] };
-          if (negated) relationship.negated = true;
-          if (accept('(')) {
-            predicates(relationship, false);
-            expect(')');
-          }
-          if (descendant) {
-            Object.assign(relationship, { maximumDepth: 8, maximumNodes: 1000 });
-            (target.anyDescendants ??= []).push(relationship);
-          } else {
-            (target.anyChildren ??= []).push(relationship);
-          }
-        } else {
-          const predicate = filter(true);
-          if (!target.filters.length && !target.anyOf && !target.anyChildren && !target.anyDescendants && peek() === 'OR') {
-            if (Array.isArray(predicate)) throw new Error('BETWEEN, NOT IN and exact NOT LIKE need an AND clause outside OR alternatives.');
-            target.anyOf = orPredicates(predicate);
-            if (peek() === 'AND') throw new Error('Parenthesize the OR group when combining it with AND.');
-            break;
-          }
-          if (predicate.anyOf) {
-            if (target.anyOf) throw new Error('Use one OR group per scope.');
-            target.anyOf = predicate.anyOf;
-          } else {
-            target.filters.push(...[].concat(predicate));
-          }
+          let match;
+          if (accept('(')) { match = alternatives(depth + 1); expect(')'); }
+          return { kind: descendant ? 'Descendant' : 'Child', ...(match ? { match } : {}) };
         }
-      } while (accept('AND'));
+        const value = filter(true);
+        const leaf = filter => ({ kind: 'Filter', filter });
+        return Array.isArray(value) ? combineWhere('And', value.map(leaf))
+          : value.anyOf ? combineWhere('Or', value.anyOf.map(leaf)) : leaf(value);
+      }
+      function conjunction(depth) {
+        const terms = [term(depth)];
+        while (accept('AND')) terms.push(term(depth));
+        return combineWhere('And', terms);
+      }
+      function alternatives(depth) {
+        const terms = [conjunction(depth)];
+        while (accept('OR')) terms.push(conjunction(depth));
+        return combineWhere('Or', terms);
+      }
+      const tree = alternatives(1);
+      whereStats(tree);
+      const flat = flatWhere(tree);
+      if (flat) Object.assign(target, flat);
+      else target.where = tree;
     }
     if (accept('WHERE')) predicates(body, true);
-    if (body.virtualMappingId && (body.filters.length < 1 || body.filters.length > 8 ||
+    if (body.where && selected.some(provider =>
+        !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(provider)))
+      throw new Error('Nested Boolean WHERE requires admitted MongoDB, SQLite or Neo4j sources.');
+
+    if (body.virtualMappingId && (body.where || body.filters.length < 1 || body.filters.length > 8 ||
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
@@ -1036,8 +1066,9 @@
       }
       accept(';');
       if (index !== tokens.length) throw new Error('Unexpected grouped query clause.');
-      const filterCount = body.filters.length + (body.anyOf?.length ?? 0);
-      if (body.anyChildren || body.anyDescendants || filterCount > 12)
+      const filterCount = body.filters.length + (body.anyOf?.length ?? 0) +
+        (body.where ? whereStats(body.where).filters : 0);
+      if (body.anyChildren || body.anyDescendants || body.where && whereStats(body.where).relationships || filterCount > 12)
         throw new Error('Grouped queries support up to twelve filters on the source records.');
       if (body.virtualMappingId) {
         const inputColumns = [{ field: 'Id', alias: 'Id' }];
@@ -1150,7 +1181,8 @@
     const relationships = [...(body.anyChildren ?? []), ...(body.anyDescendants ?? [])];
     if (relationships.length > 4) throw new Error('Use at most four relationship predicates.');
     const filterCount = [body, ...relationships].reduce(
-      (total, scope) => total + scope.filters.length + (scope.anyOf?.length ?? 0), 0);
+      (total, scope) => total + scope.filters.length + (scope.anyOf?.length ?? 0) +
+        (scope.where ? whereStats(scope.where).filters : 0), 0);
     if (filterCount > 12) throw new Error('Use at most twelve filters across the query.');
     if (holo && (operation || body.orderBy !== 'None' || relationships.length ||
         [...body.filters, ...(body.anyOf ?? [])].some(item =>
