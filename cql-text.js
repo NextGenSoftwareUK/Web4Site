@@ -130,7 +130,21 @@
         throw new Error('Expected an integer from ' + minimum + ' to ' + maximum + '.');
       return value;
     }
-    function readWindow(maximumTake, maximumSkip, minimumTake = 1) {
+    function readTop() {
+      if (!accept('TOP')) return undefined;
+      const parenthesized = accept('(');
+      const take = integer(tokens[index++], 1, 100);
+      if (parenthesized) expect(')');
+      if (peek() === 'PERCENT' || peek() === 'WITH')
+        throw new Error('Use a bounded TOP row count without PERCENT or WITH TIES.');
+      return take;
+    }
+    function readWindow(maximumTake, maximumSkip, minimumTake = 1, leadingTake) {
+      if (leadingTake !== undefined) {
+        if (['LIMIT', 'OFFSET', 'FETCH'].includes(peek()))
+          throw new Error('Use either TOP or LIMIT/OFFSET/FETCH in one query window.');
+        return { take: integer(String(leadingTake), minimumTake, maximumTake), skip: undefined };
+      }
       let take, skip;
       if (accept('LIMIT')) {
         take = integer(tokens[index++], minimumTake, maximumTake);
@@ -405,7 +419,7 @@
       return { ...selector, scalar, operator, value: literal() };
     }
 
-    function readJoin() {
+    function readJoin(leadingTake) {
       const identifier = label => {
         const value = tokens[index++];
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value ?? ''))
@@ -425,6 +439,7 @@
       const source = () => {
         expect('(');
         expect('SELECT');
+        const sourceTop = readTop();
         expect('*');
         expect('FROM');
         const provider = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].find(name => name.toUpperCase() === peek());
@@ -440,7 +455,7 @@
           if (accept('DESC')) body.descending = true;
           else accept('ASC');
         }
-        const window = readWindow(10, 1000);
+        const window = readWindow(10, 1000, 1, sourceTop);
         if (window.take === undefined) throw new Error('Join inputs require a LIMIT or FETCH row bound.');
         body.take = window.take;
         if (window.skip !== undefined) body.skip = window.skip;
@@ -582,7 +597,7 @@
           ? { outputOrderBy: terms[0].alias, outputDescending: terms[0].descending }
           : { outputOrdering: terms };
       }
-      const { take, skip } = readWindow(100, 1000, 0);
+      const { take, skip } = readWindow(100, 1000, 0, leadingTake);
       if (take === undefined && skip !== undefined)
         throw new Error('A joined output offset requires LIMIT or FETCH.');
       accept(';');
@@ -613,14 +628,19 @@
     }
 
     expect('SELECT');
-    if (tokens.some((token, position) => token.toUpperCase() === 'FROM' && tokens[position + 1] === '('))
-      return readJoin();
     const distinct = accept('DISTINCT');
+    const selectTop = readTop();
+    if (tokens.some((token, position) => token.toUpperCase() === 'FROM' && tokens[position + 1] === '(')) {
+      if (distinct) throw new Error('DISTINCT is not admitted for joined output.');
+      return readJoin(selectTop);
+    }
     const aggregates = { COUNT: 'LongCount', ANY: 'Any', MIN: 'Min', MAX: 'Max', SUM: 'Sum', AVG: 'Average' };
     const hasGrouping = tokens.some((token, position) =>
       token.toUpperCase() === 'GROUP' && tokens[position + 1]?.toUpperCase() === 'BY');
     const operation = !hasGrouping && Object.hasOwn(aggregates, peek())
       ? aggregates[tokens[index++].toUpperCase()] : null;
+    if (selectTop !== undefined && operation)
+      throw new Error('TOP applies to row or grouped results; scalar queries already return one value.');
     if (operation) expect('(');
     const countDistinct = operation === 'LongCount' && accept('DISTINCT');
     const countValues = operation === 'LongCount' && !countDistinct && peek() !== '*' && peek() !== '1';
@@ -999,7 +1019,7 @@
           grouped.resultOrder.push({ alias, descending });
         } while (accept(','));
       }
-      const window = readWindow(100, 100);
+      const window = readWindow(100, 100, 1, selectTop);
       if (window.take !== undefined) grouped.resultTake = window.take;
       if (window.skip !== undefined) {
         if (!grouped.resultOrder) throw new Error('Use ORDER BY before paging grouped results.');
@@ -1107,7 +1127,7 @@
         throw new Error('A mixed count returns one scalar without a result offset.');
     }
     if (!operation) {
-      const window = readWindow(100, 1000);
+      const window = readWindow(100, 1000, 1, selectTop);
       if (window.take !== undefined) body.take = window.take;
       if (window.skip !== undefined) body.skip = window.skip;
     }
