@@ -887,7 +887,7 @@
         !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(provider)))
       throw new Error('Nested Boolean WHERE requires admitted MongoDB, SQLite or Neo4j sources.');
 
-    if (body.virtualMappingId && (body.where || body.filters.length < 1 || body.filters.length > 8 ||
+    if (body.virtualMappingId && (body.where || body.filters.length > 8 ||
         body.filters.some(filter => filter.metadataPath?.length !== 1 || filter.value === null ||
             !['Equal', 'NotEqual', 'GreaterThan', 'GreaterThanOrEqual', 'LessThan', 'LessThanOrEqual',
               'Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) ||
@@ -899,7 +899,7 @@
                 ['Equal', 'NotEqual']).includes(filter.operator) ||
             ['Contains', 'StartsWith', 'EndsWith', 'NotContains', 'NotStartsWith', 'NotEndsWith'].includes(filter.operator) && filter.scalar !== 'String') ||
         body.anyOf || body.anyChildren || body.anyDescendants))
-      throw new Error('Use one to eight supported typed metadata comparison filters with a Virtual Holon mapping.');
+      throw new Error('Use zero to eight supported typed metadata comparison filters with a bounded Virtual Holon mapping.');
     if (distinct || groupedAggregates.length || peek() === 'GROUP') {
       if (columns.some(column => column.function))
         throw new Error('Computed SELECT grouping and DISTINCT require native grouped-function support.');
