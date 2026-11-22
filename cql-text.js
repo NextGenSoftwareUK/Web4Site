@@ -859,7 +859,7 @@
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true, operation === 'Min' || operation === 'Max') : null;
-    if (['TextCoalesce','BooleanTextCase'].includes(scalarSelection?.function)) throw new Error('Computed text currently supports selected row columns, not scalar aggregates.');
+    if (['TextCoalesce','BooleanTextCase','Int32Coalesce'].includes(scalarSelection?.function)) throw new Error('Computed scalar expressions currently support selected row columns, not scalar aggregates.');
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
       if (allowComputed && accept('CASE')) {
@@ -884,6 +884,11 @@
         expect('(');
         const input = readSelection();
         expect(',');
+        if (!input.field && input.valueType === 'Int32') {
+          const int32Replacement = integer(tokens[index++], -2147483648, 2147483647);
+          expect(')');
+          return {...input,function:'Int32Coalesce',int32Replacement};
+        }
         const token = tokens[index++];
         if (!/^'(?:[^']|'')*'$/.test(token ?? ''))
           throw new Error('COALESCE requires a non-null quoted text replacement or string parameter.');
@@ -932,6 +937,7 @@
     function selectionKey(column) {
       const input = column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
       return column.function === 'BooleanTextCase' ? JSON.stringify([column.function,input,column.whenTrue,column.whenFalse])
+        : column.function === 'Int32Coalesce' ? JSON.stringify([column.function,input,column.int32Replacement])
         : column.function === 'TextCoalesce' ? JSON.stringify([column.function,input,column.nullReplacement])
         : column.function ? JSON.stringify([column.function, input]) : input;
     }
