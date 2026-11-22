@@ -1,3 +1,5 @@
+SQL typed Boolean metadata CASE added: CASE WHEN CAST(metadata.flag AS BOOLEAN) THEN quoted text ELSE quoted text END captures nullable=false to preserve required Boolean domain errors. Four changed parser controls passed in RAM across native Mongo/SQLite/Neo capture; no client row evaluation. Requires new metadata backend qualification/release; not hosted accepted. Coalescing is live-accepted on all3 Development providers with18pacedcalls and complete fixture/session cleanup. No local build/assets/environment/database/archive retained.
+
 Conditional-text demo help and compiler/Ask asset versions updated together. Parser3/UI1 checks accepted; backend and hosted gates remain pending. No local build/generated assets/environment/database retained.
 
 Ask conditional-text guidance and focused UI journey passed in RAM: ready Neo prompt, canonical CASE draft, explicit review before opening, typed BooleanTextCase literal branches. No real WEB6 inference/hosted acceptance. Backend qualification pending. No local generated assets/build/environment/database retained.

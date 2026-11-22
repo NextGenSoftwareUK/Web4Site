@@ -865,8 +865,8 @@
       if (allowComputed && accept('CASE')) {
         expect('WHEN');
         const input = readSelection();
-        if (!['IsActive','IsPublic'].includes(input.field))
-          throw new Error('CASE requires a canonical Boolean field condition.');
+        if (input.field ? !['IsActive','IsPublic'].includes(input.field) : input.valueType !== 'Boolean')
+          throw new Error('CASE requires a Boolean field or exact CAST of metadata AS BOOLEAN.');
         function branch() {
           const token = tokens[index++];
           if (!/^'(?:[^']|'')*'$/.test(token ?? ''))
@@ -878,7 +878,7 @@
         expect('THEN'); const whenTrue = branch();
         expect('ELSE'); const whenFalse = branch();
         expect('END');
-        return {...input,function:'BooleanTextCase',whenTrue,whenFalse};
+        return {...input,...(input.metadataPath ? {nullable:false} : {}),function:'BooleanTextCase',whenTrue,whenFalse};
       }
       if (allowComputed && accept('COALESCE')) {
         expect('(');
