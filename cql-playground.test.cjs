@@ -1107,3 +1107,29 @@ test('loads displayed derived and staged-set examples for review without executi
   }
  }
 });
+
+test('loads displayed visible-tuple DISTINCT for review and compiles all three native providers',async()=>{
+ const h=harness(async()=>assert.fail('Loading an example must not query records.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-tuple-distinct-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-tuple-distinct-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-tuple-distinct-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());
+ assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+ assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+  assert.equal(query.body.provider,provider);
+  assert.equal(query.body.source.take,25);
+  const stages=query.body.stages;
+  assert.deepEqual(stages.find(stage=>stage.operation==='Select').columns,
+   [{alias:'Label',sourceAlias:'Name'},{alias:'Detail',sourceAlias:'Description'}]);
+  assert.ok(stages.findIndex(stage=>stage.operation==='Select')<stages.findIndex(stage=>stage.operation==='Distinct'));
+  assert.ok(stages.findIndex(stage=>stage.operation==='Distinct')<stages.findIndex(stage=>stage.operation==='OrderBy'));
+  assert.deepEqual(stages.at(-1),{operation:'Take',count:5});
+ }
+});

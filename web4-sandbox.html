@@ -331,6 +331,17 @@ ORDER BY Status, Id LIMIT 5</code></pre>
     WHERE Detail IS NOT NULL ORDER BY Label LIMIT 2)
   ORDER BY Display LIMIT 5</code></pre>
   <button type="button" id="cql-load-staged-set-example">Load combined selected-page query</button></details>
+  <details><summary>Unique visible tuples from a selected page</summary>
+  <p>The first query captures a bounded page. DISTINCT compares only Label and Detail, so different record IDs do not create duplicate displayed values. Ordering and the final page apply after duplicates are removed.</p>
+  <pre><code id="cql-tuple-distinct-example">WITH sample AS (
+    SELECT Id, Name, Description FROM MongoDBOASIS
+    WHERE IsActive = TRUE ORDER BY Id LIMIT 25
+  )
+  SELECT DISTINCT Name AS Label, Description AS Detail
+  FROM sample
+  WHERE Name IS NOT NULL
+  ORDER BY Label, Detail LIMIT 5</code></pre>
+  <button type="button" id="cql-load-tuple-distinct-example">Load unique selected values</button></details>
 <details><summary>Top five selected records</summary>
 <pre><code id="cql-top-example">SELECT TOP 5 Id, Name AS Label, Version FROM MongoDBOASIS
 WHERE IsActive = TRUE
