@@ -23,3 +23,11 @@ test('nested Boolean filters and quoted set keywords retain ordinary meaning',()
   assert.equal(query.body.left.anyOf.length,2);assert.equal(query.body.kind,'Concat');
   assert.equal(compile("SELECT * FROM MongoDBOASIS WHERE Name = 'UNION' LIMIT 2").path,'data/query-cql');
 });
+
+test('outer set paging stays separate from both native operand pages',()=>{
+  const query=compile('(SELECT * FROM MongoDBOASIS LIMIT 4 OFFSET 1) UNION ALL (SELECT * FROM MongoDBOASIS LIMIT 2 OFFSET 3) LIMIT @count OFFSET 1',{}, {count:3});
+  assert.equal(query.body.left.take,4);assert.equal(query.body.left.skip,1);
+  assert.equal(query.body.right.take,2);assert.equal(query.body.right.skip,3);
+  assert.equal(query.body.take,3);assert.equal(query.body.skip,1);
+  assert.throws(()=>compile('(SELECT * FROM MongoDBOASIS) UNION (SELECT * FROM MongoDBOASIS) ORDER BY Name'),/only outer/);
+});

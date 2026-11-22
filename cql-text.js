@@ -179,6 +179,17 @@
       } else kind = {UNION:'Union',INTERSECT:'Intersect',EXCEPT:'Except'}[kind];
       const rightTokens = rawTokens.slice(rightStart);
       if (rightTokens.at(-1) === ';') rightTokens.pop();
+      let rightEnd = -1, rightDepth = 0;
+      if (rightTokens[0] === '(') {
+        for (let position = 0; position < rightTokens.length; position++) {
+          if (rightTokens[position] === '(') rightDepth++;
+          else if (rightTokens[position] === ')' && --rightDepth === 0) { rightEnd = position; break; }
+        }
+      }
+      const outputWindow = rightEnd >= 0 ? rightTokens.splice(rightEnd + 1) : [];
+      if (outputWindow.length && (!['LIMIT','OFFSET','FETCH'].includes(outputWindow[0].toUpperCase()) ||
+          outputWindow.some(token => !/^(?:LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token))))
+        throw new Error('A set result currently accepts only outer LIMIT/OFFSET/FETCH paging.');
       function operand(parts) {
         if (parts[0] !== '(' || parts.at(-1) !== ')')
           throw new Error('Wrap each SELECT operand in parentheses to preserve its own ordering and window.');
@@ -197,8 +208,14 @@
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);
       if (left.provider !== right.provider)
         throw new Error('Native set operands must use the same provider.');
+      let window = {};
+      if (outputWindow.length) {
+        const page = compile('SELECT * FROM ' + left.provider + ' ' + outputWindow.join(' '), discoveredProfiles, parameters);
+        if (page.path !== 'data/query-cql') throw new Error('Invalid set output window.');
+        window = {skip:page.body.skip,take:page.body.take};
+      }
       return {path:'data/query-cql/set',body:{
-        provider:left.provider,kind,left:left.source,right:right.source,
+        provider:left.provider,kind,left:left.source,right:right.source,...window,
         maximumLeftRows:100,maximumRightRows:100,maximumResults:100,
         includeMetadata:!!(left.includeMetadata || right.includeMetadata)
       }};
