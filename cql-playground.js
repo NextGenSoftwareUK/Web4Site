@@ -271,7 +271,7 @@
       const joined = payload.version === 'cql-join-v1';
       const showRightMatch = joined && payload.kind === 'Left';
       const showPairSource = joined && payload.kind === 'Full';
-      const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1'].includes(payload.version))
+      const columns = (joined || ['cql-projection-v1', 'cql-grouped-v1', 'cql-composition-v1', 'cql-projected-set-v1'].includes(payload.version))
         ? payload.columns : null;
       const provenance = payload.provenance;
       if (provenance !== undefined && (!Array.isArray(provenance) || provenance.length !== payload.rows.length ||

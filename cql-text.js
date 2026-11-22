@@ -197,19 +197,16 @@
       }
       const trailingWindow = rightEnd >= 0 ? rightEnd + 1 : topWindow(rightTokens);
       const outputWindow = trailingWindow >= 0 ? rightTokens.splice(trailingWindow) : [];
-      if (outputWindow.length && (!['ORDER','LIMIT','OFFSET','FETCH'].includes(outputWindow[0].toUpperCase()) ||
-          outputWindow.some(token => !/^(?:ORDER|BY|ASC|DESC|Name|Description|Version|Id|,|LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token))))
-        throw new Error('A set result accepts declared entity ORDER BY terms and bounded LIMIT/OFFSET/FETCH paging.');
       function operand(parts) {
         const parenthesized = parts[0] === '(' && parts.at(-1) === ')';
         if (!parenthesized && (parts[0]?.toUpperCase() !== 'SELECT' || topWindow(parts) >= 0))
           throw new Error('Wrap an independently ordered or paged SELECT operand in parentheses.');
         const compiled = compile((parenthesized ? parts.slice(1,-1) : parts).join(' '), discoveredProfiles, parameters);
-        if (compiled.path !== 'data/query-cql' ||
+        if (!['data/query-cql','data/query-cql/projection'].includes(compiled.path) ||
             !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider))
-          throw new Error('Native entity sets require SELECT * from one MongoDB, SQLite or Neo4j provider.');
+          throw new Error('Native sets require SELECT * or explicit columns from one MongoDB, SQLite or Neo4j provider.');
         const {provider,includeMetadata,maximumDurationMilliseconds,...source} = compiled.body;
-        const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy','descending','skip','take']);
+        const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy','descending','skip','take','columns']);
         if (Object.keys(source).some(key => !allowed.has(key)))
           throw new Error('This set operand contains an independently unsupported source option.');
         if (maximumDurationMilliseconds !== undefined)
@@ -222,13 +219,46 @@
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);
       if (left.provider !== right.provider)
         throw new Error('Native set operands must use the same provider.');
+      const selected = Array.isArray(left.source.columns);
+      if (selected !== Array.isArray(right.source.columns))
+        throw new Error('Use SELECT * on both inputs or explicit columns on both inputs.');
+      if (selected && left.source.columns.length !== right.source.columns.length)
+        throw new Error('Selected set inputs must have the same column count.');
       let window = {};
-      if (outputWindow.length) {
-        const page = compile('SELECT * FROM ' + left.provider + ' ' + outputWindow.join(' '), discoveredProfiles, parameters);
+      if (!selected && outputWindow.some(token => !/^(?:ORDER|BY|ASC|DESC|Name|Description|Version|Id|,|LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token)))
+        throw new Error('A set result accepts declared entity ORDER BY terms and bounded LIMIT/OFFSET/FETCH paging.');
+      let pageTokens = outputWindow.slice();
+      if (selected && pageTokens[0]?.toUpperCase() === 'ORDER') {
+        let cursor = 1;
+        if (pageTokens[cursor++]?.toUpperCase() !== 'BY') throw new Error('Expected BY after ORDER.');
+        const ordering = [], used = new Set();
+        do {
+          const token = pageTokens[cursor++];
+          const column = /^[1-9][0-9]*$/.test(token ?? '')
+            ? left.source.columns[Number(token) - 1]
+            : left.source.columns.find(column => column.alias.toLowerCase() === token?.toLowerCase());
+          if (!column || used.has(column.alias) || ordering.length >= 4)
+            throw new Error('Order a selected set by up to four distinct visible left-column aliases or positions.');
+          used.add(column.alias);
+          const direction = pageTokens[cursor]?.toUpperCase();
+          if (direction === 'ASC' || direction === 'DESC') cursor++;
+          ordering.push({field:column.alias,descending:direction === 'DESC'});
+          if (pageTokens[cursor] !== ',') break;
+          cursor++;
+          if (cursor >= pageTokens.length) throw new Error('Expected a visible selected alias after the comma.');
+        } while (cursor < pageTokens.length);
+        window.ordering = ordering;
+        pageTokens = pageTokens.slice(cursor);
+      }
+      if (selected && pageTokens.length && !['LIMIT','OFFSET','FETCH'].includes(pageTokens[0].toUpperCase()))
+        throw new Error('A selected set accepts visible ORDER BY aliases and bounded LIMIT/OFFSET/FETCH paging.');
+      if (pageTokens.length) {
+        const page = compile('SELECT * FROM ' + left.provider + ' ' + pageTokens.join(' '), discoveredProfiles, parameters);
         if (page.path !== 'data/query-cql') throw new Error('Invalid set output window.');
-        const ordering = outputWindow.some(token => token.toUpperCase() === 'ORDER');
-        const paging = outputWindow.some(token => ['LIMIT','OFFSET','FETCH'].includes(token.toUpperCase()));
+        const ordering = pageTokens.some(token => token.toUpperCase() === 'ORDER');
+        const paging = pageTokens.some(token => ['LIMIT','OFFSET','FETCH'].includes(token.toUpperCase()));
         window = {
+          ...window,
           ...(paging ? {skip:page.body.skip,take:page.body.take} : {}),
           ...(ordering ? {ordering:page.body.ordering ?? [{field:page.body.orderBy,descending:!!page.body.descending}]} : {})
         };
@@ -236,7 +266,7 @@
       return {path:'data/query-cql/set',body:{
         provider:left.provider,kind,left:left.source,right:right.source,...window,
         maximumLeftRows:100,maximumRightRows:100,maximumResults:100,
-        includeMetadata:!!(left.includeMetadata || right.includeMetadata)
+        includeMetadata:!selected && !!(left.includeMetadata || right.includeMetadata)
       }};
     }
     tokens.length = 0;
