@@ -994,3 +994,18 @@ test('Ask captures a known Boolean metadata CASE and keeps review explicit',asyn
  assert.deepEqual(column.metadataPath,['flag']);assert.equal(column.valueType,'Boolean');
  assert.equal(column.nullable,false);assert.equal(column.function,'BooleanTextCase');
 });
+
+test('Ask drafts exact nullable Int32 replacement and still requires review',async()=>{
+ const text='SELECT COALESCE(CAST(metadata.stock AS INT32), 0) AS Stock FROM Neo4jOASIS ORDER BY Stock LIMIT 5';
+ const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+ app.node('ask-question').value='metadata.stock is nullable Int32. Show five Neo4j stock values using zero for missing stock';
+ await app.node('ask-generate').click();
+ const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+ assert.match(prompt,/nullable Int32 metadata/);assert.match(prompt,/-2147483648 to 2147483647/);
+ assert.doesNotMatch(prompt,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+ assert.equal(app.node('ask-draft').textContent,text);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const column=compile(app.opened[0]).body.columns[0];
+ assert.deepEqual(column.metadataPath,['stock']);assert.equal(column.valueType,'Int32');
+ assert.equal(column.nullable,true);assert.equal(column.function,'Int32Coalesce');assert.equal(column.int32Replacement,0);
+});
