@@ -1016,11 +1016,14 @@
     let mixedScalar = false;
     const body = { provider, filters: [], orderBy: holo || accountProviders.length ? 'None' : 'Name', skip: 0 };
     if (!operation) Object.assign(body, { take: 10, includeMetadata: true });
-    function mappedValue(column, allowDateTime = false) {
+    function mappedValue(column, allowDateTime = false, allowComputedRows = false) {
       return column && !column.field && column.metadataPath?.length === 1 &&
         (['String', 'Boolean', 'Guid', 'Int32', 'Int64', 'Double'].includes(column.valueType) ||
           allowDateTime && column.valueType === 'DateTime') &&
-        (!column.function || column.function === 'Utf16Length' && column.valueType === 'String');
+        (!column.function || column.function === 'Utf16Length' && column.valueType === 'String' ||
+            allowComputedRows && (column.function === 'TextCoalesce' && column.valueType === 'String' ||
+              column.function === 'BooleanTextCase' && column.valueType === 'Boolean' ||
+              column.function === 'Int32Coalesce' && column.valueType === 'Int32'));
     }
     if (accept('WITH')) {
       expect('VIRTUAL');
@@ -1455,8 +1458,8 @@
         if (columns.length < 1 || columns[0].field !== 'Id' || columns[0].function ||
             columns.slice(1).some(column => column.metadataPath?.length !== 1))
           throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
-        if (columns.slice(1).some(column => !mappedValue(column, true)))
-          throw new Error('Mapped columns support STRING, BOOLEAN, GUID, DATETIME, INT32, INT64 and finite DOUBLE; LENGTH requires STRING input.');
+        if (columns.slice(1).some(column => !mappedValue(column, true, !mixedScalar)))
+          throw new Error('Mapped columns support STRING, BOOLEAN, GUID, DATETIME, INT32, INT64 and finite DOUBLE; LENGTH/text COALESCE require STRING, CASE requires BOOLEAN and integer COALESCE requires INT32 input.');
         if ((!selectedOrder && body.orderBy !== 'Id') || body.skip >= 200 || body.take < 1)
           throw new Error('Order by Id or selected aliases, with a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body,

@@ -143,3 +143,6 @@ SQLite/Neo4j replicas2/2 passed. Original native database hash and no-WAL
 condition matched before/after. Card22 adds the hosted path and real C#
 read-only example, retaining its local5116 launcher. Coverage119local/
 78liveHTTP/28functional browser; hosted browser gate remains open.
+
+
+22 November: mapped row SQL now captures text/Int32 COALESCE and Boolean metadata CASE with canonical Id first and selected-alias ordering. Three focused parser controls passed in RAM across the three enrolled native providers. Grouping/aggregates remain refused. This is feature-source acceptance only; native mapped execution CI45004084607 and hosted mixed acceptance remain pending. No local build, install or output files.

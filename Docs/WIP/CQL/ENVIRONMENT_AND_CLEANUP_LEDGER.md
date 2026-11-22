@@ -186,3 +186,6 @@ card47 after original hosted acceptance. Existing local launcher retained.
 No new runtime, environment, download, service or provider data. Run existing
 five client suites, then compare exact public HTML with its committed blob
 in memory. Compact publication proof belongs in the backend recovery directory.
+
+
+22 November: mapped computed SQL controls executed using existing Node and Git-object sources entirely in RAM. No temporary files, downloads, environments or build outputs created; nothing to remove. Native checks run only in isolated CI.
