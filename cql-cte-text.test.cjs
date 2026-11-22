@@ -147,3 +147,32 @@ test('captured bounds survive nested WITH and derived sources without limiting u
  const unused=compile('(WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 6) SELECT Name FROM MongoDBOASIS) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9)');
  assert.equal(unused.body.left.take,undefined,'An unrelated unbounded source must not acquire the unused CTE bound.');
 });
+
+test('DISTINCT over bounded CTE tuples selects before native equality and pages afterwards',()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=compile('WITH q AS (SELECT Id, Name, Description FROM '+provider+
+   ' ORDER BY Id LIMIT 20) SELECT DISTINCT Name AS Label, Description AS Detail FROM q WHERE Name IS NOT NULL ORDER BY Detail, Label LIMIT 3 OFFSET 1');
+  assert.equal(query.body.provider,provider);
+  assert.equal(query.body.source.take,20);
+  assert.deepEqual(query.body.stages,[
+   {operation:'Where',filters:[{alias:'Name',operator:'NotEqual',value:null}]},
+   {operation:'Select',columns:[{alias:'Label',sourceAlias:'Name'},{alias:'Detail',sourceAlias:'Description'}]},
+   {operation:'Distinct'},
+   {operation:'OrderBy',order:[{alias:'Detail',descending:false},{alias:'Label',descending:false}]},
+   {operation:'Skip',count:1},{operation:'Take',count:3}]);
+ }
+});
+
+test('chained and derived DISTINCT retain earlier tuple equality and exact visible aliases',()=>{
+ const query=compile('WITH seed AS (SELECT Id, Name, Description FROM MongoDBOASIS ORDER BY Id LIMIT 20), tuples AS (SELECT DISTINCT Name AS Label, Description AS Detail FROM seed ORDER BY Label LIMIT 5) SELECT DISTINCT Label AS Display FROM tuples ORDER BY Display LIMIT 2');
+ assert.equal(query.body.stages.filter(stage=>stage.operation==='Distinct').length,2);
+ assert.deepEqual(query.body.stages.filter(stage=>stage.operation==='Select').map(stage=>stage.columns),[
+  [{alias:'Label',sourceAlias:'Name'},{alias:'Detail',sourceAlias:'Description'}],
+  [{alias:'Display',sourceAlias:'Label'}]]);
+ const derived=compile('SELECT DISTINCT q.Name AS Label FROM (SELECT Id, Name FROM Neo4jOASIS ORDER BY Id LIMIT 10) q ORDER BY 1 LIMIT 2');
+ assert.deepEqual(derived.body.stages.slice(0,3),[
+  {operation:'Select',columns:[{alias:'Label',sourceAlias:'Name'}]},
+  {operation:'Distinct'},
+  {operation:'OrderBy',order:[{alias:'Label',descending:false}]}]);
+ assert.throws(()=>compile('WITH q AS (SELECT Id, Name FROM MongoDBOASIS LIMIT 10) SELECT DISTINCT Name FROM q ORDER BY Id LIMIT 2'),/only columns visible/);
+});

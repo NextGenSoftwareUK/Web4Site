@@ -401,7 +401,7 @@
         return result;
       }
       expect('SELECT');
-      if (accept('DISTINCT')) throw new Error('WITH DISTINCT requires native distinct-stage enrollment.');
+      const distinct = accept('DISTINCT');
       const leadingTake=readTop();
       const output=[];
       if (accept('*')) input.columns.forEach(item=>output.push({alias:item.alias,sourceAlias:item.alias}));
@@ -414,9 +414,17 @@
         throw new Error('Choose up to32 distinct visible output aliases.');
       expect('FROM');index=afterFrom;
       const stages=input.stages.slice();
+      const identity=output.length === input.columns.length &&
+        output.every((item,position)=>item.alias === input.columns[position].alias && item.sourceAlias === item.alias);
       if (accept('WHERE')) {
         const parts=clauses(normalize(alternatives(1)));
         for (const part of parts) stages.push({operation:'Where',...(part.length === 1 ? {filters:part} : {anyOf:part})});
+      }
+      // SQL DISTINCT compares only this SELECT's visible tuple, before its order/page.
+      // Earlier native source and result windows remain separate stages.
+      if (distinct) {
+        if (!identity) stages.push({operation:'Select',columns:output});
+        stages.push({operation:'Distinct'});
       }
       if (accept('ORDER')) {
         expect('BY');const order=[];
@@ -430,6 +438,11 @@
             if (selected) {index++;alias=selected.sourceAlias;}
           }
           if (!alias) alias=column().alias;
+          if (distinct) {
+            const visible=output.find(item=>item.sourceAlias === alias);
+            if (!visible) throw new Error('DISTINCT orders only columns visible in this SELECT.');
+            alias=visible.alias;
+          }
           if (order.length >= 8 || order.some(term=>term.alias === alias)) throw new Error('Use up to eight distinct ordering aliases.');
           const descending=accept('DESC');if(!descending)accept('ASC');
           order.push({alias,descending});
@@ -441,9 +454,7 @@
       if (window.take !== undefined) stages.push({operation:'Take',count:window.take});
       accept(';');
       if (index !== tokens.length) throw new Error('Unsupported WITH result clause.');
-      const identity=output.length === input.columns.length &&
-        output.every((item,position)=>item.alias === input.columns[position].alias && item.sourceAlias === item.alias);
-      if (!identity) stages.push({operation:'Select',columns:output});
+      if (!identity && !distinct) stages.push({operation:'Select',columns:output});
       if (stages.length > 16 || stages.reduce((sum,stage)=>sum+(stage.filters?.length ?? 0)+(stage.anyOf?.length ?? 0),0) > 32)
         throw new Error('WITH composition exceeds16 stages or32 comparisons.');
       if (!stages.length) return compiled;
