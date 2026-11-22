@@ -1009,3 +1009,30 @@ test('Ask drafts exact nullable Int32 replacement and still requires review',asy
  assert.deepEqual(column.metadataPath,['stock']);assert.equal(column.valueType,'Int32');
  assert.equal(column.nullable,true);assert.equal(column.function,'Int32Coalesce');assert.equal(column.int32Replacement,0);
 });
+
+test('Ask mapped computed rows preserve source, free visitor scope and review before execution',async()=>{
+ const sql="SELECT Id, COALESCE(CAST(metadata.label AS STRING), 'Unnamed') AS Label, CASE WHEN CAST(metadata.flag AS BOOLEAN) THEN 'Yes' ELSE 'No' END AS Status, COALESCE(CAST(metadata.stock AS INT32), 0) AS Stock FROM Neo4jOASIS WITH VIRTUAL MAPPING '"+mappedId+"' ORDER BY Stock DESC, Id LIMIT 5";
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS'],{},true);
+ chooseMapping(app);
+ app.node('ask-question').value='Use the selected mapping. label is STRING, flag is required BOOLEAN and stock is nullable INT32. Show labels with Unnamed for null, Yes/No flag labels and zero for missing stock, highest stock first.';
+ await app.node('ask-generate').click();
+ const request=JSON.parse(app.requests[0].options.body);
+ assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+ assert.match(request.messages[0].content,/mapped row columns admit/);
+ assert.match(request.messages[0].content,/These mapped computations are row-only/);
+ assert.doesNotMatch(request.messages[0].content,/aggregates or virtual mappings|virtual CASE queries|virtual mappings; these contracts are not enrolled/);
+ assert.equal(app.node('ask-preview').disabled,false);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const q=compile(app.opened[0]);assert.equal(q.path,'data/query-cql/projection/mixed');
+ assert.equal(q.body.virtualMappingId,mappedId);
+ assert.deepEqual(q.body.columns.slice(1).map(c=>c.function),['TextCoalesce','BooleanTextCase','Int32Coalesce']);
+ assert.equal(app.requests.length,1,'Review must not run a data query.');
+});
+test('Ask mapped computed response cannot substitute another saved mapping',async()=>{
+ const sql="SELECT Id, COALESCE(CAST(metadata.stock AS INT32), 0) AS Stock FROM Neo4jOASIS WITH VIRTUAL MAPPING '"+anotherMappedId+"' ORDER BY Stock LIMIT 5";
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS']);
+ chooseMapping(app);await app.node('ask-generate').click();
+ assert.equal(app.node('ask-preview').disabled,true);
+ assert.match(app.node('ask-status').textContent,/did not preserve the selected mapping and provider/);
+ assert.deepEqual(app.opened,[]);
+});
