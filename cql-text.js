@@ -211,9 +211,18 @@
           throw new Error('This set operand contains an independently unsupported source option.');
         if (maximumDurationMilliseconds !== undefined)
           throw new Error('Native set queries currently use the server-owned execution deadline.');
-        // An unparenthesized SELECT is a complete set input, not the editor's
-        // default ten-row page. Native input proof rejects over-budget sources.
-        if (!parenthesized) { delete source.take; source.skip = 0; }
+        // Only an explicit operand window can bound a complete set input.
+        // Parentheses and ORDER BY alone must not inherit the editor's ten-row page.
+        const operandTokens = parenthesized ? parts.slice(1,-1) : parts;
+        const topIndex = operandTokens[1]?.toUpperCase() === 'DISTINCT' ? 2 : 1;
+        let depth = 0;
+        const explicitPage = operandTokens[topIndex]?.toUpperCase() === 'TOP' ||
+          operandTokens.some(token => {
+            if (token === '(') depth++;
+            else if (token === ')') depth--;
+            return depth === 0 && ['LIMIT','FETCH'].includes(token.toUpperCase());
+          });
+        if (!explicitPage) delete source.take;
         return {provider,includeMetadata,source};
       }
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);

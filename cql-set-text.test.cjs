@@ -85,3 +85,14 @@ test('selected sets reject hidden ordering and incompatible shape before dispatc
   assert.throws(()=>compile(left+' UNION SELECT Name, Version FROM MongoDBOASIS'),/column count/);
   assert.throws(()=>compile(left+' UNION '+right+' ORDER BY label DELETE FROM MongoDBOASIS'),/selected set/);
 });
+
+test('set operands preserve explicit TOP and never inherit an implicit editor page',()=>{
+  for(const columns of ['*','Name AS Label']){
+    const top=compile('SELECT TOP 3 '+columns+' FROM MongoDBOASIS UNION ALL SELECT TOP(4) '+columns+' FROM MongoDBOASIS');
+    assert.equal(top.body.left.take,3);assert.equal(top.body.right.take,4);
+    const plain=compile('(SELECT '+columns+' FROM MongoDBOASIS) UNION (SELECT '+columns+' FROM MongoDBOASIS ORDER BY Name)');
+    assert.equal(Object.hasOwn(plain.body.left,'take'),false);
+    assert.equal(Object.hasOwn(plain.body.right,'take'),false);
+    assert.equal(plain.body.right.orderBy,'Name');
+  }
+});
