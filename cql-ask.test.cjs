@@ -963,3 +963,19 @@ test('Ask drafts native text coalescing on a ready database and still requires r
   assert.equal(request.body.columns[0].nullReplacement,'Unnamed');
   assert.deepEqual(request.body.selectedOrder,[{alias:'Label',descending:false}]);
 });
+
+test('Ask conditional text requires review on a ready provider',async()=>{
+ const text="SELECT CASE WHEN IsActive THEN 'Active' ELSE 'Inactive' END AS Status FROM Neo4jOASIS ORDER BY Status LIMIT 5";
+ const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+ app.node('ask-question').value='Show Neo4j records with Active or Inactive labels';
+ await app.node('ask-generate').click();
+ const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+ assert.match(prompt,/CASE WHEN IsActive/);
+ assert.doesNotMatch(prompt,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+ assert.equal(app.node('ask-draft').textContent,text);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const request=compile(app.opened[0]);
+ assert.equal(request.body.columns[0].function,'BooleanTextCase');
+ assert.equal(request.body.columns[0].whenTrue,'Active');
+ assert.equal(request.body.columns[0].whenFalse,'Inactive');
+});
