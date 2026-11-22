@@ -93,3 +93,35 @@ test('derived tables reject unbounded initial sources, missing aliases and hidde
  const chained=compile('WITH seed(label) AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT q.label FROM (SELECT label FROM seed) q LIMIT 2');
  assert.equal(chained.body.source.take,10);assert.equal(chained.body.stages.at(-1).count,2);
 });
+
+test('WITH visible tuples keep independent source windows through all native set operators',()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  for(const [sqlOperator,kind] of [['UNION','Union'],['UNION ALL','Concat'],['INTERSECT','Intersect'],['EXCEPT','Except']]){
+   const query=compile('WITH leftRows(Label, Variant) AS (SELECT Name, Description FROM '+provider+
+    ' WHERE Version >= 1 ORDER BY Id LIMIT 10), rightRows AS (SELECT Name AS Key, Description AS Detail FROM '+provider+
+    ' WHERE Version <= 3 ORDER BY Id LIMIT 7) (SELECT Label, Variant FROM leftRows) '+sqlOperator+
+    ' (SELECT Key, Detail FROM rightRows) ORDER BY Label, 2 LIMIT 5 OFFSET 1');
+   assert.equal(query.path,'data/query-cql/set');assert.equal(query.body.provider,provider);
+   assert.equal(query.body.kind,kind);assert.equal(query.body.left.take,10);assert.equal(query.body.right.take,7);
+   assert.deepEqual(query.body.left.columns.map(c=>[c.alias,c.field]),[['Label','Name'],['Variant','Description']]);
+   assert.deepEqual(query.body.ordering,[{field:'Label',descending:false},{field:'Variant',descending:false}]);
+   assert.equal(query.body.take,5);assert.equal(query.body.skip,1);
+  }
+ }
+});
+test('set operands admit pure derived reshaping and refuse post-window stages',()=>{
+ const query=compile('(SELECT d.Name AS Label FROM (SELECT Name FROM MongoDBOASIS LIMIT 8) d) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9) ORDER BY Label LIMIT 2');
+ assert.equal(query.body.left.take,8);assert.equal(query.body.left.columns[0].alias,'Label');
+ assert.equal(query.body.right.take,9);
+ assert.throws(()=>compile("WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 10) (SELECT * FROM q WHERE Name LIKE 'x%') UNION (SELECT * FROM q)"),/post-window/);
+ assert.throws(()=>compile('WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 10) (SELECT * FROM q LIMIT 2) UNION (SELECT * FROM q)'),/post-window/);
+});
+
+test('captured bounds survive nested WITH and derived sources without limiting unrelated inputs',()=>{
+ const nested=compile('(WITH q(Label) AS (SELECT Name FROM MongoDBOASIS LIMIT 6) SELECT Label FROM q) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9)');
+ assert.equal(nested.body.left.take,6);assert.equal(nested.body.right.take,9);
+ const derived=compile('WITH q AS (SELECT d.Name FROM (SELECT Name FROM MongoDBOASIS LIMIT 4) d) (SELECT * FROM q) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9)');
+ assert.equal(derived.body.left.take,4);
+ const unused=compile('(WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 6) SELECT Name FROM MongoDBOASIS) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9)');
+ assert.equal(unused.body.left.take,undefined,'An unrelated unbounded source must not acquire the unused CTE bound.');
+});

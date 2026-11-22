@@ -79,6 +79,8 @@
     return profiles;
   }
 
+  const completeSelectedBounds = new WeakSet();
+
   function compile(text, discoveredProfiles = {}, parameters = {}) {
     return compileQuery(text,discoveredProfiles,parameters,Object.create(null),0);
   }
@@ -252,7 +254,7 @@
           throw new Error('Declare selected WITH sources together, in dependency order.');
         const from = topFrom(sourceTokens);
         const sourceName = sourceTokens[from+1]?.replace(/^"|"$/g,'');
-        const inherited = from >= 0 && Object.hasOwn(scope, sourceName?.toLowerCase());
+        const inherited = from >= 0 && (sourceTokens[from+1] === '(' || Object.hasOwn(scope, sourceName?.toLowerCase()));
         if (!inherited && !explicitPage(sourceTokens))
           throw new Error('Give the initial WITH source an explicit TOP, LIMIT or FETCH bound; an editor default page is not a complete source.');
         let compiled = compileQuery(sourceTokens.join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
@@ -271,6 +273,7 @@
               stages:[...captured.stages,{operation:'Select',columns}]}};
           }
         }
+        completeSelectedBounds.add(compiled);
         scope[key] = compiled;
         if (rawTokens[cursor] !== ',') break;
         cursor++;
@@ -444,7 +447,9 @@
       if (stages.length > 16 || stages.reduce((sum,stage)=>sum+(stage.filters?.length ?? 0)+(stage.anyOf?.length ?? 0),0) > 32)
         throw new Error('WITH composition exceeds16 stages or32 comparisons.');
       if (!stages.length) return compiled;
-      return {path:'data/query-cql/composition',body:{provider:input.provider,source:input.source,stages}};
+      const selectedResult = {path:'data/query-cql/composition',body:{provider:input.provider,source:input.source,stages}};
+      if (completeSelectedBounds.has(compiled)) completeSelectedBounds.add(selectedResult);
+      return selectedResult;
     }
 
     if (rawTokens[0]?.toUpperCase() === 'WITH') return readCteDefinitions();
@@ -474,6 +479,7 @@
         throw new Error('Give the initial derived source an explicit TOP, LIMIT or FETCH bound.');
       const captured = compileQuery(sourceTokens.join(' '),discoveredProfiles,parameters,cteScope,compileDepth+1);
       frame(captured);
+      completeSelectedBounds.add(captured);
       const scope = Object.assign(Object.create(null),cteScope);
       scope[alias.toLowerCase()] = captured;
       const outer = [...rawTokens.slice(0,from+1),alias,...rawTokens.slice(cursor)];
@@ -496,8 +502,6 @@
         setOperators.push(position);
       if (setDepth < 0) throw new Error('Unbalanced set-query parentheses.');
     }
-    if (setOperators.length && Object.keys(cteScope).length)
-      throw new Error('WITH set operands require native staged-set enrollment.');
     if (setOperators.length) {
       if (setDepth || setOperators.length !== 1)
         throw new Error('Use two parenthesized SELECT operands for a native set query.');
@@ -530,7 +534,16 @@
         const parenthesized = parts[0] === '(' && parts.at(-1) === ')';
         if (!parenthesized && (parts[0]?.toUpperCase() !== 'SELECT' || topWindow(parts) >= 0))
           throw new Error('Wrap an independently ordered or paged SELECT operand in parentheses.');
-        const compiled = compile((parenthesized ? parts.slice(1,-1) : parts).join(' '), discoveredProfiles, parameters);
+        let compiled = compileQuery((parenthesized ? parts.slice(1,-1) : parts).join(' '),
+          discoveredProfiles,parameters,cteScope,compileDepth+1);
+        const inheritedBound = completeSelectedBounds.has(compiled);
+        if (compiled.path === 'data/query-cql/composition') {
+          const input = frame(compiled);
+          if (input.stages.some(stage=>stage.operation !== 'Select'))
+            throw new Error('Set operands with post-window filters, ordering or pages require native staged-set enrollment.');
+          compiled = {path:'data/query-cql/projection',body:{
+            provider:input.provider,...input.source,columns:input.columns}};
+        }
         if (!['data/query-cql','data/query-cql/projection'].includes(compiled.path) ||
             !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider))
           throw new Error('Native sets require SELECT * or explicit columns from one MongoDB, SQLite or Neo4j provider.');
@@ -551,7 +564,7 @@
             else if (token === ')') depth--;
             return depth === 0 && ['LIMIT','FETCH'].includes(token.toUpperCase());
           });
-        if (!explicitPage) delete source.take;
+        if (!explicitPage && !inheritedBound) delete source.take;
         return {provider,includeMetadata,source};
       }
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);
