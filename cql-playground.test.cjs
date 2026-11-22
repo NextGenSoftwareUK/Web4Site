@@ -1030,3 +1030,26 @@ test('loads the grouped distinct demo with the documented mixed mapping syntax',
     assert.deepEqual(body.grouping.columns[2].selection, { metadataPath: ['label'], valueType: 'String', nullable: true });
   }
 });
+
+test('loads the displayed conditional/coalesce demo for review and clears unrelated mapping scope', async () => {
+  const h=harness(async()=>assert.fail('Loading an example must not query records.'));
+  await h.ui.ready;
+  const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+  const sql=page.match(/<code id="cql-computed-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-computed-example',{textContent:sql});
+  h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-load-computed-example').listeners.click();
+  assert.equal(h.elements.get('cql-text').value,sql);
+  assert.equal(h.elements.get('cql-text').focused,true);
+  assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+  assert.equal(h.elements.get('cql-saved-mapping').value,'');
+  for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+    const q=require('./cql-text.js').compile(sql.replace('MongoDBOASIS',provider));
+    assert.equal(q.path,'data/query-cql/projection');
+    assert.equal(q.body.columns[2].function,'BooleanTextCase');
+    assert.equal(q.body.columns[3].function,'TextCoalesce');
+    assert.deepEqual(q.body.selectedOrder,[{alias:'Status',descending:false},{alias:'Id',descending:false}]);
+    assert.equal(q.body.take,5);
+  }
+});

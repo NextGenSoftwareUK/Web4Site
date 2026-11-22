@@ -191,3 +191,5 @@ in memory. Compact publication proof belongs in the backend recovery directory.
 22 November: mapped computed SQL controls executed using existing Node and Git-object sources entirely in RAM. No temporary files, downloads, environments or build outputs created; nothing to remove. Native checks run only in isolated CI.
 
 22 November: two changed Ask mapped-computed UI controls executed with existing Node, Git-object source and controlled replies entirely in RAM. No model/API/shared database calls, downloads, local build or output files; nothing to remove.
+
+22 November: one new example-loading UI journey used existing Node and Git-object modules entirely in RAM, no API calls, test outputs, downloads, environments or files to remove. No accepted test cohort replay.

@@ -290,6 +290,14 @@ ORDER BY Id LIMIT 10</code></pre>
 WHERE (Name = &#x27;Coffee&#x27; AND Version &gt;= 1)
    OR (Name = &#x27;Tea&#x27; AND NOT EXISTS CHILD (IsActive = FALSE))</code></pre>
 <button type="button" id="cql-load-boolean-example">Load nested and / or / not example</button></details>
+<details><summary>Labels and missing descriptions</summary>
+<p>Use CASE to label records and COALESCE to fill missing descriptions. This example works on MongoDB, SQLite and Neo4j by changing the provider name. Loading it clears the selected mapping and fills the editor; nothing runs until you choose Run query.</p>
+<pre><code id="cql-computed-example">SELECT Id, Name AS Label,
+  CASE WHEN IsActive THEN 'Active' ELSE 'Inactive' END AS Status,
+  COALESCE(Description, 'No description') AS Summary
+FROM MongoDBOASIS
+ORDER BY Status, Id LIMIT 5</code></pre>
+<button type="button" id="cql-load-computed-example">Load labels and missing values example</button></details>
 <details><summary>Top five selected records</summary>
 <pre><code id="cql-top-example">SELECT TOP 5 Id, Name AS Label, Version FROM MongoDBOASIS
 WHERE IsActive = TRUE
@@ -2453,10 +2461,10 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-text.js?v=20261122-int32-coalesce-v1"></script>
+<script src="cql-text.js?v=20261122-computed-demo-v2"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261122-selected-column-sets-v1"></script>
-<script src="cql-ask.js?v=20261122-int32-coalesce-v1"></script>
+<script src="cql-playground.js?v=20261122-computed-demo-v2"></script>
+<script src="cql-ask.js?v=20261122-computed-demo-v2"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });
