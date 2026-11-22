@@ -448,6 +448,42 @@
     }
 
     if (rawTokens[0]?.toUpperCase() === 'WITH') return readCteDefinitions();
+    function readDerivedTable(from) {
+      let cursor = from + 2;
+      const begin = cursor;
+      let depth = 1;
+      while (cursor < rawTokens.length && depth) {
+        if (rawTokens[cursor] === '(') depth++;
+        else if (rawTokens[cursor] === ')') depth--;
+        cursor++;
+      }
+      if (depth) throw new Error('Unbalanced selected subquery parentheses.');
+      const sourceTokens = rawTokens.slice(begin,cursor-1);
+      if (sourceTokens[0]?.toUpperCase() !== 'SELECT')
+        throw new Error('A derived table requires one selected query.');
+      if (rawTokens[cursor]?.toUpperCase() === 'AS') cursor++;
+      const alias = cteIdentifier(rawTokens[cursor++], 'derived table alias');
+      if (['WHERE','GROUP','HAVING','ORDER','LIMIT','OFFSET','FETCH','JOIN','INNER','LEFT',
+          'RIGHT','FULL','CROSS','UNION','INTERSECT','EXCEPT'].includes(alias.toUpperCase()))
+        throw new Error('Give the selected subquery an explicit table alias.');
+      const innerFrom = topFrom(sourceTokens);
+      const innerName = sourceTokens[innerFrom+1]?.replace(/^"|"$/g,'').toLowerCase();
+      const inherited = innerFrom >= 0 && (sourceTokens[innerFrom+1] === '(' ||
+        Object.hasOwn(cteScope,innerName));
+      if (!inherited && !explicitPage(sourceTokens))
+        throw new Error('Give the initial derived source an explicit TOP, LIMIT or FETCH bound.');
+      const captured = compileQuery(sourceTokens.join(' '),discoveredProfiles,parameters,cteScope,compileDepth+1);
+      frame(captured);
+      const scope = Object.assign(Object.create(null),cteScope);
+      scope[alias.toLowerCase()] = captured;
+      const outer = [...rawTokens.slice(0,from+1),alias,...rawTokens.slice(cursor)];
+      return compileQuery(outer.join(' '),discoveredProfiles,parameters,scope,compileDepth+1);
+    }
+    const derivedFrom = topFrom(rawTokens);
+    if (rawTokens[0]?.toUpperCase() === 'SELECT' && derivedFrom >= 0 &&
+        rawTokens[derivedFrom+1] === '(')
+      return readDerivedTable(derivedFrom);
+
 
     // Parenthesized operands make each source's ORDER/LIMIT/OFFSET scope explicit.
     let setDepth = 0;

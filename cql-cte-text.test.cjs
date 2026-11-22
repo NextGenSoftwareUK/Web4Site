@@ -71,3 +71,25 @@ test('WITH column declarations reject ambiguity, wrong cardinality and original 
  const quoted=compile('WITH q("Label") AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT "Label" FROM q');
  assert.equal(quoted.body.stages[0].columns[0].alias,'Label');
 });
+
+test('derived selected tables preserve native source bounds and current aliases on three providers',()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=compile('SELECT picked.Name AS Label, picked.Version FROM (SELECT Name, Version FROM '+
+   provider+' ORDER BY Id LIMIT 20) AS picked WHERE picked.Version >= @minimum ORDER BY Label LIMIT 3',{}, {minimum:1});
+  assert.equal(query.path,'data/query-cql/composition');
+  assert.equal(query.body.provider,provider);assert.equal(query.body.source.take,20);
+  assert.equal(query.body.stages.find(s=>s.operation==='Where').filters[0].value,1);
+  assert.deepEqual(query.body.stages.at(-1),{operation:'Select',columns:[{alias:'Label',sourceAlias:'Name'},{alias:'Version',sourceAlias:'Version'}]});
+ }
+ const nested=compile('SELECT d.label FROM (SELECT n.Name AS label FROM (SELECT Name FROM MongoDBOASIS LIMIT 10) n WHERE n.Name IS NOT NULL) d ORDER BY d.label LIMIT 2');
+ assert.equal(nested.body.source.take,10);
+ assert.ok(nested.body.stages.some(s=>s.operation==='Select'&&s.columns[0].alias==='label'));
+});
+test('derived tables reject unbounded initial sources, missing aliases and hidden-field reentry',()=>{
+ assert.throws(()=>compile('SELECT * FROM (SELECT Name FROM MongoDBOASIS) q'),/explicit TOP, LIMIT or FETCH/);
+ assert.throws(()=>compile('SELECT * FROM (SELECT Name FROM MongoDBOASIS LIMIT 10)'),/derived table alias/);
+ assert.throws(()=>compile('SELECT * FROM (SELECT Name FROM MongoDBOASIS LIMIT 10) WHERE Name IS NOT NULL'),/explicit table alias/);
+ assert.throws(()=>compile('SELECT q.Version FROM (SELECT Name FROM MongoDBOASIS LIMIT 10) q'),/does not expose/);
+ const chained=compile('WITH seed(label) AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT q.label FROM (SELECT label FROM seed) q LIMIT 2');
+ assert.equal(chained.body.source.take,10);assert.equal(chained.body.stages.at(-1).count,2);
+});
