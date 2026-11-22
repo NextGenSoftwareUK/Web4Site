@@ -186,14 +186,25 @@
           else if (rightTokens[position] === ')' && --rightDepth === 0) { rightEnd = position; break; }
         }
       }
-      const outputWindow = rightEnd >= 0 ? rightTokens.splice(rightEnd + 1) : [];
+      function topWindow(parts) {
+        let depth = 0;
+        for (let position = 0; position < parts.length; position++) {
+          if (parts[position] === '(') depth++;
+          else if (parts[position] === ')') depth--;
+          else if (!depth && ['ORDER','LIMIT','OFFSET','FETCH'].includes(parts[position].toUpperCase())) return position;
+        }
+        return -1;
+      }
+      const trailingWindow = rightEnd >= 0 ? rightEnd + 1 : topWindow(rightTokens);
+      const outputWindow = trailingWindow >= 0 ? rightTokens.splice(trailingWindow) : [];
       if (outputWindow.length && (!['ORDER','LIMIT','OFFSET','FETCH'].includes(outputWindow[0].toUpperCase()) ||
           outputWindow.some(token => !/^(?:ORDER|BY|ASC|DESC|Name|Description|Version|Id|,|LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token))))
         throw new Error('A set result accepts declared entity ORDER BY terms and bounded LIMIT/OFFSET/FETCH paging.');
       function operand(parts) {
-        if (parts[0] !== '(' || parts.at(-1) !== ')')
-          throw new Error('Wrap each SELECT operand in parentheses to preserve its own ordering and window.');
-        const compiled = compile(parts.slice(1,-1).join(' '), discoveredProfiles, parameters);
+        const parenthesized = parts[0] === '(' && parts.at(-1) === ')';
+        if (!parenthesized && (parts[0]?.toUpperCase() !== 'SELECT' || topWindow(parts) >= 0))
+          throw new Error('Wrap an independently ordered or paged SELECT operand in parentheses.');
+        const compiled = compile((parenthesized ? parts.slice(1,-1) : parts).join(' '), discoveredProfiles, parameters);
         if (compiled.path !== 'data/query-cql' ||
             !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider))
           throw new Error('Native entity sets require SELECT * from one MongoDB, SQLite or Neo4j provider.');
@@ -203,6 +214,9 @@
           throw new Error('This set operand contains an independently unsupported source option.');
         if (maximumDurationMilliseconds !== undefined)
           throw new Error('Native set queries currently use the server-owned execution deadline.');
+        // An unparenthesized SELECT is a complete set input, not the editor's
+        // default ten-row page. Native input proof rejects over-budget sources.
+        if (!parenthesized) { delete source.take; source.skip = 0; }
         return {provider,includeMetadata,source};
       }
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);

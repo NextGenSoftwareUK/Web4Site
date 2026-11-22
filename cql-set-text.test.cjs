@@ -13,7 +13,7 @@ test('native entity set text preserves both input windows and named values',()=>
 });
 test('set grammar refuses ambiguous windows and unsupported authority or projections',()=>{
   const left='(SELECT * FROM MongoDBOASIS LIMIT 2)';
-  assert.throws(()=>compile('SELECT * FROM MongoDBOASIS UNION SELECT * FROM MongoDBOASIS'),/parentheses/);
+  assert.throws(()=>compile('SELECT * FROM MongoDBOASIS LIMIT 2 UNION SELECT * FROM MongoDBOASIS'),/parentheses/);
   assert.throws(()=>compile(left+' UNION (SELECT * FROM Neo4jOASIS LIMIT 2)'),/same provider/);
   assert.throws(()=>compile(left+' UNION (SELECT Name FROM MongoDBOASIS LIMIT 2)'),/SELECT \*/);
   assert.throws(()=>compile(left+' UNION '+left+' EXCEPT '+left),/two parenthesized/);
@@ -41,4 +41,15 @@ test('outer set ordering binds native terms before independent output paging',()
   const ordered=compile(sql+' ORDER BY Id DESC');
   assert.deepEqual(ordered.body.ordering,[{field:'Id',descending:true}]);
   assert.equal(Object.hasOwn(ordered.body,'take'),false);
+});
+
+test('standard unparenthesized set inputs are complete and global windows stay outside',()=>{
+  for(const [operator,kind] of [['UNION','Union'],['UNION ALL','Concat'],['INTERSECT','Intersect'],['EXCEPT','Except']]){
+    const query=compile('SELECT * FROM MongoDBOASIS WHERE Name = @name '+operator+' SELECT * FROM MongoDBOASIS WHERE Version >= 2 ORDER BY Id LIMIT 3 OFFSET 1',{}, {name:'Coffee'});
+    assert.equal(query.body.kind,kind);
+    assert.equal(Object.hasOwn(query.body.left,'take'),false);assert.equal(Object.hasOwn(query.body.right,'take'),false);
+    assert.equal(query.body.left.filters[0].value,'Coffee');
+    assert.equal(query.body.take,3);assert.equal(query.body.skip,1);
+    assert.deepEqual(query.body.ordering,[{field:'Id',descending:false}]);
+  }
 });
