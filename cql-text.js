@@ -537,18 +537,22 @@
         let compiled = compileQuery((parenthesized ? parts.slice(1,-1) : parts).join(' '),
           discoveredProfiles,parameters,cteScope,compileDepth+1);
         const inheritedBound = completeSelectedBounds.has(compiled);
+        let visibleColumns;
         if (compiled.path === 'data/query-cql/composition') {
           const input = frame(compiled);
-          if (input.stages.some(stage=>stage.operation !== 'Select'))
-            throw new Error('Set operands with post-window filters, ordering or pages require native staged-set enrollment.');
-          compiled = {path:'data/query-cql/projection',body:{
-            provider:input.provider,...input.source,columns:input.columns}};
+          visibleColumns = input.columns;
+          // Preserve ordered native stages when they affect membership/order/windows.
+          // Pure reselection may retain the existing direct-projection representation.
+          const staged = input.stages.some(stage=>stage.operation !== 'Select');
+          compiled = {path:'data/query-cql/projection',body:staged
+            ? {provider:input.provider,...input.source,stages:input.stages}
+            : {provider:input.provider,...input.source,columns:input.columns}};
         }
         if (!['data/query-cql','data/query-cql/projection'].includes(compiled.path) ||
             !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider))
           throw new Error('Native sets require SELECT * or explicit columns from one MongoDB, SQLite or Neo4j provider.');
         const {provider,includeMetadata,maximumDurationMilliseconds,...source} = compiled.body;
-        const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy','descending','skip','take','columns']);
+        const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy','descending','skip','take','columns','stages']);
         if (Object.keys(source).some(key => !allowed.has(key)))
           throw new Error('This set operand contains an independently unsupported source option.');
         if (maximumDurationMilliseconds !== undefined)
@@ -565,7 +569,7 @@
             return depth === 0 && ['LIMIT','FETCH'].includes(token.toUpperCase());
           });
         if (!explicitPage && !inheritedBound) delete source.take;
-        return {provider,includeMetadata,source};
+        return {provider,includeMetadata,source,columns:visibleColumns ?? source.columns};
       }
       const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);
       if (left.provider !== right.provider)
@@ -573,7 +577,7 @@
       const selected = Array.isArray(left.source.columns);
       if (selected !== Array.isArray(right.source.columns))
         throw new Error('Use SELECT * on both inputs or explicit columns on both inputs.');
-      if (selected && left.source.columns.length !== right.source.columns.length)
+      if (selected && left.columns.length !== right.columns.length)
         throw new Error('Selected set inputs must have the same column count.');
       let window = {};
       if (!selected && outputWindow.some(token => !/^(?:ORDER|BY|ASC|DESC|Name|Description|Version|Id|,|LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token)))
@@ -586,8 +590,8 @@
         do {
           const token = pageTokens[cursor++];
           const column = /^[1-9][0-9]*$/.test(token ?? '')
-            ? left.source.columns[Number(token) - 1]
-            : left.source.columns.find(column => column.alias.toLowerCase() === token?.toLowerCase());
+            ? left.columns[Number(token) - 1]
+            : left.columns.find(column => column.alias.toLowerCase() === token?.toLowerCase());
           if (!column || used.has(column.alias) || ordering.length >= 4)
             throw new Error('Order a selected set by up to four distinct visible left-column aliases or positions.');
           used.add(column.alias);

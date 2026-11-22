@@ -109,12 +109,34 @@ test('WITH visible tuples keep independent source windows through all native set
   }
  }
 });
-test('set operands admit pure derived reshaping and refuse post-window stages',()=>{
- const query=compile('(SELECT d.Name AS Label FROM (SELECT Name FROM MongoDBOASIS LIMIT 8) d) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9) ORDER BY Label LIMIT 2');
- assert.equal(query.body.left.take,8);assert.equal(query.body.left.columns[0].alias,'Label');
- assert.equal(query.body.right.take,9);
- assert.throws(()=>compile("WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 10) (SELECT * FROM q WHERE Name LIKE 'x%') UNION (SELECT * FROM q)"),/post-window/);
- assert.throws(()=>compile('WITH q AS (SELECT Name FROM MongoDBOASIS LIMIT 10) (SELECT * FROM q LIMIT 2) UNION (SELECT * FROM q)'),/post-window/);
+test('set operands preserve independent post-window stages before visible tuple equality',()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=compile("WITH q AS (SELECT Name, Version FROM "+provider+" ORDER BY Id LIMIT 10) "+
+   "(SELECT Name AS Label FROM q WHERE Version >= @minimum ORDER BY Name DESC LIMIT 2 OFFSET 1) "+
+   "UNION ALL (SELECT Name AS Other FROM q WHERE Name NOT LIKE 'x%') ORDER BY Label LIMIT 3",{}, {minimum:2});
+  assert.equal(query.path,'data/query-cql/set');assert.equal(query.body.kind,'Concat');
+  assert.equal(query.body.left.take,10);assert.equal(query.body.right.take,10);
+  assert.deepEqual(query.body.left.columns.map(c=>c.alias),['Name','Version']);
+  assert.deepEqual(query.body.left.stages.slice(-3),[
+   {operation:'Skip',count:1},{operation:'Take',count:2},
+   {operation:'Select',columns:[{alias:'Label',sourceAlias:'Name'}]}]);
+  assert.equal(query.body.left.stages.find(s=>s.operation==='Where').filters[0].value,2);
+  assert.ok(query.body.right.stages.some(s=>s.operation==='Where'));
+  assert.deepEqual(query.body.ordering,[{field:'Label',descending:false}]);
+  assert.equal(query.body.take,3);
+ }
+ const pure=compile('(SELECT d.Name AS Label FROM (SELECT Name FROM MongoDBOASIS LIMIT 8) d) UNION (SELECT Name FROM MongoDBOASIS LIMIT 9) ORDER BY Label LIMIT 2');
+ assert.equal(pure.body.left.columns[0].alias,'Label');assert.equal(pure.body.left.stages,undefined);
+});
+
+test('staged set ordering and tuple widths use final visible bindings only',()=>{
+ const prefix="WITH q AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 10) "+
+  "(SELECT Name AS Label FROM q WHERE Version >= 1) UNION (SELECT Name FROM q)";
+ assert.throws(()=>compile(prefix+" ORDER BY Version LIMIT 2"),/visible left-column/);
+ assert.throws(()=>compile("WITH q AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 10) "+
+  "(SELECT Name FROM q WHERE Version >= 1) UNION (SELECT Name, Version FROM q)"),/same column count/);
+ const ordinal=compile(prefix+" ORDER BY 1 LIMIT 2");
+ assert.deepEqual(ordinal.body.ordering,[{field:'Label',descending:false}]);
 });
 
 test('captured bounds survive nested WITH and derived sources without limiting unrelated inputs',()=>{
