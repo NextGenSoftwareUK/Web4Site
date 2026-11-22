@@ -979,3 +979,18 @@ test('Ask conditional text requires review on a ready provider',async()=>{
  assert.equal(request.body.columns[0].whenTrue,'Active');
  assert.equal(request.body.columns[0].whenFalse,'Inactive');
 });
+
+test('Ask captures a known Boolean metadata CASE and keeps review explicit',async()=>{
+ const text="SELECT CASE WHEN CAST(metadata.flag AS BOOLEAN) THEN 'Yes' ELSE 'No' END AS Label FROM Neo4jOASIS ORDER BY Label LIMIT 5";
+ const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+ app.node('ask-question').value='The metadata flag field is Boolean. Label five Neo4j records Yes or No using flag';
+ await app.node('ask-generate').click();
+ const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+ assert.match(prompt,/Never guess a metadata path or its type/);
+ assert.match(prompt,/missing, null or invalid Boolean values are errors/);
+ assert.equal(app.node('ask-draft').textContent,text);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const column=compile(app.opened[0]).body.columns[0];
+ assert.deepEqual(column.metadataPath,['flag']);assert.equal(column.valueType,'Boolean');
+ assert.equal(column.nullable,false);assert.equal(column.function,'BooleanTextCase');
+});

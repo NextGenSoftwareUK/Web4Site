@@ -1,3 +1,5 @@
+Ask typed Boolean metadata CASE guidance and one focused UI journey passed in RAM: user-supplied field/type, explicit review, required native Boolean column. Prompt refuses guessed paths/types and explains missing/null/invalid errors. Help and compiler/Ask cache versions advanced together. Backend metadata CI live; not hosted or real WEB6 inference accepted. No local generated assets/build/environment/database retained.
+
 SQL typed Boolean metadata CASE added: CASE WHEN CAST(metadata.flag AS BOOLEAN) THEN quoted text ELSE quoted text END captures nullable=false to preserve required Boolean domain errors. Four changed parser controls passed in RAM across native Mongo/SQLite/Neo capture; no client row evaluation. Requires new metadata backend qualification/release; not hosted accepted. Coalescing is live-accepted on all3 Development providers with18pacedcalls and complete fixture/session cleanup. No local build/assets/environment/database/archive retained.
 
 Conditional-text demo help and compiler/Ask asset versions updated together. Parser3/UI1 checks accepted; backend and hosted gates remain pending. No local build/generated assets/environment/database retained.
