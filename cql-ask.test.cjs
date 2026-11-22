@@ -944,3 +944,22 @@ test('Ask refuses a selected-value set draft with a hidden result sort', async()
   assert.equal(app.node('ask-preview').disabled,true);
   assert.deepEqual(app.opened,[]);
 });
+
+test('Ask drafts native text coalescing on a ready database and still requires review',async()=>{
+  const text="SELECT COALESCE(Description, 'Unnamed') AS Label FROM Neo4jOASIS ORDER BY Label LIMIT 5";
+  const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+  app.node('ask-question').value='Show five Neo4j descriptions, using Unnamed for missing descriptions';
+  await app.node('ask-generate').click();
+  const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.match(prompt,/COALESCE\(Description/);
+  assert.match(prompt,/stored invalid types are errors/);
+  assert.doesNotMatch(prompt,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+  assert.equal(app.node('ask-draft').textContent,text);
+  assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  const request=compile(app.opened[0]);
+  assert.equal(request.path,'data/query-cql/projection');
+  assert.equal(request.body.columns[0].function,'TextCoalesce');
+  assert.equal(request.body.columns[0].nullReplacement,'Unnamed');
+  assert.deepEqual(request.body.selectedOrder,[{alias:'Label',descending:false}]);
+});
