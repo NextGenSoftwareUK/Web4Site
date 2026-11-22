@@ -29,5 +29,16 @@ test('outer set paging stays separate from both native operand pages',()=>{
   assert.equal(query.body.left.take,4);assert.equal(query.body.left.skip,1);
   assert.equal(query.body.right.take,2);assert.equal(query.body.right.skip,3);
   assert.equal(query.body.take,3);assert.equal(query.body.skip,1);
-  assert.throws(()=>compile('(SELECT * FROM MongoDBOASIS) UNION (SELECT * FROM MongoDBOASIS) ORDER BY Name'),/only outer/);
+  assert.throws(()=>compile('(SELECT * FROM MongoDBOASIS) UNION (SELECT * FROM MongoDBOASIS) ORDER BY metadata.hidden'),/declared entity/);
+});
+
+test('outer set ordering binds native terms before independent output paging',()=>{
+  const sql='(SELECT * FROM MongoDBOASIS LIMIT 4) UNION ALL (SELECT * FROM MongoDBOASIS LIMIT 2)';
+  const query=compile(sql+' ORDER BY Name DESC, Version ASC LIMIT 3 OFFSET 1');
+  assert.deepEqual(query.body.ordering,[{field:'Name',descending:true},{field:'Version',descending:false}]);
+  assert.equal(query.body.take,3);assert.equal(query.body.skip,1);
+  assert.equal(query.body.left.take,4);assert.equal(query.body.right.take,2);
+  const ordered=compile(sql+' ORDER BY Id DESC');
+  assert.deepEqual(ordered.body.ordering,[{field:'Id',descending:true}]);
+  assert.equal(Object.hasOwn(ordered.body,'take'),false);
 });

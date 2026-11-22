@@ -187,9 +187,9 @@
         }
       }
       const outputWindow = rightEnd >= 0 ? rightTokens.splice(rightEnd + 1) : [];
-      if (outputWindow.length && (!['LIMIT','OFFSET','FETCH'].includes(outputWindow[0].toUpperCase()) ||
-          outputWindow.some(token => !/^(?:LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token))))
-        throw new Error('A set result currently accepts only outer LIMIT/OFFSET/FETCH paging.');
+      if (outputWindow.length && (!['ORDER','LIMIT','OFFSET','FETCH'].includes(outputWindow[0].toUpperCase()) ||
+          outputWindow.some(token => !/^(?:ORDER|BY|ASC|DESC|Name|Description|Version|Id|,|LIMIT|OFFSET|FETCH|FIRST|NEXT|ROWS?|ONLY|[0-9]+|@[A-Za-z_][A-Za-z_0-9]*)$/i.test(token))))
+        throw new Error('A set result accepts declared entity ORDER BY terms and bounded LIMIT/OFFSET/FETCH paging.');
       function operand(parts) {
         if (parts[0] !== '(' || parts.at(-1) !== ')')
           throw new Error('Wrap each SELECT operand in parentheses to preserve its own ordering and window.');
@@ -212,7 +212,12 @@
       if (outputWindow.length) {
         const page = compile('SELECT * FROM ' + left.provider + ' ' + outputWindow.join(' '), discoveredProfiles, parameters);
         if (page.path !== 'data/query-cql') throw new Error('Invalid set output window.');
-        window = {skip:page.body.skip,take:page.body.take};
+        const ordering = outputWindow.some(token => token.toUpperCase() === 'ORDER');
+        const paging = outputWindow.some(token => ['LIMIT','OFFSET','FETCH'].includes(token.toUpperCase()));
+        window = {
+          ...(paging ? {skip:page.body.skip,take:page.body.take} : {}),
+          ...(ordering ? {ordering:page.body.ordering ?? [{field:page.body.orderBy,descending:!!page.body.descending}]} : {})
+        };
       }
       return {path:'data/query-cql/set',body:{
         provider:left.provider,kind,left:left.source,right:right.source,...window,
