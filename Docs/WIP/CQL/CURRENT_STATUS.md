@@ -1,3 +1,5 @@
+LINQ set capture ACCEPTED at contract scope:44965175654/job137032452845 on0f1e999f/Core8b543e53 passed6tests0failed0skipped plus actual WEB4 build. RAM artifact14731677111/2022bytes/SHAd453cfb9088ce5cff721828db6ad6fe98587d8e8a557ab99b9fb12c0860d0ae8 exact6TRX verified. SQL text source fdcba74a6d13a6006de724835d34cf376be4a104 passes3focused in-memory Node cases across same-authority Mongo/SQLite/Neo and all4operators; two explicitly parenthesized SELECT-star windows, named parameters/Boolean filters/quoted keywords preserved, unsupported mixed authorities/projections/ambiguous/nested compound forms refused. First test assumed Boolean normalization used Where; corrected expected canonical anyOf without shipping change. WEB4 sourceed07 preserves nested Where in dedicated set-source DTO. Endpoint/native HTTP/browser/ordinary shared-stage regression and full SQL grammar remain open; no deploy. No archive/local build/runtime/DB/output retained; source checkout conflicts preserved.
+
 # CQL website current status
 
 ## Grouped text filters with escaped LIKE
