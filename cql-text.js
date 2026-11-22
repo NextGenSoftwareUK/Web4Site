@@ -859,8 +859,23 @@
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true, operation === 'Min' || operation === 'Max') : null;
+    if (scalarSelection?.function === 'TextCoalesce') throw new Error('COALESCE currently supports selected row columns, not scalar aggregates.');
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
+      if (allowComputed && accept('COALESCE')) {
+        expect('(');
+        const input = readSelection();
+        expect(',');
+        const token = tokens[index++];
+        if (!/^'(?:[^']|'')*'$/.test(token ?? ''))
+          throw new Error('COALESCE requires a non-null quoted text replacement or string parameter.');
+        const nullReplacement = token.slice(1,-1).replace(/''/g, "'");
+        if (nullReplacement.length > 512) throw new Error('COALESCE replacement exceeds512 characters.');
+        expect(')');
+        if (input.field ? !['Name','Description'].includes(input.field) : input.valueType !== 'String')
+          throw new Error('COALESCE requires a string field or CAST of metadata AS STRING.');
+        return {...input,function:'TextCoalesce',nullReplacement};
+      }
       if (allowComputed && accept('LENGTH')) {
         expect('(');
         const input = readSelection();
@@ -898,7 +913,8 @@
     }
     function selectionKey(column) {
       const input = column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
-      return column.function ? JSON.stringify([column.function, input]) : input;
+      return column.function === 'TextCoalesce' ? JSON.stringify([column.function,input,column.nullReplacement])
+        : column.function ? JSON.stringify([column.function, input]) : input;
     }
     function readGroupedAggregate(name) {
       const operation = aggregates[name];
@@ -1323,7 +1339,7 @@
       const order = [];
       do {
         let name;
-        if (columns.length && ['CAST', 'LENGTH'].includes(peek()) && tokens[index + 1] === '(') {
+        if (columns.length && ['CAST', 'LENGTH', 'COALESCE'].includes(peek()) && tokens[index + 1] === '(') {
           const expression = selectionKey(readSelection(true));
           const selectedColumn = columns.find(column => selectionKey(column) === expression);
           if (!selectedColumn) throw new Error('Order by selected column aliases or expressions.');
