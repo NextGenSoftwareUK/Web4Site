@@ -158,6 +158,51 @@
       if (token.trim() && !token.startsWith('--') && !token.startsWith('/*')) tokens.push(token);
     }
     const rawTokens = tokens.slice();
+    // Parenthesized operands make each source's ORDER/LIMIT/OFFSET scope explicit.
+    let setDepth = 0;
+    const setOperators = [];
+    for (let position = 0; position < rawTokens.length; position++) {
+      const token = rawTokens[position];
+      if (token === '(') setDepth++;
+      else if (token === ')') setDepth--;
+      else if (setDepth === 0 && ['UNION','INTERSECT','EXCEPT'].includes(token.toUpperCase()))
+        setOperators.push(position);
+      if (setDepth < 0) throw new Error('Unbalanced set-query parentheses.');
+    }
+    if (setOperators.length) {
+      if (setDepth || setOperators.length !== 1)
+        throw new Error('Use two parenthesized SELECT operands for a native set query.');
+      const position = setOperators[0];
+      let kind = rawTokens[position].toUpperCase(), rightStart = position + 1;
+      if (kind === 'UNION' && rawTokens[rightStart]?.toUpperCase() === 'ALL') {
+        kind = 'Concat'; rightStart++;
+      } else kind = {UNION:'Union',INTERSECT:'Intersect',EXCEPT:'Except'}[kind];
+      const rightTokens = rawTokens.slice(rightStart);
+      if (rightTokens.at(-1) === ';') rightTokens.pop();
+      function operand(parts) {
+        if (parts[0] !== '(' || parts.at(-1) !== ')')
+          throw new Error('Wrap each SELECT operand in parentheses to preserve its own ordering and window.');
+        const compiled = compile(parts.slice(1,-1).join(' '), discoveredProfiles, parameters);
+        if (compiled.path !== 'data/query-cql' ||
+            !['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider))
+          throw new Error('Native entity sets require SELECT * from one MongoDB, SQLite or Neo4j provider.');
+        const {provider,includeMetadata,maximumDurationMilliseconds,...source} = compiled.body;
+        const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy','descending','skip','take']);
+        if (Object.keys(source).some(key => !allowed.has(key)))
+          throw new Error('This set operand contains an independently unsupported source option.');
+        if (maximumDurationMilliseconds !== undefined)
+          throw new Error('Native set queries currently use the server-owned execution deadline.');
+        return {provider,includeMetadata,source};
+      }
+      const left = operand(rawTokens.slice(0,position)), right = operand(rightTokens);
+      if (left.provider !== right.provider)
+        throw new Error('Native set operands must use the same provider.');
+      return {path:'data/query-cql/set',body:{
+        provider:left.provider,kind,left:left.source,right:right.source,
+        maximumLeftRows:100,maximumRightRows:100,maximumResults:100,
+        includeMetadata:!!(left.includeMetadata || right.includeMetadata)
+      }};
+    }
     tokens.length = 0;
     for (let position = 0; position < rawTokens.length; position++) {
       const token = rawTokens[position];
