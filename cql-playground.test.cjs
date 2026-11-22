@@ -1077,3 +1077,33 @@ test('loads the displayed bounded WITH example for review without querying recor
   assert.equal(compiled.body.stages.at(-1).count,5);
  }
 });
+
+
+test('loads displayed derived and staged-set examples for review without executing records',async()=>{
+ const h=harness(async()=>assert.fail('Loading examples must not query records.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ for(const example of ['derived','staged-set']){
+  const sql=page.match(new RegExp('<code id="cql-'+example+'-example">([\\s\\S]+?)<\\/code>'))[1];
+  h.elements.set('cql-'+example+'-example',{textContent:sql});
+  h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-load-'+example+'-example').listeners.click();
+  assert.equal(h.elements.get('cql-text').value,sql.trim());assert.equal(h.elements.get('cql-text').focused,true);
+  assert.equal(h.elements.get('cql-virtual-mapping').value,'');assert.equal(h.elements.get('cql-saved-mapping').value,'');
+  for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+   const query=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+   assert.equal(query.body.provider,provider);
+   if(example==='derived'){
+    assert.equal(query.path,'data/query-cql/composition');assert.equal(query.body.source.take,25);
+    assert.ok(query.body.stages.some(stage=>stage.operation==='Where'));
+   }else{
+    assert.equal(query.path,'data/query-cql/set');assert.equal(query.body.kind,'Concat');
+    assert.equal(query.body.left.take,25);assert.equal(query.body.right.take,25);
+    assert.ok(query.body.left.stages.some(stage=>stage.operation==='Where'));
+    assert.ok(query.body.right.stages.some(stage=>stage.operation==='Where'));
+    assert.deepEqual(query.body.ordering,[{field:'Display',descending:false}]);assert.equal(query.body.take,5);
+   }
+  }
+ }
+});
