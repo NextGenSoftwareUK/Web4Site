@@ -48,3 +48,26 @@ test('CTEs refuse implicit source truncation, recursion, provider shadowing and 
   assert.throws(()=>compile('WITH MongoDBOASIS AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT * FROM MongoDBOASIS'),/replacing a provider/);
   assert.throws(()=>compile('WITH seed AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 10), named AS (SELECT Name FROM seed) SELECT Version FROM named'),/does not expose/);
 });
+
+test('WITH declared column aliases bind positionally across chained native results',()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=compile('WITH seed(label, revision) AS (SELECT Name, Version FROM '+provider+
+   ' ORDER BY Id LIMIT 20), page(title, rank) AS (SELECT label, revision FROM seed WHERE revision >= 1 ORDER BY label LIMIT 5) SELECT title FROM page WHERE rank < 4 ORDER BY title LIMIT 2');
+  assert.equal(query.body.provider,provider);assert.equal(query.body.source.take,20);
+  const selects=query.body.stages.filter(s=>s.operation==='Select');
+  assert.deepEqual(selects[0].columns,[{alias:'label',sourceAlias:'Name'},{alias:'revision',sourceAlias:'Version'}]);
+  assert.deepEqual(selects[1].columns,[{alias:'title',sourceAlias:'label'},{alias:'rank',sourceAlias:'revision'}]);
+  assert.deepEqual(selects[2].columns,[{alias:'title',sourceAlias:'title'}]);
+  assert.ok(query.body.stages.some(s=>s.filters?.some(f=>f.alias==='rank'&&f.value===4)));
+ }
+});
+test('WITH column declarations reject ambiguity, wrong cardinality and original alias reentry',()=>{
+ assert.throws(()=>compile('WITH q(x,X) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 10) SELECT * FROM q'),/distinct WITH/);
+ assert.throws(()=>compile('WITH q(x) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 10) SELECT * FROM q'),/count must match/);
+ assert.throws(()=>compile('WITH q(x) AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT Name FROM q'),/does not expose/);
+ assert.throws(()=>compile('WITH q() AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT * FROM q'),/column alias/);
+ const identity=compile('WITH q(Name) AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT * FROM q');
+ assert.equal(identity.path,'data/query-cql/projection');
+ const quoted=compile('WITH q("Label") AS (SELECT Name FROM MongoDBOASIS LIMIT 10) SELECT "Label" FROM q');
+ assert.equal(quoted.body.stages[0].columns[0].alias,'Label');
+});

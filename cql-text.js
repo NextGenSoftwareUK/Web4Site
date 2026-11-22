@@ -223,6 +223,20 @@
         if (Object.hasOwn(scope,key) || selectableProviders.some(provider => provider.toLowerCase() === key) ||
             Object.keys(scope).length >= 8)
           throw new Error('Use up to eight distinct WITH names without replacing a provider.');
+        const declaredAliases = [];
+        if (rawTokens[cursor] === '(') {
+          cursor++;
+          do {
+            const alias = cteIdentifier(rawTokens[cursor++], 'WITH column alias');
+            if (declaredAliases.length >= 32 ||
+                declaredAliases.some(item => item.toLowerCase() === alias.toLowerCase()))
+              throw new Error('Use up to32 distinct WITH column aliases.');
+            declaredAliases.push(alias);
+            if (rawTokens[cursor] !== ',') break;
+            cursor++;
+          } while (cursor < rawTokens.length);
+          if (rawTokens[cursor++] !== ')') throw new Error('Close the WITH column alias list.');
+        }
         if (rawTokens[cursor++]?.toUpperCase() !== 'AS' || rawTokens[cursor++] !== '(')
           throw new Error('Use WITH name AS (SELECT explicit columns ... LIMIT n).');
         const begin = cursor;
@@ -241,8 +255,22 @@
         const inherited = from >= 0 && Object.hasOwn(scope, sourceName?.toLowerCase());
         if (!inherited && !explicitPage(sourceTokens))
           throw new Error('Give the initial WITH source an explicit TOP, LIMIT or FETCH bound; an editor default page is not a complete source.');
-        const compiled = compileQuery(sourceTokens.join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
-        frame(compiled);
+        let compiled = compileQuery(sourceTokens.join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
+        const captured = frame(compiled);
+        if (declaredAliases.length) {
+          if (declaredAliases.length !== captured.columns.length)
+            throw new Error('WITH column alias count must match its selected columns.');
+          const columns = declaredAliases.map((alias, position) =>
+            ({alias, sourceAlias:captured.columns[position].alias}));
+          const identity = columns.every(binding => binding.alias === binding.sourceAlias);
+          if (!identity) {
+            if (captured.stages.length >= 16)
+              throw new Error('WITH composition exceeds16 stages.');
+            compiled = {path:'data/query-cql/composition',body:{
+              provider:captured.provider,source:captured.source,
+              stages:[...captured.stages,{operation:'Select',columns}]}};
+          }
+        }
         scope[key] = compiled;
         if (rawTokens[cursor] !== ',') break;
         cursor++;
