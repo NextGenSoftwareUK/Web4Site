@@ -1053,3 +1053,27 @@ test('loads the displayed conditional/coalesce demo for review and clears unrela
     assert.equal(q.body.take,5);
   }
 });
+
+
+test('loads the displayed bounded WITH example for review without querying records',async()=>{
+ const h=harness(async()=>assert.fail('Loading a query must not execute it.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-cte-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-cte-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-cte-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());
+ assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+ assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const compiled=require('./cql-text.js').compile(sql.replace('MongoDBOASIS',provider));
+  assert.equal(compiled.path,'data/query-cql/composition');
+  assert.equal(compiled.body.provider,provider);
+  assert.equal(compiled.body.source.take,25);
+  assert.equal(compiled.body.stages.at(-1).operation,'Take');
+  assert.equal(compiled.body.stages.at(-1).count,5);
+ }
+});

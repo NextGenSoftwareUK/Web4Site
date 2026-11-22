@@ -1036,3 +1036,22 @@ test('Ask mapped computed response cannot substitute another saved mapping',asyn
  assert.match(app.node('ask-status').textContent,/did not preserve the selected mapping and provider/);
  assert.deepEqual(app.opened,[]);
 });
+
+
+test('Ask bounded WITH draft stays provider-grounded and requires review',async()=>{
+ const sql='WITH sample AS (SELECT Id, Name, Version FROM Neo4jOASIS ORDER BY Id LIMIT 25) SELECT * FROM sample WHERE Version >= 1 ORDER BY Version DESC, Id LIMIT 5';
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS'],{},true);
+ app.node('ask-question').value='From the first25Neo4j records by Id, show five with Version at least1, highest Version first.';
+ await app.node('ask-generate').click();
+ const request=JSON.parse(app.requests[0].options.body);
+ assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+ assert.match(request.messages[0].content,/non-recursive WITH steps/);
+ assert.doesNotMatch(request.messages[0].content,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+ assert.equal(app.node('ask-preview').disabled,false);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const compiled=compile(app.opened[0]);
+ assert.equal(compiled.path,'data/query-cql/composition');
+ assert.equal(compiled.body.provider,'Neo4jOASIS');
+ assert.equal(compiled.body.source.take,25);
+ assert.equal(app.requests.length,1,'Review must not execute a data query.');
+});

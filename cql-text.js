@@ -80,6 +80,11 @@
   }
 
   function compile(text, discoveredProfiles = {}, parameters = {}) {
+    return compileQuery(text,discoveredProfiles,parameters,Object.create(null),0);
+  }
+
+  function compileQuery(text, discoveredProfiles = {}, parameters = {}, cteScope = Object.create(null), compileDepth = 0) {
+    if (compileDepth > 8) throw new Error('Nested selected queries exceed eight levels.');
     const keyProfiles = { ...discoveredProfiles, ...accountProfiles };
     const selectableProviders = [...providers, ...Object.keys(discoveredProfiles)];
     if (typeof text !== 'string' || text.length > 4096) throw new Error('Enter a query of up to 4,096 characters.');
@@ -158,6 +163,264 @@
       if (token.trim() && !token.startsWith('--') && !token.startsWith('/*')) tokens.push(token);
     }
     const rawTokens = tokens.slice();
+
+    function cteIdentifier(token, description) {
+      const value = token?.startsWith('"') ? token.slice(1,-1).replace(/""/g, '"') : token;
+      if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(value ?? ''))
+        throw new Error('Expected a bounded ' + description + '.');
+      return value;
+    }
+    function topFrom(parts) {
+      let depth = 0;
+      for (let position = 0; position < parts.length; position++) {
+        if (parts[position] === '(') depth++;
+        else if (parts[position] === ')') depth--;
+        else if (!depth && parts[position].toUpperCase() === 'FROM') return position;
+      }
+      return -1;
+    }
+    function explicitPage(parts) {
+      let depth = 0;
+      return parts.some((token, position) => {
+        if (token === '(') depth++;
+        else if (token === ')') depth--;
+        return !depth && (['LIMIT','FETCH'].includes(token.toUpperCase()) ||
+          token.toUpperCase() === 'TOP' && [1,2].includes(position));
+      });
+    }
+    function frame(compiled) {
+      if (!['data/query-cql/projection','data/query-cql/composition'].includes(compiled.path))
+        throw new Error('A WITH source requires explicit selected columns from one native database.');
+      const provider = compiled.body.provider;
+      if (!['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(provider))
+        throw new Error('WITH selected stages require MongoDB, SQLite or Neo4j.');
+      const {provider: ignored, includeMetadata, ...source} = compiled.path.endsWith('/composition')
+        ? compiled.body.source : compiled.body;
+      const allowed = new Set(['filters','anyOf','anyChildren','anyDescendants','where','orderBy',
+        'descending','selectedOrder','skip','take','columns']);
+      if (Object.keys(source).some(key => !allowed.has(key)) || !Array.isArray(source.columns) ||
+          !Number.isInteger(source.take) || source.take < 0 || source.take > 100)
+        throw new Error('WITH requires a bounded native column source without mapping, graph or deadline overrides.');
+      const stages = compiled.path.endsWith('/composition') ? compiled.body.stages.slice() : [];
+      let columns = source.columns.slice();
+      for (const stage of stages) if (stage.operation === 'Select') {
+        columns = stage.columns.map(binding => {
+          const input = columns.find(column => column.alias === binding.sourceAlias);
+          if (!input) throw new Error('A selected stage references an unavailable alias.');
+          return {...input, alias:binding.alias};
+        });
+      }
+      return {provider, source, stages, columns};
+    }
+    function readCteDefinitions() {
+      let cursor = 1;
+      if (rawTokens[cursor]?.toUpperCase() === 'RECURSIVE')
+        throw new Error('Recursive WITH queries require a separate native recursive contract.');
+      const scope = Object.assign(Object.create(null), cteScope);
+      do {
+        const name = cteIdentifier(rawTokens[cursor++], 'WITH name');
+        const key = name.toLowerCase();
+        if (Object.hasOwn(scope,key) || selectableProviders.some(provider => provider.toLowerCase() === key) ||
+            Object.keys(scope).length >= 8)
+          throw new Error('Use up to eight distinct WITH names without replacing a provider.');
+        if (rawTokens[cursor++]?.toUpperCase() !== 'AS' || rawTokens[cursor++] !== '(')
+          throw new Error('Use WITH name AS (SELECT explicit columns ... LIMIT n).');
+        const begin = cursor;
+        let depth = 1;
+        while (cursor < rawTokens.length && depth) {
+          if (rawTokens[cursor] === '(') depth++;
+          else if (rawTokens[cursor] === ')') depth--;
+          cursor++;
+        }
+        if (depth) throw new Error('Unbalanced WITH source parentheses.');
+        const sourceTokens = rawTokens.slice(begin,cursor-1);
+        if (sourceTokens[0]?.toUpperCase() !== 'SELECT')
+          throw new Error('Declare selected WITH sources together, in dependency order.');
+        const from = topFrom(sourceTokens);
+        const sourceName = sourceTokens[from+1]?.replace(/^"|"$/g,'');
+        const inherited = from >= 0 && Object.hasOwn(scope, sourceName?.toLowerCase());
+        if (!inherited && !explicitPage(sourceTokens))
+          throw new Error('Give the initial WITH source an explicit TOP, LIMIT or FETCH bound; an editor default page is not a complete source.');
+        const compiled = compileQuery(sourceTokens.join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
+        frame(compiled);
+        scope[key] = compiled;
+        if (rawTokens[cursor] !== ',') break;
+        cursor++;
+      } while (cursor < rawTokens.length);
+      if (cursor === rawTokens.length) throw new Error('A WITH query requires its final SELECT.');
+      return compileQuery(rawTokens.slice(cursor).join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
+    }
+    function readCteSelection(compiled, from) {
+      const input = frame(compiled);
+      const sourceName = cteIdentifier(tokens[from+1], 'WITH source name');
+      let tableAlias = sourceName;
+      let afterFrom = from+2;
+      if (tokens[afterFrom]?.toUpperCase() === 'AS') {
+        tableAlias = cteIdentifier(tokens[afterFrom+1], 'table alias'); afterFrom += 2;
+      } else if (/^[A-Za-z][A-Za-z0-9_]*$/.test(tokens[afterFrom] ?? '') &&
+          !['WHERE','ORDER','LIMIT','OFFSET','FETCH','GROUP','HAVING','JOIN','INNER','LEFT','RIGHT','FULL','CROSS'].includes(tokens[afterFrom].toUpperCase())) {
+        tableAlias = cteIdentifier(tokens[afterFrom++], 'table alias');
+      }
+      const byName = new Map(input.columns.map(column => [column.alias.toLowerCase(),column]));
+      if (byName.size !== input.columns.length) throw new Error('WITH aliases must be unambiguous without case.');
+      function column() {
+        let name = cteIdentifier(tokens[index++], 'visible selected alias');
+        if (accept('.')) {
+          if (name.toLowerCase() !== tableAlias.toLowerCase())
+            throw new Error('Use the current WITH table alias.');
+          name = cteIdentifier(tokens[index++], 'visible selected alias');
+        }
+        const selected = byName.get(name.toLowerCase());
+        if (!selected) throw new Error('The WITH source does not expose column ' + name + '.');
+        return selected;
+      }
+      function domain(selected) {
+        return selected.function === 'Utf16Length' || selected.function === 'Int32Coalesce' ? 'Int32'
+          : ['TextCoalesce','BooleanTextCase'].includes(selected.function) ? 'String'
+          : selected.valueType ?? projectionFields[selected.field?.toLowerCase()]?.[1];
+      }
+      function nullable(selected) {
+        return domain(selected) === 'String' || selected.nullable === true;
+      }
+      const leaf = (selected, operator, value) => ({kind:'leaf', selected,
+        filter:{alias:selected.alias, operator,...(value === undefined ? {} : {value})}});
+      const logical = (kind,left,right) => ({kind,left,right});
+      function condition(depth) {
+        if (depth > 8) throw new Error('WITH conditions allow at most eight nested levels.');
+        if (accept('NOT')) return {kind:'not',value:condition(depth+1)};
+        if (accept('(')) {const node=alternatives(depth+1);expect(')');return node;}
+        const selected = column(), type = domain(selected);
+        const literal = () => readLiteral(type === 'Int64' ? 'Integer' : type, type === 'Int64');
+        if (accept('IS')) {
+          const not = accept('NOT');expect('NULL');
+          if (!nullable(selected)) throw new Error('This selected alias cannot be null.');
+          return leaf(selected,not ? 'NotEqual' : 'IsNull',not ? null : undefined);
+        }
+        const not = accept('NOT');
+        let node;
+        if (accept('BETWEEN')) {
+          const low=literal();expect('AND');const high=literal();
+          if (['String','Boolean','Guid','HolonType'].includes(type))
+            throw new Error('BETWEEN requires an ordered numeric or timestamp alias.');
+          node=logical('and',leaf(selected,'GreaterThanOrEqual',low),leaf(selected,'LessThanOrEqual',high));
+        } else if (accept('IN')) {
+          expect('(');let count=0;
+          do {
+            if (++count > 32) throw new Error('Use up to32 WITH membership values.');
+            const item=leaf(selected,'Equal',literal());
+            node=node ? logical('or',node,item) : item;
+          } while (accept(','));
+          expect(')');
+        } else if (accept('LIKE')) {
+          const match=readLike(type,true);
+          node=match.operator === 'IsNotNull' ? {...leaf(selected,'NotEqual',null),matchAllLike:true}
+            : leaf(selected,match.operator,match.value);
+        } else {
+          if (not) throw new Error('Use NOT IN, NOT BETWEEN or NOT LIKE for a selected alias.');
+          const comparison=tokens[index++];
+          if (!['=','<>','!=','<','<=','>','>='].includes(comparison) ||
+              ['String','Boolean','Guid','HolonType'].includes(type) && !['=','<>','!='].includes(comparison))
+            throw new Error('Use a supported exact selected-alias comparison.');
+          node=leaf(selected,comparisons[comparison],literal());
+        }
+        return not ? {kind:'not',value:node} : node;
+      }
+      function conjunction(depth) {
+        let node=condition(depth);
+        while (accept('AND')) node=logical('and',node,condition(depth));
+        return node;
+      }
+      function alternatives(depth) {
+        let node=conjunction(depth);
+        while (accept('OR')) node=logical('or',node,conjunction(depth));
+        return node;
+      }
+      const inverse={Equal:'NotEqual',NotEqual:'Equal',LessThan:'GreaterThanOrEqual',
+        LessThanOrEqual:'GreaterThan',GreaterThan:'LessThanOrEqual',GreaterThanOrEqual:'LessThan',
+        Contains:'NotContains',NotContains:'Contains',StartsWith:'NotStartsWith',NotStartsWith:'StartsWith',
+        EndsWith:'NotEndsWith',NotEndsWith:'EndsWith'};
+      function normalize(node,negative=false) {
+        if (node.kind === 'not') return normalize(node.value,!negative);
+        if (node.kind !== 'leaf') return {kind:negative ? node.kind === 'and' ? 'or' : 'and' : node.kind,
+          left:normalize(node.left,negative),right:normalize(node.right,negative)};
+        if (negative && node.matchAllLike) return logical('and',
+          {kind:'leaf',filter:{alias:node.filter.alias,operator:'IsNull'}},
+          {kind:'leaf',filter:{alias:node.filter.alias,operator:'NotEqual',value:null}});
+        let filter={...node.filter};
+        if (negative) {
+          if (filter.operator === 'IsNull') filter={alias:filter.alias,operator:'NotEqual',value:null};
+          else if (filter.operator === 'NotEqual' && filter.value === null) filter={alias:filter.alias,operator:'IsNull'};
+          else {
+            if (!inverse[filter.operator]) throw new Error('Unsupported negated selected comparison.');
+            filter.operator=inverse[filter.operator];
+          }
+        }
+        const result={kind:'leaf',filter};
+        if (nullable(node.selected) && filter.value !== null &&
+            ['NotEqual','NotContains','NotStartsWith','NotEndsWith'].includes(filter.operator))
+          return logical('and',{kind:'leaf',filter:{alias:filter.alias,operator:'NotEqual',value:null}},result);
+        return result;
+      }
+      function clauses(node) {
+        if (node.kind === 'leaf') return [[node.filter]];
+        const left=clauses(node.left),right=clauses(node.right);
+        const result=node.kind === 'and' ? [...left,...right] : left.flatMap(a=>right.map(b=>[...a,...b]));
+        if (result.length > 16 || result.reduce((sum,part)=>sum+part.length,0) > 32)
+          throw new Error('The selected Boolean expression exceeds32 native comparisons.');
+        return result;
+      }
+      expect('SELECT');
+      if (accept('DISTINCT')) throw new Error('WITH DISTINCT requires native distinct-stage enrollment.');
+      const leadingTake=readTop();
+      const output=[];
+      if (accept('*')) input.columns.forEach(item=>output.push({alias:item.alias,sourceAlias:item.alias}));
+      else do {
+        const selected=column();
+        const alias=readColumnAlias(selected.alias);
+        output.push({alias,sourceAlias:selected.alias});
+      } while (accept(','));
+      if (!output.length || output.length > 32 || new Set(output.map(item=>item.alias.toLowerCase())).size !== output.length)
+        throw new Error('Choose up to32 distinct visible output aliases.');
+      expect('FROM');index=afterFrom;
+      const stages=input.stages.slice();
+      if (accept('WHERE')) {
+        const parts=clauses(normalize(alternatives(1)));
+        for (const part of parts) stages.push({operation:'Where',...(part.length === 1 ? {filters:part} : {anyOf:part})});
+      }
+      if (accept('ORDER')) {
+        expect('BY');const order=[];
+        do {
+          const token=tokens[index];
+          let alias;
+          if (/^[1-9][0-9]*$/.test(token ?? '')) {
+            const position=integer(tokens[index++],1,output.length);alias=output[position-1].sourceAlias;
+          } else if (tokens[index+1] !== '.') {
+            const selected=output.find(item=>item.alias.toLowerCase() === token?.toLowerCase());
+            if (selected) {index++;alias=selected.sourceAlias;}
+          }
+          if (!alias) alias=column().alias;
+          if (order.length >= 8 || order.some(term=>term.alias === alias)) throw new Error('Use up to eight distinct ordering aliases.');
+          const descending=accept('DESC');if(!descending)accept('ASC');
+          order.push({alias,descending});
+        } while (accept(','));
+        stages.push({operation:'OrderBy',order});
+      }
+      const window=readWindow(100,10000,0,leadingTake);
+      if (window.skip !== undefined) stages.push({operation:'Skip',count:window.skip});
+      if (window.take !== undefined) stages.push({operation:'Take',count:window.take});
+      accept(';');
+      if (index !== tokens.length) throw new Error('Unsupported WITH result clause.');
+      const identity=output.length === input.columns.length &&
+        output.every((item,position)=>item.alias === input.columns[position].alias && item.sourceAlias === item.alias);
+      if (!identity) stages.push({operation:'Select',columns:output});
+      if (stages.length > 16 || stages.reduce((sum,stage)=>sum+(stage.filters?.length ?? 0)+(stage.anyOf?.length ?? 0),0) > 32)
+        throw new Error('WITH composition exceeds16 stages or32 comparisons.');
+      if (!stages.length) return compiled;
+      return {path:'data/query-cql/composition',body:{provider:input.provider,source:input.source,stages}};
+    }
+
+    if (rawTokens[0]?.toUpperCase() === 'WITH') return readCteDefinitions();
+
     // Parenthesized operands make each source's ORDER/LIMIT/OFFSET scope explicit.
     let setDepth = 0;
     const setOperators = [];
@@ -169,6 +432,8 @@
         setOperators.push(position);
       if (setDepth < 0) throw new Error('Unbalanced set-query parentheses.');
     }
+    if (setOperators.length && Object.keys(cteScope).length)
+      throw new Error('WITH set operands require native staged-set enrollment.');
     if (setOperators.length) {
       if (setDepth || setOperators.length !== 1)
         throw new Error('Use two parenthesized SELECT operands for a native set query.');
@@ -290,6 +555,13 @@
     const peek = () => tokens[index]?.toUpperCase();
     const aliasBoundaries = new Set(['FROM','WHERE','GROUP','HAVING','ORDER','LIMIT','OFFSET','TIMEOUT',
       'JOIN','INNER','LEFT','RIGHT','FULL','CROSS','CHILD','ON','UNION','INTERSECT','EXCEPT']);
+    if (Object.keys(cteScope).length) {
+      const from = topFrom(tokens);
+      const sourceName = tokens[from+1]?.replace(/^"|"$/g,'').toLowerCase();
+      if (from >= 0 && Object.hasOwn(cteScope,sourceName))
+        return readCteSelection(cteScope[sourceName],from);
+    }
+
     function readColumnAlias(defaultAlias) {
       const explicit = accept('AS');
       if (!explicit && (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(tokens[index] ?? '') || aliasBoundaries.has(peek())))
