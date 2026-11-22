@@ -859,9 +859,27 @@
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true, operation === 'Min' || operation === 'Max') : null;
-    if (scalarSelection?.function === 'TextCoalesce') throw new Error('COALESCE currently supports selected row columns, not scalar aggregates.');
+    if (['TextCoalesce','BooleanTextCase'].includes(scalarSelection?.function)) throw new Error('Computed text currently supports selected row columns, not scalar aggregates.');
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
+      if (allowComputed && accept('CASE')) {
+        expect('WHEN');
+        const input = readSelection();
+        if (!['IsActive','IsPublic'].includes(input.field))
+          throw new Error('CASE requires a canonical Boolean field condition.');
+        function branch() {
+          const token = tokens[index++];
+          if (!/^'(?:[^']|'')*'$/.test(token ?? ''))
+            throw new Error('CASE requires quoted text branches or string parameters.');
+          const value = token.slice(1,-1).replace(/''/g, "'");
+          if (value.length > 512) throw new Error('CASE branch exceeds512 characters.');
+          return value;
+        }
+        expect('THEN'); const whenTrue = branch();
+        expect('ELSE'); const whenFalse = branch();
+        expect('END');
+        return {...input,function:'BooleanTextCase',whenTrue,whenFalse};
+      }
       if (allowComputed && accept('COALESCE')) {
         expect('(');
         const input = readSelection();
@@ -913,7 +931,8 @@
     }
     function selectionKey(column) {
       const input = column.field ?? JSON.stringify([column.valueType, ...column.metadataPath]);
-      return column.function === 'TextCoalesce' ? JSON.stringify([column.function,input,column.nullReplacement])
+      return column.function === 'BooleanTextCase' ? JSON.stringify([column.function,input,column.whenTrue,column.whenFalse])
+        : column.function === 'TextCoalesce' ? JSON.stringify([column.function,input,column.nullReplacement])
         : column.function ? JSON.stringify([column.function, input]) : input;
     }
     function readGroupedAggregate(name) {
@@ -1339,7 +1358,7 @@
       const order = [];
       do {
         let name;
-        if (columns.length && ['CAST', 'LENGTH', 'COALESCE'].includes(peek()) && tokens[index + 1] === '(') {
+        if (columns.length && (peek() === 'CASE' || ['CAST', 'LENGTH', 'COALESCE'].includes(peek()) && tokens[index + 1] === '(')) {
           const expression = selectionKey(readSelection(true));
           const selectedColumn = columns.find(column => selectionKey(column) === expression);
           if (!selectedColumn) throw new Error('Order by selected column aliases or expressions.');
