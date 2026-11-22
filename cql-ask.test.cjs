@@ -916,3 +916,31 @@ test('parameter example loads the selected ready provider and stays review-only'
   assert.match(h.node('cql-note').textContent,/ready MongoDB/);
   assert.equal(h.opened.length,1);assert.equal(h.requests.length,0);
 });
+
+test('Ask drafts selected-value set operations and waits for explicit review', async()=>{
+  for(const operator of ['UNION','UNION ALL','INTERSECT','EXCEPT']){
+    const text='SELECT Name AS Label FROM Neo4jOASIS WHERE IsActive = TRUE '+operator+
+      ' SELECT Name FROM Neo4jOASIS WHERE Version >= 2 ORDER BY Label LIMIT 5';
+    const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+    app.node('ask-question').value='Compare active names with version two names in Neo4j';
+    await app.node('ask-generate').click();
+    const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+    assert.match(prompt,/equality uses only the selected values/);
+    assert.match(prompt,/aliases come from the left/);
+    assert.doesNotMatch(prompt,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+    assert.equal(app.node('ask-draft').textContent,text);
+    assert.deepEqual(app.opened,[]);
+    app.node('ask-preview').click();
+    const request=compile(app.opened[0]);
+    assert.equal(request.path,'data/query-cql/set');
+    assert.deepEqual(request.body.ordering,[{field:'Label',descending:false}]);
+    assert.equal(request.body.take,5);
+  }
+});
+test('Ask refuses a selected-value set draft with a hidden result sort', async()=>{
+  const text='SELECT Name AS Label FROM Neo4jOASIS UNION SELECT Name FROM Neo4jOASIS ORDER BY Id';
+  const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,true);
+  assert.deepEqual(app.opened,[]);
+});
