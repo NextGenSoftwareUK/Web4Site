@@ -1131,7 +1131,7 @@ test('Ask direct selected DISTINCT preserves identity membership and explicit re
  const request=JSON.parse(app.requests[0].options.body);
  assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
  assert.match(request.messages[0].content,/Direct form: SELECT DISTINCT Name AS Label/);
- assert.match(request.messages[0].content,/post-set aggregates remain unsupported/);
+ assert.match(request.messages[0].content,/selected-value\/numeric post-set aggregates remain unsupported/);
  app.node('ask-preview').click();assert.deepEqual(app.opened,[sql]);
  const captured=compile(app.opened[0]);
  assert.equal(captured.body.kind,'Union');assert.equal(captured.body.left.columns,undefined);assert.equal(captured.body.take,5);
@@ -1181,4 +1181,20 @@ test('Ask selected stages after entity membership retain free ready-provider rev
  assert.deepEqual(result.body.entityStages,[{operation:'Take',count:3}]);
  assert.deepEqual(result.body.selectedStages.map(stage=>stage.operation),['Where','Select','Distinct','OrderBy','Take']);
  assert.equal(app.requests.length,1,'Review must not execute a WEB4 query.');
+});
+
+test('Ask combined-record counts preserve native identity and explicit review',async()=>{
+ const sql='SELECT COUNT(*) AS Total FROM (SELECT * FROM MongoDBOASIS UNION ALL SELECT * FROM MongoDBOASIS LIMIT 5) AS records WHERE Version >= 1';
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['MongoDBOASIS'],{},true);
+ app.node('ask-question').value='Count the visible combined records after the earlier five-record window.';
+ await app.node('ask-generate').click();
+ assert.equal(app.node('ask-preview').disabled,false);assert.deepEqual(app.opened,[]);
+ const request=JSON.parse(app.requests[0].options.body);
+ assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+ assert.match(request.messages[0].content,/COUNT\(\*\) AS Total FROM/);
+ app.node('ask-preview').click();assert.deepEqual(app.opened,[sql]);
+ const result=compile(app.opened[0]);assert.equal(result.path,'data/query-cql/set');
+ assert.equal(result.body.kind,'Concat');assert.equal(result.body.take,5);assert.equal(result.body.reduction,'LongCount');
+ assert.equal(result.body.outputColumns,undefined);assert.equal(result.body.left.columns,undefined);
+ assert.equal(app.requests.length,1,'Review must not execute application data queries.');
 });

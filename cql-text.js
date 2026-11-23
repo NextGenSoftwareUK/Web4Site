@@ -331,8 +331,11 @@
         }
         const selection=compileQuery(qualified.join(' '),discoveredProfiles,parameters,
           Object.create(null),compileDepth+1);
-        if(!['data/query-cql','data/query-cql/projection'].includes(selection.path) ||
-            selection.path.endsWith('/projection')&&!Array.isArray(selection.body.columns))
+        const reduction=selection.path==='data/query-cql/scalar';
+        if(reduction && (distinct || !['LongCount','Any'].includes(selection.body.operation) || selection.body.selection))
+          throw new Error('Combined-record aggregates currently support COUNT(*)/COUNT(1) and ANY(*); selected-value and numeric aggregates need independent native reduction.');
+        if(!reduction && (!['data/query-cql','data/query-cql/projection'].includes(selection.path) ||
+            selection.path.endsWith('/projection')&&!Array.isArray(selection.body.columns)))
           throw new Error('Select native entity columns or * after the set; DISTINCT and aggregates require their own result stage.');
         const body=selection.body;
         const stages=(compiled.body.entityStages ?? []).slice();
@@ -358,6 +361,13 @@
           return conjunction(parts);
         }
         const where=predicate(body);
+        if(reduction) {
+          if(explicitPage(qualified))
+            throw new Error('Apply the input LIMIT/OFFSET inside the combined-record source before counting.');
+          return {path:compiled.path,body:{...compiled.body,includeMetadata:false,
+            reduction:body.operation,...(where?{reductionWhere:where}:{})},
+            ...(selection.scalarAlias?{scalarAlias:selection.scalarAlias}:{})};
+        }
         if(where)stages.push({operation:'Where',where});
         const hasOrdering=rawTokens.slice(cursor).some((token,position,tail)=>
           token.toUpperCase()==='ORDER'&&tail[position+1]?.toUpperCase()==='BY');
