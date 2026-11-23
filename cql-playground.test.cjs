@@ -1154,3 +1154,40 @@ test('loads selected combined results for review and clears mapping without exec
   assert.deepEqual(result.body.selectedStages.map(stage=>stage.operation),['Where','OrderBy','Take','Select','Distinct','OrderBy','Take']);
  }
 });
+
+test('late-selected set replies render aliased native cells in the result grid',async()=>{
+ const h=harness(async(url,options)=>{
+  assert.ok(url.endsWith('/query-cql/set'));
+  const body=JSON.parse(options.body);assert.equal(body.kind,'Concat');
+  assert.deepEqual(body.outputColumns,[{field:'Name',alias:'Label'}]);
+  return {ok:true,status:200,json:async()=>({isError:false,result:{
+   version:'cql-set-projection-v1',provider:'MongoDBOASIS',kind:'Concat',count:1,
+   columns:[{alias:'Label',valueType:'String'}],rows:[['<b>literal label</b>']]
+  }})};
+ });
+ await h.ui.ready;
+ h.ui.loadText('SELECT Name AS Label FROM (SELECT * FROM MongoDBOASIS UNION ALL SELECT * FROM MongoDBOASIS LIMIT 4) AS records ORDER BY Label LIMIT 2');
+ await h.elements.get('cql-run').listeners.click();
+ const grid=h.elements.get('cql-results').children[0];
+ assert.ok(grid,'Native selected results need a visible result grid.');
+ assert.deepEqual(grid.children[0].children[0].children.map(cell=>cell.textContent),['Label']);
+ assert.deepEqual(grid.children[1].children[0].children.map(cell=>cell.textContent),['<b>literal label</b>']);
+ assert.match(h.elements.get('cql-note').textContent,/1 returned rows/);
+});
+test('combined count replies display the reviewed SQL alias through the set route',async()=>{
+ let calls=0;
+ const h=harness(async(url,options)=>{
+  calls++;assert.ok(url.endsWith('/query-cql/set'));
+  const body=JSON.parse(options.body);assert.equal(body.reduction,'LongCount');
+  assert.equal(body.take,4);assert.equal(body.outputColumns,undefined);
+  return {ok:true,status:200,json:async()=>({isError:false,result:{
+   version:'cql-scalar-v1',provider:'MongoDBOASIS',operation:'LongCount',valueType:'Int64',value:'4'
+  }})};
+ });
+ await h.ui.ready;
+ h.ui.loadText('SELECT COUNT(*) AS Total FROM (SELECT * FROM MongoDBOASIS UNION ALL SELECT * FROM MongoDBOASIS LIMIT 4) AS records');
+ await h.elements.get('cql-run').listeners.click();
+ assert.match(h.elements.get('cql-note').textContent,/Total: 4/);
+ assert.equal(h.elements.get('cql-results').children.length,0);
+ assert.equal(calls,1,'Rendering must not issue another data query.');
+});
