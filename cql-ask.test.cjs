@@ -266,16 +266,22 @@ test('opens a reviewed WEB6 selected-column draft on the native projection route
   assert.deepEqual(request.body.columns.map(column => column.field), ['Id', 'Name', 'Version']);
 });
 
-test('the WEB6 relationship example compiles to independent child and descendant predicates', async () => {
+test('the WEB6 relationship example preserves nested Boolean child predicates', async () => {
   const app = setup(() => ({ ok: true, json: async () => ({ content: 'UNSUPPORTED' }) }));
   await app.node('ask-generate').click();
   const prompt = JSON.parse(app.requests[0].options.body).messages[0].content;
   const example = prompt.split(String.fromCharCode(10)).find(line => line.includes('EXISTS CHILD')).split('Example: ')[1].slice(0, -1);
   const { path, body } = compile(example);
   assert.equal(path, 'data/query-cql');
-  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
-  assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
-  assert.equal(body.anyDescendants[0].maximumDepth, 8);
+  assert.equal(body.where.kind, 'Or');
+  const [coffee,tea]=body.where.terms;
+  assert.equal(coffee.kind,'And');assert.equal(tea.kind,'And');
+  assert.equal(coffee.terms[0].filter.value,'Coffee');
+  assert.equal(coffee.terms[1].kind,'Child');
+  assert.equal(coffee.terms[1].match.filter.field,'IsActive');
+  assert.equal(tea.terms[0].filter.value,'Tea');
+  assert.equal(tea.terms[1].kind,'Not');
+  assert.equal(tea.terms[1].terms[0].kind,'Child');
 });
 
 test('Ask your data hands a grouped count draft to the Playground only after review', async () => {
@@ -827,13 +833,13 @@ test('grouped distinct WEB6 draft retains both counts and requires review before
 });
 
 test('grouped distinct WEB6 rejects unproved normalized domains before editor or execution', async () => {
-  const text = 'SELECT Version, COUNT(DISTINCT CAST(metadata.owner AS GUID)) AS Owners ' +
+  const text = 'SELECT Version, COUNT(DISTINCT CAST(metadata.observed AS DATETIME)) AS Times ' +
     'FROM Neo4jOASIS GROUP BY Version';
   const app = setup(() => ({ ok: true, json: async () => ({ content: text }) }),
     null, compile, ['Neo4jOASIS']);
   const actions = [];
   app.node('cql-run').click = () => actions.push('run');
-  app.node('ask-question').value = 'Count different owner GUIDs per version in Neo4j';
+  app.node('ask-question').value = 'metadata.observed is DATETIME. Count different timestamps per version in Neo4j';
   await app.node('ask-generate').click();
   assert.equal(app.requests.length, 1);
   assert.match(app.node('ask-status').textContent, /Grouped COUNT DISTINCT requires/);
@@ -854,7 +860,7 @@ test('grounds and reviews typed UUID mapping filters without executing data', as
   await app.node('ask-generate').click();
   assert.equal(app.requests.length, 1);
   const request = JSON.parse(app.requests[0].options.body);
-  assert.match(request.messages[0].content, /Mapped metadata types are STRING, BOOLEAN, GUID/);
+  assert.match(request.messages[0].content, /Mapped row metadata types are STRING, BOOLEAN, GUID/);
   assert.match(request.messages[0].content, /GUID range comparisons, IN and LENGTH\(GUID\) are unsupported/);
   assert.equal(app.node('ask-preview').disabled, false);
   assert.deepEqual(app.opened, []);
@@ -1089,4 +1095,38 @@ test('Mapped UTC date parts draft retains mapping and opens review without execu
  assert.equal(q.body.virtualMappingId,'20000000-0000-0000-0000-000000000000');
  assert.equal(q.body.columns[1].function,'UtcYear');
  assert.equal(app.requests.length,1);
+});
+
+test('Ask late entity-set columns preserve identity, ready provider, free route and review',async()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const sql='SELECT Name AS Label, Id FROM (SELECT * FROM '+provider+
+   ' WHERE IsActive = TRUE UNION SELECT * FROM '+provider+
+   ' WHERE Version >= 2 ORDER BY Id LIMIT 5) AS records';
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,[provider],{},true);
+  app.node('ask-question').value='Show names and IDs of active or version2 records, retaining different records with equal names.';
+  await app.node('ask-generate').click();
+  const request=JSON.parse(app.requests[0].options.body);
+  assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+  assert.match(request.messages[0].content,/preserve entity identity/);
+  assert.match(request.messages[0].content,/Distinct records with the same Name remain separate/);
+  assert.match(request.messages[0].content,/no outer WHERE, ORDER BY, TOP, LIMIT, DISTINCT or aggregates/);
+  for(const other of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].filter(x=>x!==provider))
+    assert.ok(!request.messages[0].content.includes('FROM '+other));
+  assert.equal(app.node('ask-preview').disabled,false);
+  assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  assert.deepEqual(app.opened,[sql]);
+  const captured=compile(app.opened[0]);
+  assert.equal(captured.body.provider,provider);
+  assert.equal(captured.body.left.columns,undefined);
+  assert.deepEqual(captured.body.outputColumns,[{field:'Name',alias:'Label'},{field:'Id',alias:'Id'}]);
+ }
+});
+test('Ask refuses unsupported late entity result filtering instead of showing a runnable draft',async()=>{
+ const sql='SELECT Name FROM (SELECT * FROM Neo4jOASIS UNION SELECT * FROM Neo4jOASIS LIMIT 5) AS records WHERE Version > 1';
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS'],{},true);
+ await app.node('ask-generate').click();
+ assert.equal(app.node('ask-preview').disabled,true);
+ assert.match(app.node('ask-status').textContent,/direct SELECT list/);
+ assert.deepEqual(app.opened,[]);
 });
