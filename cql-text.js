@@ -196,6 +196,11 @@
       });
     }
     function frame(compiled) {
+      if (compiled.path === 'data/query-cql/set' &&
+          !compiled.body.left.columns && !compiled.body.right.columns &&
+          !compiled.body.outputColumns) {
+        return {entitySet:true, provider:compiled.body.provider, columns:[], stages:[]};
+      }
       if (!['data/query-cql/projection','data/query-cql/composition'].includes(compiled.path))
         throw new Error('A WITH source requires explicit selected columns from one native database.');
       const provider = compiled.body.provider;
@@ -265,6 +270,7 @@
         let compiled = compileQuery(sourceTokens.join(' '), discoveredProfiles, parameters, scope, compileDepth+1);
         const captured = frame(compiled);
         if (declaredAliases.length) {
+          if (captured.entitySet) throw new Error('Select explicit columns after the entity set before declaring WITH column aliases.');
           if (declaredAliases.length !== captured.columns.length)
             throw new Error('WITH column alias count must match its selected columns.');
           const columns = declaredAliases.map((alias, position) =>
@@ -288,6 +294,27 @@
     }
     function readCteSelection(compiled, from) {
       const input = frame(compiled);
+      if (input.entitySet) {
+        // Entity identity membership and every source/output window stay intact.
+        // Capture only the new selection through the ordinary projection parser.
+        let cursor=from+2;
+        if (tokens[cursor]?.toUpperCase() === 'AS') {
+          cteIdentifier(tokens[cursor+1], 'table alias');cursor+=2;
+        }
+        if (tokens[cursor] === ';') cursor++;
+        if (cursor !== tokens.length)
+          throw new Error('A selection after an entity set currently requires a direct SELECT list; keep entity ordering and paging inside its source.');
+        if (['TOP','DISTINCT'].includes(tokens[1]?.toUpperCase()))
+          throw new Error('TOP and DISTINCT after an entity set require their own result stage.');
+        const selection=compileQuery(
+          [...rawTokens.slice(0,from),'FROM',input.provider].join(' '),
+          discoveredProfiles,parameters,Object.create(null),compileDepth+1);
+        if (selection.path !== 'data/query-cql/projection' ||
+            !Array.isArray(selection.body.columns))
+          throw new Error('Select explicit native columns after an entity set; DISTINCT and aggregates require their own result stage.');
+        return {path:compiled.path,body:{...compiled.body,
+          includeMetadata:false,outputColumns:selection.body.columns}};
+      }
       const sourceName = cteIdentifier(tokens[from+1], 'WITH source name');
       let tableAlias = sourceName;
       let afterFrom = from+2;
