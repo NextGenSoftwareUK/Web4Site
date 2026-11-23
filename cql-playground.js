@@ -550,9 +550,9 @@
       return null;
     }
 
-    for (const example of ['grouped', 'grouped-distinct', 'join', 'distinct-count', 'child-join', 'version-join', 'length', 'boolean', 'computed', 'cte', 'derived', 'staged-set', 'tuple-distinct', 'top', 'timestamp']) {
+    for (const example of ['grouped', 'grouped-distinct', 'join', 'distinct-count', 'child-join', 'version-join', 'length', 'boolean', 'computed', 'cte', 'derived', 'staged-set', 'tuple-distinct', 'entity-set-selection', 'top', 'timestamp']) {
       $('cql-load-' + example + '-example').addEventListener('click', () => {
-        if (['computed','cte','derived','staged-set','tuple-distinct'].includes(example))
+        if (['computed','cte','derived','staged-set','tuple-distinct','entity-set-selection'].includes(example))
           clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note'));
         const editor = $('cql-text');
         editor.value = $('cql-' + example + '-example').textContent.trim();
