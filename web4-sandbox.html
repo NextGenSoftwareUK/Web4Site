@@ -300,14 +300,17 @@ FROM MongoDBOASIS
 ORDER BY Status, Id LIMIT 5</code></pre>
 <button type="button" id="cql-load-computed-example">Load labels and missing values example</button></details>
       <details><summary>Combine records, then choose displayed columns</summary>
-    <p>Keep distinct records even when they have the same name. This query combines records by ID first,
-    applies its combined order and limit, then displays only Name and Id. Requires the matching Development API release.</p>
+    <p>Keep distinct records even when they have the same name. First combine records by ID and choose25 by Id.
+    Then filter that selected group by version, reorder by name and display five records.
+    Requires the matching Development API release.</p>
     <pre><code id="cql-entity-set-selection-example">SELECT Name AS Label, Id FROM (
       SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
       UNION
       SELECT * FROM MongoDBOASIS WHERE Version &gt;= 2
-      ORDER BY Id LIMIT 5
-    ) AS records</code></pre>
+      ORDER BY Id LIMIT 25
+    ) AS records
+    WHERE records.Version &gt;= 1
+    ORDER BY Label DESC LIMIT 5</code></pre>
     <button type="button" id="cql-load-entity-set-selection-example">Load combined records example</button></details>
 <details><summary>Query a bounded result with WITH</summary>
   <p>Name a selected result, then filter, reorder and page it. The first step needs an explicit TOP, LIMIT or FETCH; later steps use only its visible columns. You can declare positional names, for example <code>WITH sample(label, revision) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 25)</code>; later steps use <code>label</code> and <code>revision</code>. Up to eight named steps can use the same MongoDB, SQLite or Neo4j datasource. Recursive queries, joins, sets, aggregates and Virtual Holon mappings are not yet supported inside these steps. You can also use a bounded selected subquery: <code>SELECT q.Name FROM (SELECT Name FROM MongoDBOASIS LIMIT 25) AS q WHERE q.Name IS NOT NULL LIMIT 5</code>. Final UNION, UNION ALL, INTERSECT and EXCEPT expressions may combine compatible named selections; parenthesize each SELECT. Each operand may retain its own post-window filters, ordering, paging and visible-column renaming before set equality; this requires the qualified staged-input backend release.</p>
@@ -2516,10 +2519,10 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=20261122-composition-examples-v1"></script>
-<script src="cql-text.js?v=20261123-late-entity-set-v1"></script>
+<script src="cql-text.js?v=20261123-entity-set-stages-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261123-late-entity-set-v1"></script>
-<script src="cql-ask.js?v=20261123-late-entity-set-v1"></script>
+<script src="cql-playground.js?v=20261123-entity-set-stages-v1"></script>
+<script src="cql-ask.js?v=20261123-entity-set-stages-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });

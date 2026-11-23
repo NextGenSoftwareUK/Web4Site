@@ -191,7 +191,7 @@
       return parts.some((token, position) => {
         if (token === '(') depth++;
         else if (token === ')') depth--;
-        return !depth && (['LIMIT','FETCH'].includes(token.toUpperCase()) ||
+        return !depth && parts[position-1]!=='.' && (['LIMIT','FETCH'].includes(token.toUpperCase()) ||
           token.toUpperCase() === 'TOP' && [1,2].includes(position));
       });
     }
@@ -295,25 +295,68 @@
     function readCteSelection(compiled, from) {
       const input = frame(compiled);
       if (input.entitySet) {
-        // Entity identity membership and every source/output window stay intact.
-        // Capture only the new selection through the ordinary projection parser.
-        let cursor=from+2;
+        const sourceName=cteIdentifier(tokens[from+1], 'entity-set source');
+        let cursor=from+2, tableAlias=sourceName;
         if (tokens[cursor]?.toUpperCase() === 'AS') {
-          cteIdentifier(tokens[cursor+1], 'table alias');cursor+=2;
+          tableAlias=cteIdentifier(tokens[cursor+1], 'table alias');cursor+=2;
+        } else if (/^[A-Za-z][A-Za-z0-9_]*$/.test(tokens[cursor] ?? '') &&
+            !['WHERE','ORDER','LIMIT','OFFSET','FETCH','GROUP','HAVING'].includes(tokens[cursor].toUpperCase())) {
+          tableAlias=cteIdentifier(tokens[cursor++], 'table alias');
         }
-        if (tokens[cursor] === ';') cursor++;
-        if (cursor !== tokens.length)
-          throw new Error('A selection after an entity set currently requires a direct SELECT list; keep entity ordering and paging inside its source.');
-        if (['TOP','DISTINCT'].includes(tokens[1]?.toUpperCase()))
-          throw new Error('TOP and DISTINCT after an entity set require their own result stage.');
-        const selection=compileQuery(
-          [...rawTokens.slice(0,from),'FROM',input.provider].join(' '),
-          discoveredProfiles,parameters,Object.create(null),compileDepth+1);
-        if (selection.path !== 'data/query-cql/projection' ||
-            !Array.isArray(selection.body.columns))
-          throw new Error('Select explicit native columns after an entity set; DISTINCT and aggregates require their own result stage.');
+        const outer=[...rawTokens.slice(0,from),'FROM',input.provider,...rawTokens.slice(cursor)];
+        const qualified=[];
+        for(let position=0;position<outer.length;position++) {
+          if(outer[position].toLowerCase()===tableAlias.toLowerCase() && outer[position+1]==='.') {
+            position++;continue;
+          }
+          qualified.push(outer[position]);
+        }
+        const selection=compileQuery(qualified.join(' '),discoveredProfiles,parameters,
+          Object.create(null),compileDepth+1);
+        if(!['data/query-cql','data/query-cql/projection'].includes(selection.path) ||
+            selection.path.endsWith('/projection')&&!Array.isArray(selection.body.columns))
+          throw new Error('Select native entity columns or * after the set; DISTINCT and aggregates require their own result stage.');
+        const body=selection.body;
+        const stages=(compiled.body.entityStages ?? []).slice();
+        function conjunction(parts) {
+          return parts.length===0 ? undefined : parts.length===1 ? parts[0] : {kind:'And',terms:parts};
+        }
+        function predicate(part) {
+          const parts=part.where?[part.where]:[];
+          for(const filter of part.filters ?? [])parts.push({kind:'Filter',filter});
+          if(part.anyOf?.length)parts.push(part.anyOf.length===1
+            ?{kind:'Filter',filter:part.anyOf[0]}
+            :{kind:'Or',terms:part.anyOf.map(filter=>({kind:'Filter',filter}))});
+          for(const relation of part.anyChildren ?? []) {
+            const match=predicate(relation);
+            parts.push({kind:'Child',...(match?{match}:{})});
+          }
+          for(const relation of part.anyDescendants ?? []) {
+            const match=predicate(relation);
+            parts.push({kind:'Descendant',...(match?{match}:{}),
+              ...(relation.maximumDepth===undefined?{}:{maximumDepth:relation.maximumDepth}),
+              ...(relation.maximumNodes===undefined?{}:{maximumNodes:relation.maximumNodes})});
+          }
+          return conjunction(parts);
+        }
+        const where=predicate(body);
+        if(where)stages.push({operation:'Where',where});
+        if(rawTokens.slice(cursor).some((token,position,tail)=>token.toUpperCase()==='ORDER'&&tail[position+1]?.toUpperCase()==='BY')) {
+          const ordering=body.selectedOrder?.map(term=>{
+            const column=body.columns.find(item=>item.alias===term.alias);
+            if(!column?.field || column.function || !['Name','Description','Version','Id'].includes(column.field))
+              throw new Error('Entity-set result ordering requires a direct Name, Description, Version or Id column.');
+            return {field:column.field,descending:term.descending};
+          }) ?? [{field:body.orderBy,descending:body.descending ?? false}];
+          if(ordering.length>4)throw new Error('Use up to four native entity ordering terms.');
+          stages.push({operation:'OrderBy',ordering});
+        }
+        if(body.skip)stages.push({operation:'Skip',count:body.skip});
+        if(explicitPage(qualified))stages.push({operation:'Take',count:body.take});
+        if(stages.length>16)throw new Error('Entity-set result composition exceeds16 stages.');
         return {path:compiled.path,body:{...compiled.body,
-          includeMetadata:false,outputColumns:selection.body.columns}};
+          ...(stages.length?{entityStages:stages}:{}),
+          ...(body.columns?{includeMetadata:false,outputColumns:body.columns}:{})}};
       }
       const sourceName = cteIdentifier(tokens[from+1], 'WITH source name');
       let tableAlias = sourceName;

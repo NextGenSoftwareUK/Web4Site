@@ -1109,7 +1109,7 @@ test('Ask late entity-set columns preserve identity, ready provider, free route 
   assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
   assert.match(request.messages[0].content,/preserve entity identity/);
   assert.match(request.messages[0].content,/Distinct records with the same Name remain separate/);
-  assert.match(request.messages[0].content,/no outer WHERE, ORDER BY, TOP, LIMIT, DISTINCT or aggregates/);
+  assert.match(request.messages[0].content,/Outer WHERE, ORDER BY, TOP, LIMIT and OFFSET/);
   for(const other of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].filter(x=>x!==provider))
     assert.ok(!request.messages[0].content.includes('FROM '+other));
   assert.equal(app.node('ask-preview').disabled,false);
@@ -1122,11 +1122,31 @@ test('Ask late entity-set columns preserve identity, ready provider, free route 
   assert.deepEqual(captured.body.outputColumns,[{field:'Name',alias:'Label'},{field:'Id',alias:'Id'}]);
  }
 });
-test('Ask refuses unsupported late entity result filtering instead of showing a runnable draft',async()=>{
- const sql='SELECT Name FROM (SELECT * FROM Neo4jOASIS UNION SELECT * FROM Neo4jOASIS LIMIT 5) AS records WHERE Version > 1';
+test('Ask refuses unsupported late selected DISTINCT instead of showing a runnable draft',async()=>{
+ const sql='SELECT DISTINCT Name FROM (SELECT * FROM Neo4jOASIS UNION SELECT * FROM Neo4jOASIS LIMIT 5) AS records';
  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS'],{},true);
  await app.node('ask-generate').click();
  assert.equal(app.node('ask-preview').disabled,true);
- assert.match(app.node('ask-status').textContent,/direct SELECT list/);
+ assert.match(app.node('ask-status').textContent,/DISTINCT|native entity columns/);
  assert.deepEqual(app.opened,[]);
+});
+
+test('Ask ordered entity stages keep the earlier combined page and review boundary',async()=>{
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const sql='SELECT q.Name AS Label, q.Id FROM (SELECT * FROM '+provider+
+   ' WHERE IsActive = TRUE UNION SELECT * FROM '+provider+
+   ' WHERE Version >= 2 ORDER BY Id LIMIT 25) AS q WHERE q.Version >= 1 ORDER BY Label DESC LIMIT 5';
+  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,[provider],{},true);
+  await app.node('ask-generate').click();
+  assert.equal(app.node('ask-preview').disabled,false);
+  assert.deepEqual(app.opened,[]);
+  const request=JSON.parse(app.requests[0].options.body);
+  assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+  assert.match(request.messages[0].content,/separate ordered entity stages/);
+  app.node('ask-preview').click();
+  const q=compile(app.opened[0]);assert.equal(q.body.provider,provider);assert.equal(q.body.take,25);
+  assert.deepEqual(q.body.entityStages.map(s=>s.operation),['Where','OrderBy','Take']);
+  assert.equal(q.body.entityStages[2].count,5);
+  assert.equal(q.body.outputColumns[0].alias,'Label');
+ }
 });
