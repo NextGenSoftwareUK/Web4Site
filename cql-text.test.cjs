@@ -2005,3 +2005,32 @@ test('mapped count-only grouping retains its hidden key in the input but not the
   assert.deepEqual(body.grouping.columns, [{alias:'Total',operation:'LongCount'}]);
   assert.deepEqual(body.grouping.keys[0].metadataPath, ['region']);
 });
+
+test('UTC calendar and time parts compile as exact nullable Int32 projections', () => {
+  const functions={YEAR:'UtcYear',MONTH:'UtcMonth',DAY:'UtcDay',DAYOFYEAR:'UtcDayOfYear',
+    HOUR:'UtcHour',MINUTE:'UtcMinute',SECOND:'UtcSecond'};
+  const columns=Object.keys(functions).map(name=>name+'(CAST(metadata.observed AS DATETIME)) AS '+name+'Part');
+  const query=compile('SELECT '+columns.join(', ')+' FROM MongoDBOASIS ORDER BY YEARPart LIMIT 5');
+  assert.equal(query.body.columns.length,7);
+  for(const [index,name] of Object.keys(functions).entries()) {
+    const column=query.body.columns[index];
+    assert.equal(column.function,functions[name]);
+    assert.equal(column.valueType,'DateTime');
+    assert.equal(column.nullable,true);
+    assert.deepEqual(column.metadataPath,['observed']);
+  }
+});
+
+test('UTC date-part selected aliases retain integer semantics through WITH', () => {
+  const query=compile('WITH dates AS (SELECT YEAR(CAST(metadata.observed AS DATETIME)) AS ObservedYear FROM Neo4jOASIS LIMIT 10) SELECT ObservedYear FROM dates WHERE ObservedYear = 2025 ORDER BY ObservedYear LIMIT 1');
+  assert.equal(query.body.source.columns[0].function,'UtcYear');
+  assert.ok(JSON.stringify(query.body).includes('2025'));
+  assert.ok(!JSON.stringify(query.body).includes('"2025"'));
+});
+
+test('UTC parts reject wrong sources and unenrolled aggregate or mapped functions', () => {
+  assert.throws(()=>compile('SELECT YEAR(Version) AS Y FROM SQLLiteDBOASIS'),/UTC date parts|Unknown provider/);
+  assert.throws(()=>compile('SELECT YEAR(CAST(metadata.observed AS INT32)) AS Y FROM Neo4jOASIS'),/UTC date parts/);
+  assert.throws(()=>compile('SELECT SUM(YEAR(CAST(metadata.observed AS DATETIME))) FROM Neo4jOASIS'),/Computed scalar/);
+  assert.throws(()=>compile("SELECT YEAR(CAST(metadata.observed AS DATETIME)) AS Y FROM Neo4jOASIS WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'"),/Mapped|mixed|virtual|native|computed/i);
+});

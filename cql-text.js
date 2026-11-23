@@ -3,6 +3,11 @@
   'use strict';
 
   const providers = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS', 'HoloOASIS', 'SolanaOASIS', 'EthereumOASIS', 'PolygonOASIS', 'ArbitrumOASIS', 'NEAROASIS', 'EOSIOOASIS', 'SOLIDOASIS', 'IPFSOASIS', 'ActivityPubOASIS', 'CosmosBlockChainOASIS', 'PolkadotOASIS', 'TONOASIS', 'HashgraphOASIS', 'TRONOASIS', 'NostrOASIS', 'AxelarOASIS', 'BitcoinOASIS', 'XRPLOASIS', 'StellarOASIS', 'CardanoOASIS', 'BNBChainOASIS', 'AvalancheOASIS', 'BaseOASIS', 'OptimismOASIS', 'SuiOASIS', 'AptosOASIS', 'StarknetOASIS', 'FantomOASIS', 'AlgorandOASIS', 'FilecoinOASIS', 'ZcashOASIS', 'RadixOASIS'];
+  const utcDateParts = Object.freeze({
+    YEAR:'UtcYear', MONTH:'UtcMonth', DAY:'UtcDay', DAYOFYEAR:'UtcDayOfYear',
+    HOUR:'UtcHour', MINUTE:'UtcMinute', SECOND:'UtcSecond'
+  });
+  const utcDatePartNames = new Set(Object.values(utcDateParts));
   const evmAddress = /^0x[0-9a-fA-F]{40}$/;
   const lowercaseHex32 = /^0x[0-9a-f]{64}$/;
   const starknetFieldPrime = (1n << 251n) + 17n * (1n << 192n) + 1n;
@@ -306,7 +311,7 @@
         return selected;
       }
       function domain(selected) {
-        return selected.function === 'Utf16Length' || selected.function === 'Int32Coalesce' ? 'Int32'
+        return selected.function === 'Utf16Length' || selected.function === 'Int32Coalesce' || utcDatePartNames.has(selected.function) ? 'Int32'
           : ['TextCoalesce','BooleanTextCase'].includes(selected.function) ? 'String'
           : selected.valueType ?? projectionFields[selected.field?.toLowerCase()]?.[1];
       }
@@ -1223,9 +1228,16 @@
     const selectedCount = countDistinct || countValues;
     const hasSelection = selectedCount || operation && operation !== 'LongCount' && operation !== 'Any';
     const scalarSelection = selectedCount ? readSelection(true) : hasSelection ? readAggregateSelection(true, operation === 'Min' || operation === 'Max') : null;
-    if (['TextCoalesce','BooleanTextCase','Int32Coalesce'].includes(scalarSelection?.function)) throw new Error('Computed scalar expressions currently support selected row columns, not scalar aggregates.');
+    if (utcDatePartNames.has(scalarSelection?.function) || ['TextCoalesce','BooleanTextCase','Int32Coalesce'].includes(scalarSelection?.function)) throw new Error('Computed scalar expressions currently support selected row columns, not scalar aggregates.');
     if (operation && !hasSelection && !(operation === 'LongCount' && accept('1'))) expect('*');
     function readSelection(allowComputed = false) {
+      if (allowComputed && Object.hasOwn(utcDateParts,peek())) {
+        const functionName=utcDateParts[peek()];index++;
+        expect('(');const input=readSelection();expect(')');
+        if(input.field || input.valueType!=='DateTime')
+          throw new Error('UTC date parts require CAST of metadata AS DATETIME.');
+        return {...input,function:functionName,nullable:true};
+      }
       if (allowComputed && accept('CASE')) {
         expect('WHEN');
         const input = readSelection();
