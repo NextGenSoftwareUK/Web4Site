@@ -1055,3 +1055,20 @@ test('Ask bounded WITH draft stays provider-grounded and requires review',async(
  assert.equal(compiled.body.source.take,25);
  assert.equal(app.requests.length,1,'Review must not execute a data query.');
 });
+
+test('UTC date parts draft uses supplied field types and opens review without executing', async () => {
+  const text='SELECT YEAR(CAST(metadata.observed AS DATETIME)) AS ObservedYear, MONTH(CAST(metadata.observed AS DATETIME)) AS ObservedMonth FROM Neo4jOASIS ORDER BY ObservedYear DESC LIMIT 5';
+  const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+  app.node('ask-question').value='metadata.observed is UTC DateTime. Show the UTC year and month for five Neo4j holons.';
+  await app.node('ask-generate').click();
+  const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+  assert.match(prompt,/YEAR\(CAST\(metadata\.observed AS DATETIME\)\)/);
+  assert.match(prompt,/DAYOFYEAR/);assert.match(prompt,/nullable Int32 row columns/);
+  assert.match(prompt,/Never guess a path or type/);
+  assert.doesNotMatch(prompt,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+  assert.equal(app.node('ask-draft').textContent,text);assert.deepEqual(app.opened,[]);
+  app.node('ask-preview').click();
+  const request=compile(app.opened[0]);
+  assert.deepEqual(request.body.columns.map(column=>column.function),['UtcYear','UtcMonth']);
+  assert.equal(app.requests.length,1,'Draft review must not execute a WEB4 data query.');
+});
