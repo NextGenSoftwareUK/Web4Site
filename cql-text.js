@@ -319,10 +319,12 @@
             !['WHERE','ORDER','LIMIT','OFFSET','FETCH','GROUP','HAVING'].includes(tokens[cursor].toUpperCase())) {
           tableAlias=cteIdentifier(tokens[cursor++], 'table alias');
         }
+        const distinct=rawTokens[1]?.toUpperCase()==='DISTINCT';
         const outer=[...rawTokens.slice(0,from),'FROM',input.provider,...rawTokens.slice(cursor)];
+        if(distinct)outer.splice(1,1);
         const qualified=[];
         for(let position=0;position<outer.length;position++) {
-          if(outer[position].toLowerCase()===tableAlias.toLowerCase() && outer[position+1]==='.') {
+          if(outer[position-1]!=='.' && outer[position].toLowerCase()===tableAlias.toLowerCase() && outer[position+1]==='.') {
             position++;continue;
           }
           qualified.push(outer[position]);
@@ -357,7 +359,28 @@
         }
         const where=predicate(body);
         if(where)stages.push({operation:'Where',where});
-        if(rawTokens.slice(cursor).some((token,position,tail)=>token.toUpperCase()==='ORDER'&&tail[position+1]?.toUpperCase()==='BY')) {
+        const hasOrdering=rawTokens.slice(cursor).some((token,position,tail)=>
+          token.toUpperCase()==='ORDER'&&tail[position+1]?.toUpperCase()==='BY');
+        if(distinct) {
+          if(!Array.isArray(body.columns)||!body.columns.length)
+            throw new Error('DISTINCT after an entity set requires explicit selected columns.');
+          const selected=[{operation:'Distinct'}];
+          if(hasOrdering) {
+            const order=body.selectedOrder?.map(term=>({...term})) ?? [{
+              alias:body.columns.find(column=>column.field===body.orderBy&&!column.function)?.alias,
+              descending:body.descending??false}];
+            if(order.length>8||order.some(term=>!body.columns.some(column=>column.alias===term.alias)))
+              throw new Error('DISTINCT orders only the explicitly selected visible columns.');
+            selected.push({operation:'OrderBy',order});
+          }
+          if(body.skip)selected.push({operation:'Skip',count:body.skip});
+          if(explicitPage(qualified))selected.push({operation:'Take',count:body.take});
+          if(stages.length>16)throw new Error('Entity-set result composition exceeds16 stages.');
+          return {path:compiled.path,body:{...compiled.body,
+            ...(stages.length?{entityStages:stages}:{}),includeMetadata:false,
+            outputColumns:body.columns,selectedStages:selected}};
+        }
+        if(hasOrdering) {
           const ordering=body.selectedOrder?.map(term=>{
             const column=body.columns.find(item=>item.alias===term.alias);
             if(!column?.field || column.function || !['Name','Description','Version','Id'].includes(column.field))

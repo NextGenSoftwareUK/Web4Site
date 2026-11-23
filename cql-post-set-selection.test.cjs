@@ -55,9 +55,13 @@ test('entity result filters retain typed metadata and Boolean relationship inten
  assert.equal(predicate.terms[1].kind,'Not');
  assert.equal(predicate.terms[1].terms[0].kind,'Child');
 });
-test('late stages refuse selected DISTINCT and preserve operand value equality',()=>{
+test('late selected DISTINCT stays separate from operand value equality',()=>{
  const inner='SELECT * FROM MongoDBOASIS UNION SELECT * FROM MongoDBOASIS LIMIT 3';
- assert.throws(()=>compile('SELECT DISTINCT Name FROM ('+inner+') AS records'),/DISTINCT|native entity columns/);
+ const selected=compile('SELECT DISTINCT Name FROM ('+inner+') AS records');
+ assert.equal(selected.body.kind,'Union');assert.equal(selected.body.take,3);
+ assert.equal(selected.body.left.columns,undefined);assert.equal(selected.body.right.columns,undefined);
+ assert.deepEqual(selected.body.outputColumns,[{field:'Name',alias:'Name'}]);
+ assert.deepEqual(selected.body.selectedStages,[{operation:'Distinct'}]);
  const tuple=compile('SELECT Name FROM MongoDBOASIS UNION SELECT Name FROM MongoDBOASIS LIMIT 3');
  assert.ok(tuple.body.left.columns);assert.equal(tuple.body.outputColumns,undefined);
 });

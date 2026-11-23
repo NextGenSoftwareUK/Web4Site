@@ -1122,13 +1122,22 @@ test('Ask late entity-set columns preserve identity, ready provider, free route 
   assert.deepEqual(captured.body.outputColumns,[{field:'Name',alias:'Label'},{field:'Id',alias:'Id'}]);
  }
 });
-test('Ask refuses unsupported late selected DISTINCT instead of showing a runnable draft',async()=>{
- const sql='SELECT DISTINCT Name FROM (SELECT * FROM Neo4jOASIS UNION SELECT * FROM Neo4jOASIS LIMIT 5) AS records';
+test('Ask direct selected DISTINCT preserves identity membership and explicit review',async()=>{
+ const sql='SELECT DISTINCT Name AS Label FROM (SELECT * FROM Neo4jOASIS UNION SELECT * FROM Neo4jOASIS LIMIT 5) AS records ORDER BY Label LIMIT 2';
  const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,['Neo4jOASIS'],{},true);
+ app.node('ask-question').value='Show two unique record labels from the bounded combined records.';
  await app.node('ask-generate').click();
- assert.equal(app.node('ask-preview').disabled,true);
- assert.match(app.node('ask-status').textContent,/DISTINCT|native entity columns/);
- assert.deepEqual(app.opened,[]);
+ assert.equal(app.node('ask-preview').disabled,false);assert.deepEqual(app.opened,[]);
+ const request=JSON.parse(app.requests[0].options.body);
+ assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+ assert.match(request.messages[0].content,/Direct form: SELECT DISTINCT Name AS Label/);
+ assert.match(request.messages[0].content,/post-set aggregates remain unsupported/);
+ app.node('ask-preview').click();assert.deepEqual(app.opened,[sql]);
+ const captured=compile(app.opened[0]);
+ assert.equal(captured.body.kind,'Union');assert.equal(captured.body.left.columns,undefined);assert.equal(captured.body.take,5);
+ assert.deepEqual(captured.body.outputColumns,[{field:'Name',alias:'Label'}]);
+ assert.deepEqual(captured.body.selectedStages.map(stage=>stage.operation),['Distinct','OrderBy','Take']);
+ assert.equal(app.requests.length,1,'Review must not execute application data queries.');
 });
 
 test('Ask ordered entity stages keep the earlier combined page and review boundary',async()=>{
