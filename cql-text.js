@@ -1407,7 +1407,8 @@
         (!column.function || column.function === 'Utf16Length' && column.valueType === 'String' ||
             allowComputedRows && (column.function === 'TextCoalesce' && column.valueType === 'String' ||
               column.function === 'BooleanTextCase' && column.valueType === 'Boolean' ||
-              column.function === 'Int32Coalesce' && column.valueType === 'Int32'));
+              column.function === 'Int32Coalesce' && column.valueType === 'Int32' ||
+              utcDatePartNames.has(column.function) && column.valueType === 'DateTime'));
     }
     if (accept('WITH')) {
       expect('VIRTUAL');
@@ -1843,7 +1844,7 @@
             columns.slice(1).some(column => column.metadataPath?.length !== 1))
           throw new Error('Virtual mapping queries must select Id first, followed only by direct mapped metadata fields.');
         if (columns.slice(1).some(column => !mappedValue(column, true, !mixedScalar)))
-          throw new Error('Mapped columns support STRING, BOOLEAN, GUID, DATETIME, INT32, INT64 and finite DOUBLE; LENGTH/text COALESCE require STRING, CASE requires BOOLEAN and integer COALESCE requires INT32 input.');
+          throw new Error('Mapped columns support STRING, BOOLEAN, GUID, DATETIME, INT32, INT64 and finite DOUBLE; LENGTH/text COALESCE require STRING, CASE requires BOOLEAN integer COALESCE requires INT32 input; UTC date parts require DATETIME input.');
         if ((!selectedOrder && body.orderBy !== 'Id') || body.skip >= 200 || body.take < 1)
           throw new Error('Order by Id or selected aliases, with a positive LIMIT and OFFSET below 200 for a Virtual Holon mapping.');
         return { path: 'data/query-cql/projection/mixed', body: { ...body,

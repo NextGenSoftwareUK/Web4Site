@@ -28,3 +28,18 @@ test('Mapped computed SQL retains identity, domain and grouped restrictions',()=
   "SELECT SUM(COALESCE(CAST(metadata.stockAlias AS INT32), 7)) FROM MongoDBOASIS"
  ]) assert.throws(()=>compile(query+mapping));
 });
+
+test('Mapped UTC date parts preserve DateTime inputs and use the mixed route',()=>{
+ const names={YEAR:'UtcYear',MONTH:'UtcMonth',DAY:'UtcDay',DAYOFYEAR:'UtcDayOfYear',HOUR:'UtcHour',MINUTE:'UtcMinute',SECOND:'UtcSecond'};
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const selections=Object.keys(names).map((name,i)=>name+'(CAST(metadata.observed AS DATETIME)) AS Part'+i);
+  const q=compile('SELECT Id, '+selections.join(', ')+' FROM '+provider+mapping+' ORDER BY Part0 DESC, Id LIMIT 10');
+  assert.equal(q.path,'data/query-cql/projection/mixed');
+  assert.equal(q.body.virtualMappingId,'20000000-0000-0000-0000-000000000000');
+  assert.deepEqual(q.body.selectedOrder,[{alias:'Part0',descending:true},{alias:'Id',descending:false}]);
+  for(const [i,fn] of Object.values(names).entries())
+   assert.deepEqual(q.body.columns[i+1],{metadataPath:['observed'],valueType:'DateTime',nullable:true,function:fn,alias:'Part'+i});
+ }
+ assert.throws(()=>compile('SELECT Id, YEAR(CAST(metadata.observed AS STRING)) AS Year FROM MongoDBOASIS'+mapping+' ORDER BY Id LIMIT 10'),/DATETIME/);
+ assert.throws(()=>compile('SELECT SUM(YEAR(CAST(metadata.observed AS DATETIME))) FROM MongoDBOASIS'+mapping));
+});
