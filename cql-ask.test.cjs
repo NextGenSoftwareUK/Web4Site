@@ -1072,3 +1072,21 @@ test('UTC date parts draft uses supplied field types and opens review without ex
   assert.deepEqual(request.body.columns.map(column=>column.function),['UtcYear','UtcMonth']);
   assert.equal(app.requests.length,1,'Draft review must not execute a WEB4 data query.');
 });
+
+test('Mapped UTC date parts draft retains mapping and opens review without execution', async () => {
+ const text="SELECT Id, YEAR(CAST(metadata.observed AS DATETIME)) AS ObservedYear FROM Neo4jOASIS WITH VIRTUAL MAPPING '20000000-0000-0000-0000-000000000000' ORDER BY ObservedYear DESC, Id LIMIT 5";
+ const app=setup(()=>({ok:true,json:async()=>({content:text})}),null,compile,['Neo4jOASIS']);
+ chooseMapping(app,'20000000-0000-0000-0000-000000000000','Neo4jOASIS');
+ app.node('ask-question').value="Use Neo4jOASIS mapping 20000000-0000-0000-0000-000000000000; metadata.observed is UTC DateTime. Show years across full and virtual holons.";
+ await app.node('ask-generate').click();
+ const prompt=JSON.parse(app.requests[0].options.body).messages[0].content;
+ assert.match(prompt,/retain WITH VIRTUAL MAPPING and its exact mapping ID and provider/);
+ assert.match(prompt,/same supplied DATETIME metadata input/);
+ assert.equal(app.node('ask-draft').textContent,text);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();
+ const q=compile(app.opened[0]);
+ assert.equal(q.path,'data/query-cql/projection/mixed');
+ assert.equal(q.body.virtualMappingId,'20000000-0000-0000-0000-000000000000');
+ assert.equal(q.body.columns[1].function,'UtcYear');
+ assert.equal(app.requests.length,1);
+});
