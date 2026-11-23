@@ -312,8 +312,26 @@ ORDER BY Status, Id LIMIT 5</code></pre>
     WHERE records.Version &gt;= 1
     ORDER BY Label DESC LIMIT 5</code></pre>
     <button type="button" id="cql-load-entity-set-selection-example">Load combined records example</button></details>
+<details><summary>Filter and deduplicate selected combined results</summary>
+  <p>Combine full records by ID, select a bounded group, then filter labels and choose unique names.
+  Each page remains in its original place. This works with MongoDB, SQLite and Neo4j on the matching Development API release.
+  Loading the example clears the selected mapping and fills the editor; nothing runs until you choose Run query.</p>
+  <pre><code id="cql-late-set-composition-example">WITH records AS (
+  SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
+  UNION
+  SELECT * FROM MongoDBOASIS WHERE Version = 2
+  ORDER BY Id LIMIT 25
+), chosen AS (
+  SELECT Id, Name AS Label FROM records LIMIT 20
+), matches AS (
+  SELECT Label FROM chosen
+  WHERE Label LIKE 'a%' ORDER BY Label DESC LIMIT 10
+)
+SELECT DISTINCT Label FROM matches ORDER BY Label LIMIT 5</code></pre>
+  <button type="button" id="cql-load-late-set-composition-example">Load selected combined results example</button>
+</details>
 <details><summary>Query a bounded result with WITH</summary>
-  <p>Name a selected result, then filter, reorder and page it. The first step needs an explicit TOP, LIMIT or FETCH; later steps use only its visible columns. You can declare positional names, for example <code>WITH sample(label, revision) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 25)</code>; later steps use <code>label</code> and <code>revision</code>. Up to eight named steps can use the same MongoDB, SQLite or Neo4j datasource. Recursive queries, joins, sets, aggregates and Virtual Holon mappings are not yet supported inside these steps. You can also use a bounded selected subquery: <code>SELECT q.Name FROM (SELECT Name FROM MongoDBOASIS LIMIT 25) AS q WHERE q.Name IS NOT NULL LIMIT 5</code>. Final UNION, UNION ALL, INTERSECT and EXCEPT expressions may combine compatible named selections; parenthesize each SELECT. Each operand may retain its own post-window filters, ordering, paging and visible-column renaming before set equality; this requires the qualified staged-input backend release.</p>
+  <p>Name a selected result, then filter, reorder and page it. The first step needs an explicit TOP, LIMIT or FETCH; later steps use only its visible columns. You can declare positional names, for example <code>WITH sample(label, revision) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 25)</code>; later steps use <code>label</code> and <code>revision</code>. Up to eight named steps can use the same MongoDB, SQLite or Neo4j datasource. Recursive queries, source joins, aggregates and Virtual Holon mappings are not yet supported inside these steps. Full-record entity sets may be captured first, followed by explicit selected stages as in the combined-results example above. You can also use a bounded selected subquery: <code>SELECT q.Name FROM (SELECT Name FROM MongoDBOASIS LIMIT 25) AS q WHERE q.Name IS NOT NULL LIMIT 5</code>. Final UNION, UNION ALL, INTERSECT and EXCEPT expressions may combine compatible named selections; parenthesize each SELECT. Each operand may retain its own post-window filters, ordering, paging and visible-column renaming before set equality; this requires the qualified staged-input backend release.</p>
   <pre><code id="cql-cte-example">WITH sample AS (
     SELECT Id, Name, Version FROM MongoDBOASIS
     ORDER BY Id LIMIT 25
@@ -2519,10 +2537,10 @@ function renderMetrics(metrics, connections, best){
 }
 </script>
 <script src="cql-demo-preparation.js?v=20261122-composition-examples-v1"></script>
-<script src="cql-text.js?v=20261123-entity-set-stages-v1"></script>
+<script src="cql-text.js?v=20261123-late-set-composition-v1"></script>
 <script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
-<script src="cql-playground.js?v=20261123-entity-set-stages-v1"></script>
-<script src="cql-ask.js?v=20261123-entity-set-stages-v1"></script>
+<script src="cql-playground.js?v=20261123-late-set-composition-v1"></script>
+<script src="cql-ask.js?v=20261123-late-set-composition-v1"></script>
 <script>
 window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
   onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });

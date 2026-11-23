@@ -201,6 +201,16 @@
           !compiled.body.outputColumns) {
         return {entitySet:true, provider:compiled.body.provider, columns:[], stages:[]};
       }
+      if(compiled.path==='data/query-cql/set' && compiled.body.outputColumns &&
+          !compiled.body.left.columns && !compiled.body.right.columns) {
+        if(!['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS'].includes(compiled.body.provider) ||
+            !Array.isArray(compiled.body.outputColumns) || compiled.body.outputColumns.length<1 ||
+            compiled.body.outputColumns.length>32)
+          throw new Error('Late entity-set selected stages require bounded native database columns.');
+        const stages=(compiled.body.selectedStages ?? []).slice();
+        return {provider:compiled.body.provider,setBody:compiled.body,stages,
+          columns:visibleSelectedColumns(compiled.body.outputColumns,stages)};
+      }
       if (!['data/query-cql/projection','data/query-cql/composition'].includes(compiled.path))
         throw new Error('A WITH source requires explicit selected columns from one native database.');
       const provider = compiled.body.provider;
@@ -214,15 +224,23 @@
           !Number.isInteger(source.take) || source.take < 0 || source.take > 100)
         throw new Error('WITH requires a bounded native column source without mapping, graph or deadline overrides.');
       const stages = compiled.path.endsWith('/composition') ? compiled.body.stages.slice() : [];
-      let columns = source.columns.slice();
-      for (const stage of stages) if (stage.operation === 'Select') {
-        columns = stage.columns.map(binding => {
-          const input = columns.find(column => column.alias === binding.sourceAlias);
-          if (!input) throw new Error('A selected stage references an unavailable alias.');
-          return {...input, alias:binding.alias};
+      return {provider, source, stages, columns:visibleSelectedColumns(source.columns,stages)};
+    }
+    function visibleSelectedColumns(source,stages) {
+      let columns=source.slice();
+      for(const stage of stages) if(stage.operation==='Select') {
+        columns=stage.columns.map(binding=>{
+          const input=columns.find(column=>column.alias===binding.sourceAlias);
+          if(!input)throw new Error('A selected stage references an unavailable alias.');
+          return {...input,alias:binding.alias};
         });
       }
-      return {provider, source, stages, columns};
+      return columns;
+    }
+    function bindSelectedFrame(input,stages) {
+      return input.setBody
+        ?{path:'data/query-cql/set',body:{...input.setBody,selectedStages:stages}}
+        :{path:'data/query-cql/composition',body:{provider:input.provider,source:input.source,stages}};
     }
     function readCteDefinitions() {
       let cursor = 1;
@@ -279,9 +297,7 @@
           if (!identity) {
             if (captured.stages.length >= 16)
               throw new Error('WITH composition exceeds16 stages.');
-            compiled = {path:'data/query-cql/composition',body:{
-              provider:captured.provider,source:captured.source,
-              stages:[...captured.stages,{operation:'Select',columns}]}};
+            compiled=bindSelectedFrame(captured,[...captured.stages,{operation:'Select',columns}]);
           }
         }
         completeSelectedBounds.add(compiled);
@@ -533,7 +549,7 @@
       if (stages.length > 16 || stages.reduce((sum,stage)=>sum+(stage.filters?.length ?? 0)+(stage.anyOf?.length ?? 0),0) > 32)
         throw new Error('WITH composition exceeds16 stages or32 comparisons.');
       if (!stages.length) return compiled;
-      const selectedResult = {path:'data/query-cql/composition',body:{provider:input.provider,source:input.source,stages}};
+      const selectedResult=bindSelectedFrame(input,stages);
       if (completeSelectedBounds.has(compiled)) completeSelectedBounds.add(selectedResult);
       return selectedResult;
     }

@@ -1133,3 +1133,24 @@ test('loads displayed visible-tuple DISTINCT for review and compiles all three n
   assert.deepEqual(stages.at(-1),{operation:'Take',count:5});
  }
 });
+
+
+test('loads selected combined results for review and clears mapping without executing data queries',async()=>{
+ const h=harness(async()=>assert.fail('Loading a query must not execute it.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-late-set-composition-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-late-set-composition-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-late-set-composition-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+  const result=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+  assert.equal(result.path,'data/query-cql/set');assert.equal(result.body.provider,provider);
+  assert.equal(result.body.kind,'Union');assert.equal(result.body.left.columns,undefined);
+  assert.equal(result.body.take,25);assert.deepEqual(result.body.entityStages,[{operation:'Take',count:20}]);
+  assert.deepEqual(result.body.selectedStages.map(stage=>stage.operation),['Where','OrderBy','Take','Select','Distinct','OrderBy','Take']);
+ }
+});

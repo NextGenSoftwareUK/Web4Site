@@ -1150,3 +1150,26 @@ test('Ask ordered entity stages keep the earlier combined page and review bounda
   assert.equal(q.body.outputColumns[0].alias,'Label');
  }
 });
+
+
+test('Ask selected stages after entity membership retain free ready-provider review and native scope',async()=>{
+ const provider='Neo4jOASIS';
+ const sql='WITH records AS (SELECT * FROM '+provider+' UNION ALL SELECT * FROM '+provider+' LIMIT 4), '+
+  "chosen AS (SELECT Id, Name AS Label FROM records LIMIT 3) SELECT DISTINCT Label FROM chosen WHERE Label LIKE 'a%' ORDER BY Label LIMIT 2";
+ const app=setup(()=>({ok:true,json:async()=>({content:sql})}),null,compile,[provider],{},true);
+ app.node('ask-question').value='Combine records first, then show two unique matching labels from the selected page.';
+ await app.node('ask-generate').click();
+ const request=JSON.parse(app.requests[0].options.body);
+ assert.equal(request.freeOnly,true);assert.equal(request.injectAvatarContext,false);
+ assert.match(request.messages[0].content,/selected stages after entity membership/);
+ assert.match(request.messages[0].content,/never rewrite entity identity membership/);
+ assert.doesNotMatch(request.messages[0].content,/FROM (MongoDBOASIS|SQLLiteDBOASIS)\b/);
+ assert.equal(app.node('ask-preview').disabled,false);assert.deepEqual(app.opened,[]);
+ app.node('ask-preview').click();assert.deepEqual(app.opened,[sql]);
+ const result=compile(app.opened[0]);
+ assert.equal(result.path,'data/query-cql/set');assert.equal(result.body.kind,'Concat');
+ assert.equal(result.body.left.columns,undefined);assert.equal(result.body.take,4);
+ assert.deepEqual(result.body.entityStages,[{operation:'Take',count:3}]);
+ assert.deepEqual(result.body.selectedStages.map(stage=>stage.operation),['Where','Select','Distinct','OrderBy','Take']);
+ assert.equal(app.requests.length,1,'Review must not execute a WEB4 query.');
+});
