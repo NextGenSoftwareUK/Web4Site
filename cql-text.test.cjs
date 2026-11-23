@@ -630,8 +630,9 @@ test('preserves UTC timestamp precision in metadata filters', () => {
   assert.deepEqual(filter('2024-02-29T12:34:56.1234567Z'), {
     metadataPath: ['observedAt'], scalar: 'DateTime', operator: 'GreaterThanOrEqual', value: '2024-02-29T12:34:56.1234567Z'
   });
+  assert.equal(filter('2024-01-01T00:00:00+00:00').value,'2024-01-01T00:00:00Z');
   for (const value of ['2023-02-29T00:00:00Z', '0000-01-01T00:00:00Z', '2024-01-01T24:00:00Z',
-    '2024-01-01T00:00:00+00:00', '2024-01-01T00:00:00.12345678Z'])
+    '2024-01-01T00:00:00.12345678Z'])
     assert.throws(() => filter(value), /quoted UTC timestamp/);
 });
 
@@ -1237,7 +1238,12 @@ test('compiles native negative child and descendant existence without inverting 
   assert.equal(query.body.anyDescendants[0].negated, true);
   assert.equal(query.body.anyDescendants[0].filters[0].operator, 'GreaterThanOrEqual');
   assert.equal(query.body.anyDescendants[0].maximumDepth, 8);
-  assert.throws(() => compile("SELECT * FROM Neo4jOASIS WHERE NOT EXISTS CHILD (NOT EXISTS CHILD (Version = 1))"));
+  const nested=compile("SELECT * FROM Neo4jOASIS WHERE NOT EXISTS CHILD (NOT EXISTS CHILD (Version = 1))").body.where;
+  assert.equal(nested.kind,'Not');assert.equal(nested.terms[0].kind,'Child');
+  const inner=nested.terms[0].match;
+  assert.equal(inner.kind,'Not');assert.equal(inner.terms[0].kind,'Child');
+  assert.equal(inner.terms[0].match.filter.operator,'Equal');
+  assert.equal(inner.terms[0].match.filter.value,1);
 });
 
 test('orders explicit SELECT columns by their one-based positions', () => {
@@ -1727,7 +1733,7 @@ test('mixed computed snapshot preparation requests original fields and never com
     "WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10");
   const snapshot=virtualSnapshotQuery(query.body);
   assert.deepEqual(snapshot.select,['name','tier']);
-  assert.equal(snapshot.take,100);
+  assert.equal(snapshot.take,200);
   assert.deepEqual(snapshot.filters,query.body.filters);
   assert.notStrictEqual(snapshot.filters,query.body.filters);
   assert.notStrictEqual(snapshot.filters[0].metadataPath,query.body.filters[0].metadataPath);
@@ -1774,14 +1780,14 @@ test('mixed selected ordering keeps alias uniqueness, shape and window admission
 
 test('mixed metadata columns reject domains not admitted by the native projection contract', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
-  for(const type of ['UINT64','DECIMAL','SINGLE','GUID','DATETIME'])
+  for(const type of ['UINT64','DECIMAL','SINGLE'])
     assert.throws(()=>compile('SELECT Id, CAST(metadata.value AS '+type+') AS Value FROM MongoDBOASIS'+
       mapping+" WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 2"),/Mapped columns support/);
 });
 
-test('mixed metadata columns preserve all five admitted scalar domains', () => {
+test('mixed metadata columns preserve the seven admitted scalar domains', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
-  for(const [sql,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64'],['DOUBLE','Double']]) {
+  for(const [sql,type] of [['STRING','String'],['BOOLEAN','Boolean'],['INT32','Int32'],['INT64','Int64'],['DOUBLE','Double'],['GUID','Guid'],['DATETIME','DateTime']]) {
     const result=compile('SELECT Id, CAST(metadata.value AS '+sql+') AS Value FROM Neo4jOASIS'+
       mapping+" WHERE metadata.tier = 'gold' ORDER BY Value LIMIT 2");
     assert.equal(result.path,'data/query-cql/projection/mixed');
@@ -1835,7 +1841,9 @@ test('mixed identity-only SQL requests no native metadata columns on every prior
 });
 test('identity-only mixed SQL keeps filters and aggregate admission explicit', () => {
   const mapping=" WITH VIRTUAL MAPPING '11000000-0000-0000-0000-000000000001'";
-  assert.throws(()=>compile('SELECT Id FROM MongoDBOASIS'+mapping+' ORDER BY Id LIMIT 2'),/filter/);
+  const unfiltered=compile('SELECT Id FROM MongoDBOASIS'+mapping+' ORDER BY Id LIMIT 2');
+  assert.equal(unfiltered.path,'data/query-cql/projection/mixed');
+  assert.deepEqual(unfiltered.body.filters,[]);assert.equal(unfiltered.body.take,2);
   assert.throws(()=>compile('SELECT COUNT(*) FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"));
   assert.throws(()=>compile('SELECT Name FROM MongoDBOASIS'+mapping+" WHERE metadata.tier = 'gold' LIMIT 2"),/Id first/);
 });

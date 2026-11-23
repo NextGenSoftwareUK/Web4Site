@@ -501,8 +501,16 @@
       const outer = [...rawTokens.slice(0,from+1),alias,...rawTokens.slice(cursor)];
       return compileQuery(outer.join(' '),discoveredProfiles,parameters,scope,compileDepth+1);
     }
+    // A joined derived source belongs to the native join grammar, not the
+    // selected-result composition grammar. Choose its owner before parsing.
+    let joinDepth=0,hasTopLevelJoin=false;
+    for(const token of rawTokens) {
+      if(token==='(')joinDepth++;
+      else if(token===')')joinDepth--;
+      else if(joinDepth===0 && token.toUpperCase()==='JOIN')hasTopLevelJoin=true;
+    }
     const derivedFrom = topFrom(rawTokens);
-    if (rawTokens[0]?.toUpperCase() === 'SELECT' && derivedFrom >= 0 &&
+    if (!hasTopLevelJoin && rawTokens[0]?.toUpperCase() === 'SELECT' && derivedFrom >= 0 &&
         rawTokens[derivedFrom+1] === '(')
       return readDerivedTable(derivedFrom);
 
@@ -659,13 +667,13 @@
         return readCteSelection(cteScope[sourceName],from);
     }
 
-    function readColumnAlias(defaultAlias) {
+    function readColumnAlias(defaultAlias, description = 'column alias') {
       const explicit = accept('AS');
       if (!explicit && (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(tokens[index] ?? '') || aliasBoundaries.has(peek())))
         return defaultAlias;
       const alias = tokens[index++];
       if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(alias ?? ''))
-        throw new Error('Expected a column alias of up to 64 letters, digits or underscores, starting with a letter.');
+        throw new Error('Expected a ' + description + ' of up to 64 letters, digits or underscores, starting with a letter.');
       return alias;
     }
 
@@ -769,7 +777,7 @@
         const localSeconds = match && new Date(match[1] + 'Z');
         if (!localSeconds || match[1].startsWith('0000') || !Number.isFinite(localSeconds.getTime())
             || localSeconds.toISOString().slice(0, 19) !== match[1])
-          throw new Error('Expected a quoted ISO timestamp with Z or an explicit timezone offset and up to seven fractional digits.');
+          throw new Error('Expected a quoted UTC timestamp with Z, or an explicit timezone offset, and up to seven fractional digits.');
         const hours = Number(match[5] ?? 0), minutes = Number(match[6] ?? 0);
         if (hours > 14 || minutes > 59 || hours === 14 && minutes !== 0)
           throw new Error('Timestamp timezone offsets must be within minus or plus 14 hours.');
@@ -1361,7 +1369,7 @@
     let scalarAlias;
     if (operation) {
       expect(')');
-      const resultAlias = readColumnAlias();
+      const resultAlias = readColumnAlias(undefined, 'scalar result alias');
       if (resultAlias !== undefined) {
         scalarAlias = resultAlias;
         if (!/^[A-Za-z][A-Za-z0-9_]{0,63}$/.test(scalarAlias ?? ''))
