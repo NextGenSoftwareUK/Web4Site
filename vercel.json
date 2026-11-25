@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "sandbox\\.web4\\.oasisomniverse\\.one"
+        }
+      ],
+      "destination": "/web4-sandbox.html",
+      "permanent": false
+    }
+  ]
+}

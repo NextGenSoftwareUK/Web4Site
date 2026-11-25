@@ -82,6 +82,7 @@ function harness(fetcher, discover, setup = {}) {
   function element() {
     return {
       value: '', textContent: '', children: [], listeners: {}, disabled: false,
+      focus() { this.focused = true; },
       add(option) { this.children.push(option); if (!this.value) this.value = option.value; },
       append(child) { this.children.push(child); },
       replaceChildren(...children) { this.children = children; this.value = ''; },
@@ -94,6 +95,7 @@ function harness(fetcher, discover, setup = {}) {
   }
   const context = {
     TextEncoder, AbortController, setTimeout, clearTimeout, crypto: require('node:crypto').webcrypto,
+    CqlText: require('./cql-text.js'),
     CqlDemoPreparation: require('./cql-demo-preparation.js'), localStorage: setup.storage,
     fetch: async (...args) => {
       const response = args[0].endsWith('/api/data/query-cql/providers?examplesVersion=2')
@@ -118,6 +120,42 @@ function harness(fetcher, discover, setup = {}) {
     getBase: () => 'https://example.invalid', request: setup.request ?? null, canPrepare: () => setup.canPrepare === true });
   return { elements, ui, signOut() { token = null; ui.syncAuth(); } };
 }
+
+test('draft provider scope only includes available supported identities from the current session', async () => {
+  const h = harness(() => { throw new Error('Unexpected query'); }, async () => ({
+    ok: true, status: 200, json: async () => ({ isError: false, result: [
+      { provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true },
+      { provider: 'Neo4jOASIS', available: false, queryOnly: false, federationAvailable: false },
+      { provider: 'NostrOASIS', available: true, queryOnly: true, federationAvailable: true },
+      { provider: 'DuckDBOASIS', available: true, queryOnly: true, federationAvailable: true }
+    ] })
+  }));
+  await h.ui.ready;
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), ['MongoDBOASIS', 'NostrOASIS']);
+  h.signOut();
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), []);
+});
+
+test('uses discovered native key profiles only for the active signed-in visitor', async () => {
+  const h = harness(() => { throw new Error('Unexpected query'); }, async () => ({
+    ok: true, status: 200, json: async () => ({ isError: false, result: [
+      { provider: 'MongoDBOASIS', available: true, queryOnly: false, federationAvailable: true },
+      { provider: 'NewOASIS', available: true, queryOnly: true, federationAvailable: true,
+        textKeyProfile: { metadataKey: 'NativeKey', maximumKeyCharacters: 6, maximumSetKeys: 2 } },
+      { provider: 'OfflineOASIS', available: false, queryOnly: true, federationAvailable: false,
+        textKeyProfile: { metadataKey: 'NativeKey', maximumKeyCharacters: 6, maximumSetKeys: 2 } }
+    ] })
+  }));
+  await h.ui.ready;
+  assert.deepEqual(Array.from(h.ui.availableTextProviders()), ['MongoDBOASIS', 'NewOASIS']);
+  const query = h.ui.compileAvailableText("SELECT * FROM NewOASIS WHERE metadata.NativeKey IN ('a', 'b')");
+  assert.equal(query.body.provider, 'NewOASIS');
+  assert.throws(() => h.ui.compileAvailableText("SELECT * FROM OfflineOASIS WHERE metadata.NativeKey = 'a'"));
+  assert.equal(h.ui.availableTextProfiles().NewOASIS.maximumKeys, 2);
+  h.signOut();
+  assert.deepEqual(Object.keys(h.ui.availableTextProfiles()), []);
+  assert.throws(() => h.ui.compileAvailableText("SELECT * FROM NewOASIS WHERE metadata.NativeKey = 'a'"));
+});
 
 test('API failures display their status/code and never render success rows', async () => {
   const h = harness(async () => ({ ok: false, status: 503,
@@ -537,15 +575,15 @@ test('shipped query runner gives a 30-second preset 35 seconds and dispatches on
   const body = { provider: 'TONOASIS', maximumDurationMilliseconds: 30000 };
   const elements = new Map();
   const element = id => {
-    if (!elements.has(id)) elements.set(id, { value: JSON.stringify(body), replaceChildren() {} });
+    if (!elements.has(id)) elements.set(id, { value: id === 'cql-request' ? JSON.stringify(body) : '', replaceChildren() {} });
     return elements.get(id);
   };
   const timers = [], cleared = [], errors = [];
   let dispatched = 0;
   const context = vm.createContext({
-    controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0,
+    controller: null, preparing: false, discovery: null, endpoint: 'data/query-cql', generation: 0, namedScalar: null,
     getToken: () => 'controlled', getIdentity: () => 'same-avatar', getBase: () => 'https://example.invalid',
-    ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout,
+    ensureAccessToken: async () => 'controlled', parse: cql.parse, requestTimeout: cql.requestTimeout, withVirtualMapping: cql.withVirtualMapping,
     unwrap: cql.unwrap, $: element, crypto: { randomUUID: () => 'one-operation' }, AbortController,
     controls() {}, render() {}, note: (text, error) => { if (error) errors.push(text); },
     setTimeout: (_callback, delay) => { timers.push(delay); return 7; },
@@ -581,4 +619,575 @@ test('rejected preparation does not display the preceding query operation identi
   assert.equal(h.elements.get('cql-operation').textContent, '');
   assert.equal(calls, 1);
   assert.match(h.elements.get('cql-note').textContent, /preparation-key.*preparation-operation/);
+});
+
+test('loads the selected public subset into the SQL editor', async () => {
+  const provider = 'HoloOASIS';
+  const ids = ['b5d3f5a8-2539-4f94-9b12-aed841902ccb', 'ec251d38-c660-48dc-a558-dd3b5cae0bd2'];
+  const example = (id, value) => ({ id, label: id, operation: 'Rows', available: true, request: {
+    provider, orderBy: 'None', includeMetadata: true, take: 3,
+    filters: [{ field: 'Id', scalar: 'Guid', operator: 'In', value }]
+  } });
+  const h = harness(async () => { throw new Error('Loading a preset should not execute it'); },
+    async () => ({ ok: true, status: 200, json: async () => ({ result: [{
+      provider, available: true, queryOnly: true, federationAvailable: true,
+      examples: [example('public-records', ids), example('public-subset', ids.slice(1))]
+    }] }) }));
+  await h.ui.ready;
+  const select = h.elements.get('cql-preset');
+  select.value = '';
+  assert.equal(h.ui.selectedPublicExample(), null);
+  assert.deepEqual(Array.from(h.ui.publicQuestionExample().request.filters[0].value), ids);
+  select.value = 'host:public-subset';
+  select.listeners.change();
+  h.elements.get('cql-load-text-example').listeners.click();
+  const { body } = require('./cql-text.js').compile(h.elements.get('cql-text').value);
+  assert.deepEqual(body.filters[0].value, ids.slice(1));
+  assert.deepEqual(Array.from(h.ui.selectedPublicExample().request.filters[0].value), ids.slice(1));
+  assert.deepEqual(Array.from(h.ui.publicQuestionExample().request.filters[0].value), ids.slice(1));
+  h.signOut();
+  assert.equal(h.ui.publicQuestionExample(), null);
+});
+
+test('selected columns render in request order as plain text', async () => {
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/projection$/);
+    assert.deepEqual(JSON.parse(options.body).columns.map(c => c.alias), ['Name', 'Version']);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-projection-v1', provider: 'MongoDBOASIS',
+      columns: [{ alias: 'Name' }, { alias: 'Version' }], rows: [['<b>Literal</b>', 0]]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT Name, Version FROM MongoDBOASIS LIMIT 1');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [head, rows] = table.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['Name', 'Version']);
+  assert.deepEqual(rows.children[0].children.map(cell => cell.textContent), ['<b>Literal</b>', '0']);
+});
+
+test('empty relationship-filtered average displays the aggregate message', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    const request = JSON.parse(options.body);
+    assert.equal(request.operation, 'Average');
+    assert.equal(request.anyChildren[0].filters[0].field, 'Version');
+    assert.equal(request.anyDescendants[0].filters[0].field, 'IsActive');
+    return { ok: false, status: 503, json: async () => ({
+      isError: true, errorCode: 'CQL_EMPTY_SEQUENCE'
+    }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT AVG(Version) FROM Neo4jOASIS WHERE EXISTS CHILD (Version >= 2) AND EXISTS DESCENDANT (IsActive = TRUE)');
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(h.elements.get('cql-note').textContent, 'No records matched. This aggregate needs at least one value.');
+  assert.equal(h.elements.get('cql-results').children.length, 0);
+  assert.ok(h.elements.get('cql-response').textContent.includes('CQL_EMPTY_SEQUENCE'));
+});
+
+test('the displayed relationship example compiles to a bounded projection', () => {
+  const html = require('node:fs').readFileSync(__dirname + '/web4-sandbox.html', 'utf8');
+  const sample = html.split('<code id="cql-relationship-example">')[1].split('</code>')[0].replaceAll('&gt;', '>');
+  const { path, body } = require('./cql-text.js').compile(sample);
+  assert.equal(path, 'data/query-cql/projection');
+  assert.deepEqual(body.columns.map(column => column.field), ['Id', 'Name', 'Version']);
+  assert.equal(body.anyChildren[0].filters[0].field, 'Version');
+  assert.equal(body.anyDescendants[0].filters[0].field, 'IsActive');
+  assert.equal(body.take, 5);
+});
+
+test('the SQL scalar alias labels only the matching prepared request', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    const body = JSON.parse(options.body);
+    assert.equal(body.operation, 'LongCount');
+    assert.equal(Object.hasOwn(body, 'scalarAlias'), false);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-scalar-v1', provider: 'Neo4jOASIS', operation: 'LongCount', valueType: 'Int64', value: '6'
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT COUNT(*) AS Total FROM Neo4jOASIS');
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /Total: 6/);
+  const request = h.elements.get('cql-request');
+  request.value = JSON.stringify({ ...JSON.parse(request.value), filters: [{ field: 'Version', operator: 'Equal', value: 1 }] });
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /LongCount: 6/);
+});
+
+test('a false ANY result is displayed as a Boolean outcome', async () => {
+  const h = harness(async (url, options) => {
+    assert.ok(url.endsWith('/query-cql/scalar'));
+    assert.equal(JSON.parse(options.body).operation, 'Any');
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-scalar-v1', provider: 'Neo4jOASIS', operation: 'Any', valueType: 'Boolean', value: false
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT ANY(*) FROM Neo4jOASIS WHERE EXISTS CHILD (Version >= 2)');
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent, /Neo4jOASIS .* Any: false/);
+  assert.equal(h.elements.get('cql-results').children.length, 0);
+});
+
+test('loads the displayed grouped example for review without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const fs = require('node:fs');
+  const page = fs.readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-grouped-example', { textContent: sql });
+  h.elements.get('cql-load-grouped-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.resultFilters.map(({ alias, value }) => [alias, value]),
+    [['AverageVersion', '1.0'], ['TotalVersion', 1]]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'Total', descending: true }, { alias: 'IsActive', descending: false }]);
+});
+
+test('loads the unique category count without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-distinct-count-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-distinct-count-example', { textContent: sql });
+  h.elements.get('cql-load-distinct-count-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body, scalarAlias } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/scalar');
+  assert.equal(body.operation, 'CountDistinct');
+  assert.equal(scalarAlias, 'UniqueCategories');
+  assert.deepEqual(body.selection, { metadataPath: ['category'], valueType: 'String', nullable: true });
+});
+
+test('typed grouped results distinguish NULL from empty strings and preserve exact numbers', async () => {
+  const h = harness(async url => {
+    assert.match(url, /query-cql\/grouped$/);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-grouped-v1', provider: 'MongoDBOASIS',
+      columns: [{ alias: 'Label' }, { alias: 'Stock' }, { alias: 'Amount' }],
+      rows: [['', '9007199254740993', '1.0000000000000000000000000001'], [null, null, null]]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT DISTINCT CAST(metadata.label AS STRING) AS Label, ' +
+    'CAST(metadata.stock AS INT64) AS Stock, CAST(metadata.amount AS DECIMAL) AS Amount FROM MongoDBOASIS');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [, rows] = table.children;
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)), [
+    ['', '9007199254740993', '1.0000000000000000000000000001'], ['NULL', 'NULL', 'NULL']
+  ]);
+});
+
+test('SQL left join renders a matching row with a null value distinctly from an unmatched row', async () => {
+  const table = '(SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 2)';
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/join$/);
+    const request = JSON.parse(options.body);
+    assert.equal(request.kind, 'Left');
+    assert.equal(request.columns[1].allowMissing, true);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-join-v1', provider: 'MongoDBOASIS', kind: 'Left',
+      columns: [{ alias: 'LeftName' }, { alias: 'RightDescription' }],
+      rows: [{ hasRight: true, values: ['Matched', null] }, { hasRight: false, values: ['Unmatched', null] }]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT l.Name AS LeftName, r.Description AS RightDescription FROM ' + table +
+    ' AS l LEFT JOIN ' + table + ' AS r ON l.Id = r.Id');
+  await h.elements.get('cql-run').listeners.click();
+  const [result] = h.elements.get('cql-results').children;
+  const [head, rows] = result.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent), ['LeftName', 'RightDescription', 'Matched']);
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)),
+    [['Matched', 'NULL', 'Yes'], ['Unmatched', 'NULL', 'No']]);
+});
+
+test('loads the displayed bounded SQL join for review without submitting it', async () => {
+  const h = harness(async () => assert.fail('Loading the join must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-join-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-join-example', { textContent: sql });
+  h.elements.get('cql-load-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Left');
+  assert.equal(body.maximumResults, 25);
+});
+
+test('SQL full outer join shows which source row exists even when projected values are null', async () => {
+  const source = '(SELECT * FROM Neo4jOASIS ORDER BY Id LIMIT 2)';
+  const h = harness(async (url, options) => {
+    assert.match(url, /query-cql\/join$/);
+    const request = JSON.parse(options.body);
+    assert.equal(request.kind, 'Full');
+    assert.deepEqual(request.columns.map(column => column.allowMissing), [true, true]);
+    return { ok: true, status: 200, json: async () => ({ result: {
+      version: 'cql-join-v1', provider: 'Neo4jOASIS', kind: 'Full',
+      columns: [{ alias: 'LeftDescription' }, { alias: 'RightDescription' }],
+      rows: [
+        { hasLeft: true, hasRight: true, values: [null, null] },
+        { hasLeft: true, hasRight: false, values: ['Only left', null] },
+        { hasLeft: false, hasRight: true, values: [null, 'Only right'] }
+      ]
+    } }) };
+  });
+  await h.ui.ready;
+  h.ui.loadText('SELECT l.Description AS LeftDescription, r.Description AS RightDescription FROM ' +
+    source + ' AS l FULL OUTER JOIN ' + source + ' AS r ON l.Id = r.Id');
+  await h.elements.get('cql-run').listeners.click();
+  const [table] = h.elements.get('cql-results').children;
+  const [head, rows] = table.children;
+  assert.deepEqual(head.children[0].children.map(cell => cell.textContent),
+    ['LeftDescription', 'RightDescription', 'Source rows']);
+  assert.deepEqual(rows.children.map(row => row.children.map(cell => cell.textContent)), [
+    ['NULL', 'NULL', 'Both'], ['Only left', 'NULL', 'Left only'], ['NULL', 'Only right', 'Right only']
+  ]);
+});
+
+test('loads a child join example without running it', async () => {
+  const h = harness(async () => assert.fail('Loading the child join must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-child-join-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-child-join-example', { textContent: sql });
+  h.elements.get('cql-load-child-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Child');
+  assert.equal(body.maximumResults, 3);
+  assert.equal(body.maximumPairs, 5);
+  assert.equal(body.outputLimit, 3);
+  assert.deepEqual(body.outputOrdering, [{ alias: 'ParentName', descending: false }, { alias: 'ChildName', descending: false }]);
+});
+
+test('loads the signed version comparison and previews the bounded native request without querying WEB4', async () => {
+  const h = harness(async () => assert.fail('Loading the version comparison must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-version-join-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-version-join-example', { textContent: sql });
+  h.elements.get('cql-load-version-join-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/join');
+  assert.equal(body.kind, 'Inner');
+  assert.equal(body.keys[0].operator, 'LessThan');
+  assert.equal(body.maximumPairs, 25);
+  assert.equal(body.outputLimit, 5);
+  assert.deepEqual(body.outputOrdering, [{ alias: 'LaterVersion', descending: true },
+    { alias: 'EarlierVersion', descending: false }]);
+});
+
+test('loads the displayed text length example for review without querying', async () => {
+  const h = harness(async () => assert.fail('Loading the example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-length-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>');
+  h.elements.set('cql-length-example', { textContent: sql });
+  h.elements.get('cql-load-length-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const { path, body } = require('./cql-text.js').compile(editor.value.replace('MongoDBOASIS', provider));
+    assert.equal(path, 'data/query-cql/projection');
+    assert.equal(body.provider, provider);
+    assert.deepEqual(body.filters[1], { field: 'Name', scalar: 'String',
+      function: 'Utf16Length', operator: 'GreaterThanOrEqual', value: '4' });
+    assert.deepEqual(body.columns.map(c => c.field), ['Id', 'Name']);
+    assert.equal(body.take, 10);
+  }
+});
+
+
+test('clearing the selected virtual source resets its controls without discarding saved definitions', () => {
+  const mapping={value:'11000000-0000-0000-0000-000000000001'};
+  const saved={value:mapping.value,options:['saved-source']};
+  const note={textContent:'Using saved source'};
+  cql.clearVirtualMapping(mapping,saved,note);
+  assert.equal(mapping.value,'');assert.equal(saved.value,'');assert.equal(note.textContent,'');
+  assert.deepEqual(saved.options,['saved-source']);
+});
+
+test('a reviewed mixed count renders its exact scalar and never offers snapshot writes', async () => {
+  let queries=0, writes=0;
+  const h=harness(async (url, options) => {
+    queries++;
+    assert.ok(url.endsWith('/query-cql/projection/mixed'));
+    const body=JSON.parse(options.body);
+    assert.equal(body.resultOperation,'LongCount'); assert.equal(body.take,1);
+    assert.deepEqual(body.columns,[{field:'Id',alias:'Id'}]);
+    assert.equal(body.scalarAlias,undefined);
+    return {ok:true,status:200,json:async()=>({result:{
+      version:'cql-scalar-v1',provider:'Neo4jOASIS',operation:'LongCount',valueType:'Int64',
+      value:'198',canPrepareSnapshot:false
+    }})};
+  },undefined,{canPrepare:true,request:async()=>{writes++;throw new Error('Count cannot save data.');}});
+  await h.ui.ready;
+  h.ui.loadText("SELECT COUNT(*) AS Total FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  assert.equal(queries,0);
+  await h.elements.get('cql-run').listeners.click();
+  assert.equal(queries,1); assert.equal(writes,0);
+  assert.match(h.elements.get('cql-note').textContent,/Total: 198/);
+  assert.equal(h.elements.get('cql-results').children.length,0);
+});
+
+test('mixed AVG renders the exact Decimal result without a native snapshot action', async () => {
+  const h=harness(async (url, options)=>{
+    const body=JSON.parse(options.body);
+    assert.ok(url.endsWith('/query-cql/projection/mixed')); assert.equal(body.resultOperation,'Average');
+    assert.equal(body.columns[1].valueType,'Int64');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'Neo4jOASIS',
+      operation:'Average',valueType:'Decimal',value:'9007199254740994',canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT AVG(CAST(metadata.amount AS INT64)) AS Mean FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/Mean: 9007199254740994/);
+});
+
+test('mixed selected value count renders a scalar and offers no snapshot write', async () => {
+  const h=harness(async (url,options)=>{
+    const body=JSON.parse(options.body); assert.ok(url.endsWith('/query-cql/projection/mixed'));
+    assert.equal(body.resultOperation,'CountDistinct');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'MongoDBOASIS',
+      operation:'CountDistinct',valueType:'Int64',value:'3',canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT COUNT(DISTINCT CAST(metadata.region AS STRING)) AS Regions FROM MongoDBOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/Regions: 3/);
+});
+
+test('mixed empty text MIN renders null as a successful scalar', async () => {
+  const h=harness(async(url,options)=>{
+    const body=JSON.parse(options.body); assert.equal(body.resultOperation,'Min');
+    assert.equal(body.columns[1].valueType,'String');
+    return {ok:true,status:200,json:async()=>({result:{version:'cql-scalar-v1',provider:'Neo4jOASIS',
+      operation:'Min',valueType:'String',value:null,canPrepareSnapshot:false}})};
+  });
+  await h.ui.ready;
+  h.ui.loadText("SELECT MIN(CAST(metadata.region AS STRING)) AS FirstRegion FROM Neo4jOASIS WITH VIRTUAL MAPPING "+
+    "'11000000-0000-0000-0000-000000000001' WHERE metadata.tier = 'gold'");
+  await h.elements.get('cql-run').listeners.click();
+  assert.match(h.elements.get('cql-note').textContent,/FirstRegion: null/);
+});
+
+test('loads the grouped distinct demo for review without querying WEB4', async () => {
+  const h = harness(async () => assert.fail('Loading an example must not query WEB4.'));
+  await h.ui.ready;
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>').replaceAll('&lt;', '<');
+  h.elements.set('cql-grouped-distinct-example', { textContent: sql });
+  h.elements.get('cql-load-grouped-distinct-example').listeners.click();
+  const editor = h.elements.get('cql-text');
+  assert.equal(editor.value, sql);
+  assert.equal(editor.focused, true);
+  const { path, body } = require('./cql-text.js').compile(editor.value);
+  assert.equal(path, 'data/query-cql/grouped');
+  assert.deepEqual(body.columns.map(c => [c.alias, c.distinct === true]),
+    [['Category', false], ['Present', false], ['UniqueLabels', true]]);
+  assert.deepEqual(body.resultFilters.map(c => [c.alias, c.value]), [['Present', '1'], ['UniqueLabels', '1']]);
+  assert.deepEqual(body.resultOrder, [{ alias: 'UniqueLabels', descending: true }, { alias: 'Category', descending: false }]);
+  assert.equal(body.resultTake, 5);
+});
+
+test('loads the grouped distinct demo with the documented mixed mapping syntax', () => {
+  const page = require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'), 'utf8');
+  const sql = page.match(/<code id="cql-grouped-distinct-example">([\s\S]+?)<\/code>/)[1].replaceAll('&gt;', '>').replaceAll('&lt;', '<');
+  const mapping = '764b78ae-df26-4637-9bbd-1d0530954fea';
+  for (const provider of ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS']) {
+    const text = sql.replace('FROM MongoDBOASIS', "FROM " + provider + " WITH VIRTUAL MAPPING '" + mapping + "'");
+    const { path, body } = require('./cql-text.js').compile(text);
+    assert.equal(path, 'data/query-cql/projection/mixed');
+    assert.equal(body.provider, provider);
+    assert.equal(body.virtualMappingId, mapping);
+    assert.equal(body.resultOperation, 'Group');
+    assert.equal(body.take, 1);
+    assert.equal(body.grouping.resultTake, 5);
+    assert.equal(body.grouping.columns[2].distinct, true);
+    assert.deepEqual(body.grouping.columns[2].selection, { metadataPath: ['label'], valueType: 'String', nullable: true });
+  }
+});
+
+test('loads the displayed conditional/coalesce demo for review and clears unrelated mapping scope', async () => {
+  const h=harness(async()=>assert.fail('Loading an example must not query records.'));
+  await h.ui.ready;
+  const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+  const sql=page.match(/<code id="cql-computed-example">([\s\S]+?)<\/code>/)[1];
+  h.elements.set('cql-computed-example',{textContent:sql});
+  h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-load-computed-example').listeners.click();
+  assert.equal(h.elements.get('cql-text').value,sql);
+  assert.equal(h.elements.get('cql-text').focused,true);
+  assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+  assert.equal(h.elements.get('cql-saved-mapping').value,'');
+  for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+    const q=require('./cql-text.js').compile(sql.replace('MongoDBOASIS',provider));
+    assert.equal(q.path,'data/query-cql/projection');
+    assert.equal(q.body.columns[2].function,'BooleanTextCase');
+    assert.equal(q.body.columns[3].function,'TextCoalesce');
+    assert.deepEqual(q.body.selectedOrder,[{alias:'Status',descending:false},{alias:'Id',descending:false}]);
+    assert.equal(q.body.take,5);
+  }
+});
+
+
+test('loads the displayed bounded WITH example for review without querying records',async()=>{
+ const h=harness(async()=>assert.fail('Loading a query must not execute it.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-cte-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-cte-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-cte-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());
+ assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+ assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const compiled=require('./cql-text.js').compile(sql.replace('MongoDBOASIS',provider));
+  assert.equal(compiled.path,'data/query-cql/composition');
+  assert.equal(compiled.body.provider,provider);
+  assert.equal(compiled.body.source.take,25);
+  assert.equal(compiled.body.stages.at(-1).operation,'Take');
+  assert.equal(compiled.body.stages.at(-1).count,5);
+ }
+});
+
+
+test('loads displayed derived and staged-set examples for review without executing records',async()=>{
+ const h=harness(async()=>assert.fail('Loading examples must not query records.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ for(const example of ['derived','staged-set']){
+  const sql=page.match(new RegExp('<code id="cql-'+example+'-example">([\\s\\S]+?)<\\/code>'))[1];
+  h.elements.set('cql-'+example+'-example',{textContent:sql});
+  h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+  h.elements.get('cql-load-'+example+'-example').listeners.click();
+  assert.equal(h.elements.get('cql-text').value,sql.trim());assert.equal(h.elements.get('cql-text').focused,true);
+  assert.equal(h.elements.get('cql-virtual-mapping').value,'');assert.equal(h.elements.get('cql-saved-mapping').value,'');
+  for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+   const query=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+   assert.equal(query.body.provider,provider);
+   if(example==='derived'){
+    assert.equal(query.path,'data/query-cql/composition');assert.equal(query.body.source.take,25);
+    assert.ok(query.body.stages.some(stage=>stage.operation==='Where'));
+   }else{
+    assert.equal(query.path,'data/query-cql/set');assert.equal(query.body.kind,'Concat');
+    assert.equal(query.body.left.take,25);assert.equal(query.body.right.take,25);
+    assert.ok(query.body.left.stages.some(stage=>stage.operation==='Where'));
+    assert.ok(query.body.right.stages.some(stage=>stage.operation==='Where'));
+    assert.deepEqual(query.body.ordering,[{field:'Display',descending:false}]);assert.equal(query.body.take,5);
+   }
+  }
+ }
+});
+
+test('loads displayed visible-tuple DISTINCT for review and compiles all three native providers',async()=>{
+ const h=harness(async()=>assert.fail('Loading an example must not query records.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-tuple-distinct-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-tuple-distinct-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-tuple-distinct-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());
+ assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');
+ assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']){
+  const query=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+  assert.equal(query.body.provider,provider);
+  assert.equal(query.body.source.take,25);
+  const stages=query.body.stages;
+  assert.deepEqual(stages.find(stage=>stage.operation==='Select').columns,
+   [{alias:'Label',sourceAlias:'Name'},{alias:'Detail',sourceAlias:'Description'}]);
+  assert.ok(stages.findIndex(stage=>stage.operation==='Select')<stages.findIndex(stage=>stage.operation==='Distinct'));
+  assert.ok(stages.findIndex(stage=>stage.operation==='Distinct')<stages.findIndex(stage=>stage.operation==='OrderBy'));
+  assert.deepEqual(stages.at(-1),{operation:'Take',count:5});
+ }
+});
+
+
+test('loads selected combined results for review and clears mapping without executing data queries',async()=>{
+ const h=harness(async()=>assert.fail('Loading a query must not execute it.'));
+ await h.ui.ready;
+ const page=require('node:fs').readFileSync(require.resolve('./web4-sandbox.html'),'utf8');
+ const sql=page.match(/<code id="cql-late-set-composition-example">([\s\S]+?)<\/code>/)[1];
+ h.elements.set('cql-late-set-composition-example',{textContent:sql});
+ h.elements.get('cql-virtual-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-saved-mapping').value='20000000-0000-0000-0000-000000000001';
+ h.elements.get('cql-load-late-set-composition-example').listeners.click();
+ assert.equal(h.elements.get('cql-text').value,sql.trim());assert.equal(h.elements.get('cql-text').focused,true);
+ assert.equal(h.elements.get('cql-virtual-mapping').value,'');assert.equal(h.elements.get('cql-saved-mapping').value,'');
+ for(const provider of ['MongoDBOASIS','SQLLiteDBOASIS','Neo4jOASIS']) {
+  const result=require('./cql-text.js').compile(sql.replaceAll('MongoDBOASIS',provider));
+  assert.equal(result.path,'data/query-cql/set');assert.equal(result.body.provider,provider);
+  assert.equal(result.body.kind,'Union');assert.equal(result.body.left.columns,undefined);
+  assert.equal(result.body.take,25);assert.deepEqual(result.body.entityStages,[{operation:'Take',count:20}]);
+  assert.deepEqual(result.body.selectedStages.map(stage=>stage.operation),['Where','OrderBy','Take','Select','Distinct','OrderBy','Take']);
+ }
+});
+
+test('late-selected set replies render aliased native cells in the result grid',async()=>{
+ const h=harness(async(url,options)=>{
+  assert.ok(url.endsWith('/query-cql/set'));
+  const body=JSON.parse(options.body);assert.equal(body.kind,'Concat');
+  assert.deepEqual(body.outputColumns,[{field:'Name',alias:'Label'}]);
+  return {ok:true,status:200,json:async()=>({isError:false,result:{
+   version:'cql-set-projection-v1',provider:'MongoDBOASIS',kind:'Concat',count:1,
+   columns:[{alias:'Label',valueType:'String'}],rows:[['<b>literal label</b>']]
+  }})};
+ });
+ await h.ui.ready;
+ h.ui.loadText('SELECT Name AS Label FROM (SELECT * FROM MongoDBOASIS UNION ALL SELECT * FROM MongoDBOASIS LIMIT 4) AS records ORDER BY Label LIMIT 2');
+ await h.elements.get('cql-run').listeners.click();
+ const grid=h.elements.get('cql-results').children[0];
+ assert.ok(grid,'Native selected results need a visible result grid.');
+ assert.deepEqual(grid.children[0].children[0].children.map(cell=>cell.textContent),['Label']);
+ assert.deepEqual(grid.children[1].children[0].children.map(cell=>cell.textContent),['<b>literal label</b>']);
+ assert.match(h.elements.get('cql-note').textContent,/1 returned rows/);
+});
+test('combined count replies display the reviewed SQL alias through the set route',async()=>{
+ let calls=0;
+ const h=harness(async(url,options)=>{
+  calls++;assert.ok(url.endsWith('/query-cql/set'));
+  const body=JSON.parse(options.body);assert.equal(body.reduction,'LongCount');
+  assert.equal(body.take,4);assert.equal(body.outputColumns,undefined);
+  return {ok:true,status:200,json:async()=>({isError:false,result:{
+   version:'cql-scalar-v1',provider:'MongoDBOASIS',operation:'LongCount',valueType:'Int64',value:'4'
+  }})};
+ });
+ await h.ui.ready;
+ h.ui.loadText('SELECT COUNT(*) AS Total FROM (SELECT * FROM MongoDBOASIS UNION ALL SELECT * FROM MongoDBOASIS LIMIT 4) AS records');
+ await h.elements.get('cql-run').listeners.click();
+ assert.match(h.elements.get('cql-note').textContent,/Total: 4/);
+ assert.equal(h.elements.get('cql-results').children.length,0);
+ assert.equal(calls,1,'Rendering must not issue another data query.');
 });

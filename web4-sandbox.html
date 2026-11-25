@@ -80,6 +80,13 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   .nav-links .hide-sm{display:none}
   .row input{flex:1 1 100%}
 }
+/* Keep the question and review controls usable on desktop and mobile. */
+#panel-ask label[for="ask-question"]{display:block;margin:16px 0 6px}
+#ask-question{display:block;box-sizing:border-box;width:100%;min-height:140px;padding:14px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:inherit;line-height:1.5;resize:vertical}
+#ask-question:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.ask-controls{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:14px}
+.ask-controls select{max-width:100%;flex:1 1 180px}
+#ask-draft{min-height:44px}
 </style>
 </head>
 <body>
@@ -120,7 +127,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <button class="tab" data-tab="failover" role="tab">Failover &amp; Replication</button>
     <button class="tab" data-tab="import" role="tab">Import Your Data<span class="soon" style="background:var(--green)">NEW</span></button>
     <button class="tab" data-tab="cosmic" role="tab">COSMIC ORM</button>
-    <button class="tab" data-tab="ask" role="tab">Ask Your Data<span class="soon">SOON</span></button>
+    <button class="tab" data-tab="ask" role="tab">Ask Your Data</button>
   </div>
 
   <!-- HyperDrive Live -->
@@ -159,6 +166,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>1 · Choose a CQL query</h2>
       <p>Query your visible holons and configured public records through the same WEB4 API: MongoDB, SQLite, Neo4j, ActivityPub, IPFS, SOLID, AWS S3 metadata, Azure Blob properties and Solana account metadata. The provider list shows what is ready on this host.</p>
+      <p class="note">Jump to a walkthrough: <a href="#cql-eosio-catalogue">EOSIO / Vaulta</a> · <a href="#cql-solid-catalogue">SOLID</a> · <a href="#cql-ton-catalogue">TON</a> · <a href="#cql-hedera-catalogue">Hedera</a>.</p>
       <p class="note">Start a demo session above, choose an available provider and example, then run it. Public-source examples read existing records. For your own holons, save records in the COSMIC ORM or Failover tabs first. Empty results are shown honestly; no sample rows are substituted.</p>
       <div class="row" style="margin-top:16px">
         <label>Example <select id="cql-preset"></select></label>
@@ -176,6 +184,254 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
     <div class="card">
       <h2>2 · Read and edit the request</h2>
       <p class="mono" id="cql-endpoint" style="margin-bottom:12px"></p>
+      <details id="cql-text-editor" open>
+        <summary>Write a SQL-like CQL query</summary>
+        <p>On MongoDB, SQLite and Neo4j, select computed text lengths with <code>SELECT Name, LENGTH(Name) AS Units FROM MongoDBOASIS ORDER BY Units DESC LIMIT 10</code>. Count different lengths with <code>SELECT COUNT(DISTINCT LENGTH(Name)) FROM MongoDBOASIS</code>, or use <code>SUM(LENGTH(Name))</code>, <code>AVG(LENGTH(Name))</code>, <code>MIN(LENGTH(Name))</code> and <code>MAX(LENGTH(Name))</code> as the single selected aggregate. For string metadata, use <code>LENGTH(CAST(metadata.label AS STRING))</code> on stored Holons or a saved mapping. LENGTH counts UTF-16 units; missing or null text remains null.</p>
+      <p>Combine two independently ordered pages from the same MongoDB, SQLite or Neo4j provider:
+        <code>(SELECT * FROM MongoDBOASIS WHERE Version &gt;= 1 LIMIT 5) UNION ALL (SELECT * FROM MongoDBOASIS WHERE Name LIKE 'Coffee%' LIMIT 5)</code>.
+        Use parentheses when an input needs its own ordering or page. Without parentheses, ORDER BY and paging apply to the combined result. Add <code>LIMIT 3 OFFSET 1</code> after the right parenthesis to page the combined result independently of both input pages. UNION removes repeated Holon IDs; UNION ALL preserves occurrences;
+        INTERSECT keeps shared IDs and EXCEPT keeps IDs found only on the left.
+        Selected columns use value equality instead of Holon IDs, for example
+          <code>SELECT Name AS Label FROM MongoDBOASIS UNION SELECT Name FROM MongoDBOASIS ORDER BY Label LIMIT 5</code>.
+          Both inputs must select the same number of columns with matching types. Result names come from the left input.
+          ORDER BY can use those visible names or column positions; hidden fields cannot affect selected-value equality.
+          These examples require the qualified native set-query backend release. Cross-provider sets are not yet supported.</p>
+      <p>For native MongoDB, SQLite and Neo4j text columns, use <code>SELECT COALESCE(Description, 'Unnamed') AS Label FROM MongoDBOASIS ORDER BY Label LIMIT 5</code>. Null or missing text uses the replacement; empty text stays empty and invalid stored types remain errors. A known metadata string uses <code>COALESCE(CAST(metadata.label AS STRING), @replacement)</code>. For a saved virtual mapping, select Id first and use mapped metadata fields with WITH VIRTUAL MAPPING. These row expressions also work across stored and virtual holons.</p>
+        <p>Use <code>SELECT CASE WHEN IsActive THEN 'Active' ELSE 'Inactive' END AS Status FROM MongoDBOASIS ORDER BY Status LIMIT 5</code> for native MongoDB, SQLite or Neo4j text labels. Conditions use IsActive, IsPublic or a known typed Boolean metadata path such as <code>CAST(metadata.flag AS BOOLEAN)</code>, with quoted text in both branches. Missing, null or invalid Boolean metadata produces an error. For a saved virtual mapping, select Id first and use a mapped Boolean metadata field. General conditions, numeric branches and aggregates are not supported by this text-label expression.</p>
+      <p>For a known nullable integer field, use <code>SELECT COALESCE(CAST(metadata.stock AS INT32), 0) AS Stock FROM MongoDBOASIS ORDER BY Stock LIMIT 5</code>. Missing or null stock uses zero; valid stored integers are preserved and invalid types remain errors. Requires the qualified nullable Int32 backend release on MongoDB, SQLite or Neo4j.</p>
+      <p>For a known DateTime metadata field, use <code>SELECT YEAR(CAST(metadata.observed AS DATETIME)) AS ObservedYear FROM MongoDBOASIS ORDER BY ObservedYear DESC LIMIT 5</code>. MONTH, DAY, DAYOFYEAR, HOUR, MINUTE and SECOND work the same way on MongoDB, SQLite and Neo4j and use UTC. Missing dates remain null; invalid stored values produce an error. To query stored and virtual holons together, select Id first, keep the saved mapping ID after <code>WITH VIRTUAL MAPPING</code>, and use a date field exposed by that mapping. These functions return integer row columns and can be sorted by their selected aliases.</p>
+      <p id="cql-text-help">On MongoDB, SQLite and Neo4j, AND binds before OR; parentheses and NOT preserve nested Boolean intent, including nested child/descendant tests. Advanced typed WHERE support requires the qualified backend release. Use <code>SELECT TOP 5 Id, Name FROM MongoDBOASIS ORDER BY Name</code> or <code>TOP(5)</code> to bound rows, DISTINCT results, grouped results or joined output. Join inputs accept up to ten rows. Choose either TOP or LIMIT/OFFSET/FETCH for each query window. Scalar queries already return one value. Column aliases may omit <code>AS</code>, for example <code>SELECT Name Label FROM MongoDBOASIS</code>. Use <code>SELECT *</code> for full rows, <code>SELECT Id, Name AS DisplayName, Version</code> for selected columns on one database, or SELECT COUNT(*), ANY(*), MIN(Version), MAX(Version), SUM(Version), or AVG(Version) for one database. List multiple providers for a federated row query. Use <code>ParentHolonId</code> with a quoted GUID to filter by direct parent. Use <code>EXISTS CHILD</code> or <code>EXISTS DESCENDANT</code> to filter by related records. Add a predicate in parentheses to filter the related records, or omit it to match any visible related record. Use <code>CHILD JOIN</code> between bounded sources on the same database to select fields from visible children. The relationship supplies the keys. In an explicit <code>ON</code> clause, compare matching signed integer fields with operators such as <code>l.Version &lt; r.Version</code>. After the join, use <code>ORDER BY ChildName DESC, ParentName ASC</code> to sort by selected columns, then <code>LIMIT 3 OFFSET 1</code> to page the joined results independently of the input limits. Prefix EXISTS with <code>NOT</code> to require absence of a visible match. TIMEOUT sets the row query budget in milliseconds (up to 30,000). Filter signed 64-bit metadata with <code>metadata.Sequence AS INT64 &gt;= -9007199254740993</code>. Filter unsigned 64-bit metadata with <code>metadata.Sequence AS UINT64 &gt;= 9007199254740993</code>. Filter exact decimal metadata with <code>metadata.amount AS DECIMAL &gt;= 0.10</code>. Filter floating-point metadata with <code>metadata.reading AS DOUBLE &gt;= 1e-5</code> or <code>metadata.reading AS SINGLE IN (0.25, 0.5)</code>. Use <code>CAST(metadata.reading AS DOUBLE)</code> or <code>CAST(metadata.reading AS SINGLE)</code> to select those values. Filter Boolean metadata with <code>metadata.someFlag AS BOOLEAN = TRUE</code>. Filter UTC timestamp metadata with <code>metadata.observedAt AS DATETIME &gt;= '2026-11-13T12:00:00Z'</code> for fields stored as timestamps. Use <code>TIMESTAMP '2026-11-21T12:00:00.1234567+02:00'</code> for an explicit timezone offset. The query uses the equivalent UTC instant and retains all seven fractional digits. Use a quoted string comparison for a timestamp stored as text. Use <code>Version BETWEEN 2 AND 5</code> for an inclusive range in an AND clause. Use <code>Version NOT BETWEEN 2 AND 5</code> for values strictly outside that range. Use <code>metadata.category NOT IN ('archived', 'draft')</code> to exclude values and omit null or missing categories. For MongoDB, SQLite and Neo4j, <code>SELECT Id, Version FROM Neo4jOASIS ORDER BY Version DESC, Id ASC LIMIT 5 OFFSET 1</code> orders matching records by selected aliases in the provider before applying LIMIT and OFFSET. A selected description can also be sorted with <code>SELECT Id, Description AS Detail FROM SQLLiteDBOASIS ORDER BY Detail DESC LIMIT 3</code> before applying the page limit. With an explicit column list, use <code>ORDER BY 2 DESC</code> to sort by the second selected column. Use <code>GROUP BY 2</code> when that selected column is a grouping field. For full rows on these stores, use <code>ORDER BY Name ASC, Id ASC</code> to sort by multiple fields. Filter text length with <code>LENGTH(Name) &gt;= 4</code> or <code>LENGTH(metadata.label) &gt;= 4</code>. LENGTH counts UTF-16 units, matching C#. For MongoDB, SQLite and Neo4j text fields, use <code>Name LIKE 'Coffee%'</code> for a prefix, <code>Name LIKE '%Coffee'</code> for a suffix, or <code>Name LIKE '%Coffee%'</code> for a substring. Use <code>Name LIKE '%100!%%' ESCAPE '!'</code> to match a literal <code>100%</code> anywhere in a name. Use <code>Name NOT LIKE '%Coffee%'</code> to exclude matching text and nulls. Test nested metadata with <code>metadata.location.city IS PRESENT</code> or <code>metadata.location.zip IS NULL</code>.</p>
+          <label for="cql-text">Query</label>
+        <textarea id="cql-text" aria-describedby="cql-text-help" rows="5" spellcheck="false">SELECT * FROM MongoDBOASIS
+WHERE IsActive = TRUE AND (metadata.category = 'coffee' OR metadata.category = 'tea')
+ORDER BY Name LIMIT 10</textarea>
+        <details>
+          <summary>Query parameters (optional)</summary>
+          <p id="cql-text-parameters-help">Use values such as <code>WHERE Name = @name AND Version &gt;= @minimum</code>, with JSON <code>{"name":"Coffee","minimum":2}</code>. Names are case-sensitive; parameters supply literal values, not field names or SQL fragments. For a bounded list, use <code>Name IN (@names)</code> with <code>{"names":["Coffee","Tea"]}</code>. Lists must be the entire IN list; empty lists and null elements are refused. Exact numeric example: <code>{"sequence":{"type":"INT64","value":"9007199254740993"}}</code>. Use DECIMAL for exact decimal digits. Preview shows the bound typed request before you run it.</p>
+          <label for="cql-text-parameters">Parameter values as JSON</label>
+          <textarea id="cql-text-parameters" aria-describedby="cql-text-parameters-help" rows="3" maxlength="16384" spellcheck="false">{}</textarea>
+          <button type="button" id="cql-load-parameter-example">Load parameter example</button>
+        </details>
+        <details>
+          <summary>Example with child and descendant filters</summary>
+          <pre><code id="cql-relationship-example">SELECT Id, Name, Version FROM MongoDBOASIS
+WHERE IsActive = TRUE
+  AND EXISTS CHILD (Version &gt;= 2)
+  AND EXISTS DESCENDANT (IsActive = TRUE)
+ORDER BY Name LIMIT 5</code></pre>
+        </details>
+        <details>
+          <summary>Example filtering grouped records by average and total version</summary>
+          <pre><code id="cql-grouped-example">SELECT IsActive, COUNT(*) AS Total, AVG(Version) AS AverageVersion, SUM(Version) AS TotalVersion
+FROM MongoDBOASIS
+GROUP BY IsActive
+HAVING AVG(Version) &gt;= 1.0 AND SUM(Version) &gt;= 1
+ORDER BY COUNT(*) DESC, IsActive ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-example">Load grouped example</button>
+        </details>
+        <details>
+          <summary>Example counting unique categories</summary>
+          <pre><code id="cql-distinct-count-example">SELECT COUNT(DISTINCT CAST(metadata.category AS STRING)) AS UniqueCategories
+FROM MongoDBOASIS
+WHERE IsActive = TRUE</code></pre>
+          <button type="button" id="cql-load-distinct-count-example">Load unique category count</button>
+        </details>
+        <details>
+          <summary>Compare populated values and unique labels in each category</summary>
+          <p>Use the <code>category</code> and <code>label</code> fields from your dataset, or edit the fields below. This excludes empty categories, compares rows with a label against different labels, then filters and sorts the complete groups. MongoDB, SQLite and Neo4j support this example.</p>
+          <pre><code id="cql-grouped-distinct-example">SELECT CAST(metadata.category AS STRING) AS Category,
+       COUNT(CAST(metadata.label AS STRING)) AS Present,
+       COUNT(DISTINCT CAST(metadata.label AS STRING)) AS UniqueLabels
+FROM MongoDBOASIS
+WHERE metadata.category &lt;&gt; ''
+GROUP BY Category
+HAVING Present &gt;= 1 AND UniqueLabels &gt;= 1
+ORDER BY UniqueLabels DESC, Category ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-grouped-distinct-example">Load grouped unique labels</button>
+          <p>To query stored and virtual holons together, add <code>WITH VIRTUAL MAPPING 'your saved mapping ID'</code> after the provider name. Use fields exposed by that mapping. The mapping reads the original source; this query does not import or update it. Preview the request, then choose Run CQL.</p>
+        </details>
+        <details>
+          <summary>Example joining records to active records</summary>
+          <pre><code id="cql-join-example">SELECT l.Id AS RecordId, r.Name AS ActiveName
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
+LEFT JOIN (SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE ORDER BY Id LIMIT 5) AS r
+ON l.Id = r.Id</code></pre>
+          <button type="button" id="cql-load-join-example">Load join example</button>
+        </details>
+        <details>
+          <summary>Example comparing record versions</summary>
+          <p>For nullable signed integer join keys, use <code>IS NOT DISTINCT FROM</code> to match two missing values, or <code>IS DISTINCT FROM</code> to match a missing value with a present value.</p>
+          <pre><code id="cql-version-join-example">SELECT l.Name AS EarlierRecord, l.Version AS EarlierVersion,
+       r.Name AS LaterRecord, r.Version AS LaterVersion
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS l
+INNER JOIN (SELECT * FROM MongoDBOASIS ORDER BY Id LIMIT 5) AS r
+ON r.Version &gt; l.Version
+ORDER BY LaterVersion DESC, EarlierVersion ASC LIMIT 5</code></pre>
+          <button type="button" id="cql-load-version-join-example">Load version comparison</button>
+        </details>
+        <details>
+          <summary>Example listing active children of selected records</summary>
+          <pre><code id="cql-child-join-example">SELECT p.Name AS ParentName, c.Name AS ChildName
+FROM (SELECT * FROM MongoDBOASIS ORDER BY Name LIMIT 5) AS p
+CHILD JOIN (SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE ORDER BY Name LIMIT 5) AS c
+ORDER BY ParentName ASC, ChildName ASC LIMIT 3</code></pre>
+          <button type="button" id="cql-load-child-join-example">Load child join example</button>
+        </details>
+          <details>
+            <summary>Example filtering records by text length</summary>
+            <p>Try this on MongoDB, SQLite or Neo4j by changing the provider name. LENGTH counts UTF-16 units: an emoji such as &#x1F600; counts as two. This example reads stored Holons. With a saved mapping, use LENGTH(metadata.name) to filter mapped names at their source.</p>
+            <pre><code id="cql-length-example">SELECT Id, Name FROM MongoDBOASIS
+WHERE IsActive = TRUE AND LENGTH(Name) &gt;= 4
+ORDER BY Id LIMIT 10</code></pre>
+            <button type="button" id="cql-load-length-example">Load text length example</button>
+          </details>
+                  <p>These examples only fill the editor. Review the provider and query before running. Counts and rows depend on records visible to your account; an empty result is valid. Clear any selected virtual mapping before using these stored-Holon examples. The timestamp example assumes a DateTime metadata field named occurredAt; replace it with your known field.</p>
+<details><summary>Nested AND / OR / NOT</summary>
+<pre><code id="cql-boolean-example">SELECT COUNT(*) Total FROM Neo4jOASIS
+WHERE (Name = &#x27;Coffee&#x27; AND Version &gt;= 1)
+   OR (Name = &#x27;Tea&#x27; AND NOT EXISTS CHILD (IsActive = FALSE))</code></pre>
+<button type="button" id="cql-load-boolean-example">Load nested and / or / not example</button></details>
+<details><summary>Labels and missing descriptions</summary>
+<p>Use CASE to label records and COALESCE to fill missing descriptions. This example works on MongoDB, SQLite and Neo4j by changing the provider name. Loading it clears the selected mapping and fills the editor; nothing runs until you choose Run query.</p>
+<pre><code id="cql-computed-example">SELECT Id, Name AS Label,
+  CASE WHEN IsActive THEN 'Active' ELSE 'Inactive' END AS Status,
+  COALESCE(Description, 'No description') AS Summary
+FROM MongoDBOASIS
+ORDER BY Status, Id LIMIT 5</code></pre>
+<button type="button" id="cql-load-computed-example">Load labels and missing values example</button></details>
+      <details><summary>Combine records, then choose displayed columns</summary>
+    <p>Keep distinct records even when they have the same name. First combine records by ID and choose25 by Id.
+    Then filter that selected group by version, reorder by name and display five records.
+    Requires the matching Development API release.</p>
+    <pre><code id="cql-entity-set-selection-example">SELECT Name AS Label, Id FROM (
+      SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
+      UNION
+      SELECT * FROM MongoDBOASIS WHERE Version &gt;= 2
+      ORDER BY Id LIMIT 25
+    ) AS records
+    WHERE records.Version &gt;= 1
+    ORDER BY Label DESC LIMIT 5</code></pre>
+    <button type="button" id="cql-load-entity-set-selection-example">Load combined records example</button></details>
+<details><summary>Filter and deduplicate selected combined results</summary>
+  <p>Combine full records by ID, select a bounded group, then filter labels and choose unique names.
+  Each page remains in its original place. This works with MongoDB, SQLite and Neo4j on the matching Development API release.
+  Loading the example clears the selected mapping and fills the editor; nothing runs until you choose Run query.</p>
+  <pre><code id="cql-late-set-composition-example">WITH records AS (
+  SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
+  UNION
+  SELECT * FROM MongoDBOASIS WHERE Version = 2
+  ORDER BY Id LIMIT 25
+), chosen AS (
+  SELECT Id, Name AS Label FROM records LIMIT 20
+), matches AS (
+  SELECT Label FROM chosen
+  WHERE Label LIKE 'a%' ORDER BY Label DESC LIMIT 10
+)
+SELECT DISTINCT Label FROM matches ORDER BY Label LIMIT 5</code></pre>
+  <button type="button" id="cql-load-late-set-composition-example">Load selected combined results example</button>
+  <p>You can also select unique visible labels directly. The combined page remains before deduplication;
+  sorting and the final page apply to the unique labels.</p>
+  <pre><code id="cql-direct-entity-set-distinct-example">SELECT DISTINCT Name AS Label FROM (
+  SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
+  UNION ALL
+  SELECT * FROM MongoDBOASIS WHERE Version = 2
+  ORDER BY Id LIMIT 25
+) AS records
+ORDER BY Label LIMIT 5</code></pre>
+<p>Count combined records after the bounded source window:</p>
+<pre><code id="cql-set-count-example">SELECT COUNT(*) AS Total FROM (
+  SELECT * FROM MongoDBOASIS WHERE IsActive = TRUE
+  UNION ALL
+  SELECT * FROM MongoDBOASIS WHERE Version = 2
+  ORDER BY Id LIMIT 25
+) AS records
+WHERE Version >= 1</code></pre>
+</details>
+<details><summary>Query a bounded result with WITH</summary>
+  <p>Name a selected result, then filter, reorder and page it. The first step needs an explicit TOP, LIMIT or FETCH; later steps use only its visible columns. You can declare positional names, for example <code>WITH sample(label, revision) AS (SELECT Name, Version FROM MongoDBOASIS LIMIT 25)</code>; later steps use <code>label</code> and <code>revision</code>. Up to eight named steps can use the same MongoDB, SQLite or Neo4j datasource. Recursive queries, source joins, aggregates and Virtual Holon mappings are not yet supported inside these steps. Full-record entity sets may be captured first, followed by explicit selected stages as in the combined-results example above. You can also use a bounded selected subquery: <code>SELECT q.Name FROM (SELECT Name FROM MongoDBOASIS LIMIT 25) AS q WHERE q.Name IS NOT NULL LIMIT 5</code>. Final UNION, UNION ALL, INTERSECT and EXCEPT expressions may combine compatible named selections; parenthesize each SELECT. Each operand may retain its own post-window filters, ordering, paging and visible-column renaming before set equality; this requires the qualified staged-input backend release.</p>
+  <pre><code id="cql-cte-example">WITH sample AS (
+    SELECT Id, Name, Version FROM MongoDBOASIS
+    ORDER BY Id LIMIT 25
+  )
+  SELECT * FROM sample
+  WHERE Version >= 0 AND Name IS NOT NULL
+  ORDER BY Version DESC, Id LIMIT 5</code></pre>
+  <button type="button" id="cql-load-cte-example">Load a query over a bounded result</button></details>
+  <details><summary>Filter a selected page with a derived table</summary>
+  <p>Select a bounded page first, then filter, sort and rename its visible columns.</p>
+  <pre><code id="cql-derived-example">SELECT q.Label AS Display, q.Revision
+  FROM (
+    SELECT Name AS Label, Version AS Revision FROM MongoDBOASIS
+    ORDER BY Id LIMIT 25
+  ) AS q
+  WHERE q.Revision BETWEEN 1 AND 100
+  ORDER BY Display LIMIT 5</code></pre>
+  <button type="button" id="cql-load-derived-example">Load selected-page query</button></details>
+  <details><summary>Combine independently filtered selected pages</summary>
+  <p>Each input keeps its own filter and page. UNION ALL preserves repeated values; the final order and limit apply to the combined result.</p>
+  <pre><code id="cql-staged-set-example">WITH sample(Label, Detail) AS (
+    SELECT Name, Description FROM MongoDBOASIS
+    WHERE IsActive = TRUE ORDER BY Id LIMIT 25
+  )
+  (SELECT Label AS Display FROM sample
+    WHERE Label IS NOT NULL ORDER BY Label LIMIT 3)
+  UNION ALL
+  (SELECT Label AS Other FROM sample
+    WHERE Detail IS NOT NULL ORDER BY Label LIMIT 2)
+  ORDER BY Display LIMIT 5</code></pre>
+  <button type="button" id="cql-load-staged-set-example">Load combined selected-page query</button></details>
+  <details><summary>Unique visible tuples from a selected page</summary>
+  <p>The first query captures a bounded page. DISTINCT compares only Label and Detail, so different record IDs do not create duplicate displayed values. Ordering and the final page apply after duplicates are removed.</p>
+  <pre><code id="cql-tuple-distinct-example">WITH sample AS (
+    SELECT Id, Name, Description FROM MongoDBOASIS
+    WHERE IsActive = TRUE ORDER BY Id LIMIT 25
+  )
+  SELECT DISTINCT Name AS Label, Description AS Detail
+  FROM sample
+  WHERE Name IS NOT NULL
+  ORDER BY Label, Detail LIMIT 5</code></pre>
+  <button type="button" id="cql-load-tuple-distinct-example">Load unique selected values</button></details>
+<details><summary>Top five selected records</summary>
+<pre><code id="cql-top-example">SELECT TOP 5 Id, Name AS Label, Version FROM MongoDBOASIS
+WHERE IsActive = TRUE
+ORDER BY Version DESC, Id ASC</code></pre>
+<button type="button" id="cql-load-top-example">Load top five selected records example</button></details>
+<details><summary>Timezone timestamp on metadata.occurredAt</summary>
+<pre><code id="cql-timestamp-example">SELECT Id, Name FROM SQLLiteDBOASIS
+WHERE metadata.occurredAt AS DATETIME &gt;= TIMESTAMP &#x27;2026-11-01T00:00:00-05:00&#x27;
+ORDER BY Id LIMIT 10</code></pre>
+<button type="button" id="cql-load-timestamp-example">Load timezone timestamp on metadata.occurredat example</button></details>
+<button type="button" id="cql-load-text-example" disabled>Load public example</button>
+        <button type="button" id="cql-run-text">Run CQL</button>
+          <button type="button" id="cql-compile">Preview request</button>
+      </details>
+      <details>
+        <summary>Include a Virtual Holon mapping</summary>
+        <label for="cql-virtual-mapping">Virtual mapping ID</label>
+        <div class="row">
+          <input id="cql-virtual-mapping" placeholder="Paste a saved mapping ID" autocomplete="off">
+          <button type="button" class="ghost" id="cql-virtual-example">Load customer query</button>
+          <button type="button" class="ghost" id="cql-sqlite-virtual-example">Load supplier query</button>
+          <button type="button" class="ghost" id="cql-neo-virtual-example">Load loyalty query</button>
+          <button type="button" class="ghost" id="cql-list-mappings">List my mappings</button>
+        </div>
+        <select id="cql-saved-mapping" aria-label="Saved virtual mappings" hidden></select>
+        <p id="cql-mapping-note" class="note" role="status"></p>
+        <p class="note">For row queries, select Id first, optionally add up to eight supported mapped metadata filters, and order by Id or selected aliases. You can select original text and LENGTH of the same field together. Results identify live mappings, stored Holons and existing stored copies. Save snapshot reads the original source fields again; computed result columns are not saved.</p>
+        <p class="note">You can also use GROUP BY and SELECT DISTINCT with a saved mapping on MongoDB, SQLite or Neo4j.
+        Group known direct metadata fields and use COUNT, MIN, MAX, SUM or AVG over supported values.
+        Real and virtual copies of the same record count once before HAVING, ordering and paging.
+        Grouped results are read-only summaries; snapshot controls apply to individual records.</p>
+      </details>
+        <details>
+          <summary>Query stored and mapped text in one result</summary>
+          <p>Replace &lt;mapping-id&gt; with your saved customer mapping ID. This selects each name and its length, with one logical row when a stored copy also exists.</p>
+          <pre><code>SELECT Id, CAST(metadata.name AS STRING) AS Original,
+       LENGTH(CAST(metadata.name AS STRING)) AS Units
+FROM MongoDBOASIS WITH VIRTUAL MAPPING '&lt;mapping-id&gt;'
+WHERE LENGTH(metadata.name) &gt; 0
+ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
+        </details>
       <label for="cql-request">JSON query description</label>
       <textarea id="cql-request" spellcheck="false" rows="20" style="display:block;width:100%;margin:10px 0 16px;padding:16px;background:var(--bg-card2);color:var(--text);border:1px solid var(--line);border-radius:10px;font:13px/1.8 'Share Tech Mono',monospace;tab-size:2" aria-describedby="cql-help"></textarea>
       <p class="note" id="cql-help">filters are combined with AND. anyOf adds an OR group. In selects an array of exact values. metadataPath selects a metadata key. skip and take page the results. This editor accepts JSON, not executable C#, SQL or Cypher. The server checks permissions, bounds and provider capabilities.</p>
@@ -206,11 +462,6 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
         <a id="cql-oracle-open" href="http://127.0.0.1:5090/?preset=name" target="_blank" rel="noopener noreferrer">OPEN LOCAL QUERY ↗</a>
       </div>
       <p id="cql-oracle-note" class="note" role="status" aria-live="polite"></p>
-      <details style="margin-top:16px">
-        <summary>Start the reusable local demo</summary>
-        <p class="note">From C:/Source/OASIS-cosmic, run this command first, then open a local example above. Stop the local demo with its stop button when finished.</p>
-        <pre style="margin-top:12px;line-height:1.8">pwsh -File Scripts/TestHosts/Run-ReusableOracleMongoTests.ps1 -Content -Serve -ArchiveCompletedDemo</pre>
-      </details>
     </div>
     <div class="card" id="cql-protocol-catalogue">
       <h2>5 · IPFS, SOLID and ActivityPub + MongoDB</h2>
@@ -219,18 +470,15 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <p class="note">These local demos support bounded native-key queries. General content searches and full query parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>IPFS + MongoDB · encrypted records selected by CID</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider IPFS -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected IPFS records plus two MongoDB records: five physical copies.</p>
       </details>
       <details style="margin-top:20px">
-        <summary>SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider SOLID -Serve -ArchiveCompletedDemo</pre>
+        <summary id="cql-solid-catalogue">SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
         <p>Three selected Pod records plus two MongoDB records: five physical copies.</p>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/SolidPointWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# resource-selection example ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLID_CQL_HOST_CONFIGURATION.md" target="_blank" rel="noopener noreferrer">HTTP example and host guide ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>ActivityPub + MongoDB · existing public Mastodon statuses</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider ActivityPub -Serve -ArchiveCompletedDemo</pre>
         <p>Three public statuses selected by status ID plus two MongoDB records: five physical copies. No posts or accounts are created.</p>
       </details>
       <p style="margin-top:24px">These local launcher commands use the <a href="https://github.com/NextGenSoftwareUK/OASIS/tree/237403a75b6983e013141cf7ba44bf66858abafd/Examples/CosmicCqlDemo" target="_blank" rel="noopener noreferrer">preserved local-demo source revision ↗</a> and require its configured native services. Run from the matching checkout. They share port5088, so start only one at a time. The hosted playground needs no local services.</p>
@@ -242,7 +490,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>6 · Solana public accounts + MongoDB</h2>
       <p>In the hosted playground above, select a Solana public-account example. Read three configured mainnet accounts, then select the two-account subset. These are account metadata reads; no wallet, payment or transaction is required.</p>
       <p>Choose the Solana + Mongo federation example, prepare your two private Mongo records, then run it. The full query returns five physical rows (three Solana and two Mongo); the subset returns four. Other visitors can read the public accounts but cannot read your private copies.</p>
-      <p class="note">The source is a bounded account catalogue, not arbitrary chain search or transaction history. Browser acceptance of this provider remains pending; its hosted HTTP query, isolation and replica checks have passed.</p>
+      <p class="note">The source is a bounded account catalogue, not arbitrary chain search or transaction history. The public browser presets, hosted HTTP query, isolation and replica checks have passed.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLANA_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Solana CQL guide and HTTP requests ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/d4cde8226/Examples/CosmicCqlDemo/NativeKeySetWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# example ↗</a></p>
       <details style="margin-top:20px">
         <summary>Historical local indexed-holon demo — unavailable</summary>
@@ -253,11 +501,6 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>7 · AWS DynamoDB Local + MongoDB</h2>
       <p>Select records by ID through one CQL query and inspect copies from both providers. All returns five physical copies: three AWS records and two MongoDB records. The subset returns four: two from each provider.</p>
       <p class="note">This uses the AWSOASIS adapter against DynamoDB Local. Hosted AWS, general metadata/text filters and full query parity remain separate work. Reads do not claim a distributed snapshot. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained AWS + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run this command with the retained DynamoDB environment and seed configured. Preserve previous test reports before rerunning.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicAwsCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5096/" target="_blank" rel="noopener noreferrer">OPEN AWS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each returned copy.</p>
       <p class="note">Finish with the local page's stop button and wait for the runner to exit. The owned Mongo fixture is cleaned up; the reusable AWS seed and data remain.</p>
@@ -266,17 +509,12 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>8 · Ethereum public balances and local storage demos</h2>
       <h3>Public mainnet balances · no wallet needed</h3>
       <p>The read-only C# demo queries three configured Ethereum addresses, then a two-address subset, through HolonManager and LINQ. It shows exact balances in wei and the selected finalized block hash. It creates no transaction or local database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing checks pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. This command runs the local console walkthrough.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing checks pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. This command runs the local console walkthrough.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --ethereum-public LocalState/COSMIC/HostedEthereumPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/ETHEREUM_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Ethereum setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e9283978b39936d705debc2a7668a9115ec622f7/Examples/CosmicCqlDemo/EthereumPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Owned-record demo · local chain + MongoDB</h3>
       <p>Query encrypted Ethereum records and MongoDB copies with one CQL ID filter. All returns five physical copies: Ethereum three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses the retained local EVM chain31338 and original storage contract. Hosted Ethereum, mainnet, finality guarantees and general metadata/text queries remain separate work. Reads preserve provider copies without claiming a distributed snapshot.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Ethereum + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below with the retained chain, seed and key configured. Preserve previous test reports before rerunning. No query transaction is submitted.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5097/" target="_blank" rel="noopener noreferrer">OPEN ETHEREUM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Your hosted sign-in is never forwarded.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
@@ -285,27 +523,27 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
       <h2>9 · Polygon, Arbitrum, Cosmos, Polkadot and NEAR demos</h2>
       <h3>Public Polygon balances · no wallet needed</h3>
       <p>The read-only C# example queries three configured Polygon mainnet addresses, then a two-address subset, through HolonManager and LINQ. It prints exact native balances and the selected finalized block hash without creating transactions or a database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. This command runs the local console walkthrough.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. This command runs the local console walkthrough.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polygon-public LocalState/COSMIC/HostedPolygonPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/POLYGON_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polygon setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/8c1473758e0f86e9d9204513d406c0f9af77a51e/Examples/CosmicCqlDemo/PolygonPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Arbitrum balances · official free RPC</h3>
       <p>The read-only C# example queries three configured Arbitrum One addresses, then a two-address subset. It uses the official RPC with the selected finalized block hash, prints exact native balances and creates no transaction or database.</p>
-      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo checks pass; browser verification remains open. RPC-reported finality is not independent rollup-settlement verification.</p>
+      <p class="note">Native C# and local HTTP/Mongo pairing pass. Hosted HTTP/Mongo checks pass; the public browser presets pass. RPC-reported finality is not independent rollup-settlement verification.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --arbitrum-public LocalState/COSMIC/HostedArbitrumPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/ARBITRUM_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Arbitrum setup, build and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2c06411c062c284fb61918be1e3534273c925382/Examples/CosmicCqlDemo/ArbitrumPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Cosmos Hub validators · no wallet needed</h3>
       <p>The C# demo reads three configured validators, then a two-validator subset through HolonManager and LINQ. It prints exact token counts and the pinned application state height without transactions or database setup.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. State is reported by the REST server, not independently verified consensus.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. State is reported by the REST server, not independently verified consensus.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --cosmos-public LocalState/COSMIC/HostedCosmosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/COSMOS_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Cosmos setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e5bc96173/Examples/CosmicCqlDemo/CosmosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Polkadot block headers · no wallet needed</h3>
       <p>The C# walkthrough reads three configured block headers, then a two-hash subset through HolonManager and LINQ. Each header content hash is checked locally; no transaction, block body or database setup is needed.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. Canonical history and finality are RPC-reported, not independently verified GRANDPA proofs.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. Canonical history and finality are RPC-reported, not independently verified GRANDPA proofs.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --polkadot-public LocalState/COSMIC/HostedPolkadotPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/POLKADOT_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Polkadot setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/03db9a052/Examples/CosmicCqlDemo/PolkadotPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public NEAR account data · no wallet needed</h3>
       <p>The C# walkthrough reads three configured public accounts, then a two-account subset through HolonManager and LINQ. Balances stay exact strings in yoctoNEAR and each selection is pinned to one reported final block.</p>
-      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass with the explicitly selected free FastNear endpoint. Hosted HTTP/Mongo, isolation and replica checks pass; browser verification remains open. No transaction, contract execution or database setup is needed for the console demo.</p>
+      <p class="note">Native C#, local HTTP/Mongo pairing and private snapshot isolation pass with the explicitly selected free FastNear endpoint. Hosted HTTP/Mongo, isolation and replica checks pass; the public browser presets pass. No transaction, contract execution or database setup is needed for the console demo.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --near-public LocalState/COSMIC/HostedNearPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/NEAR_PUBLIC_METADATA_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">NEAR setup, query and HTTP guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/0487d9656/Examples/CosmicCqlDemo/NearPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
       <h3>Public Base balances · no wallet needed</h3>
@@ -378,7 +616,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public Stellar ledger headers · no wallet needed</h3>
       <p>Query three configured ledgers, then filter to two with HolonManager and LINQ. Complete native XDR and hashes are checked before metadata is returned; this is not independent SCP consensus verification.</p>
-      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. Browser acceptance remains pending. No Stellar transaction is submitted.</p>
+      <p class="note">Live HTTP checks pass: query three public headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeating setup reuses those snapshots; SQLite/Neo4j replication and visitor isolation are verified. The live browser check passed for the public and paired Stellar presets. No Stellar transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run --project Examples/CosmicCqlDemo/CosmicCqlDemo.csproj --no-build --no-restore -- --stellar-public LocalState/COSMIC/HostedStellarPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/STELLAR_PUBLIC_HEADER_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/637a6d49f/Examples/CosmicCqlDemo/StellarPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
@@ -400,7 +638,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
   -- --aptos-public LocalState/COSMIC/HostedAptosPublicSourceCurrent/source.json</pre>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/cbba242f7/Docs/Devs/APTOS_PUBLIC_ACCOUNT_CQL_GUIDE.md" target="_blank" rel="noopener noreferrer">Setup and query guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/73cf8abb7/Examples/CosmicCqlDemo/AptosPublicWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
 
-      <h3>Public Hedera mirror accounts · no wallet needed</h3>
+      <h3 id="cql-hedera-catalogue">Public Hedera mirror accounts · no wallet needed</h3>
       <p>Query three configured accounts, then filter to two with HolonManager and LINQ. Tinybar balances stay exact and each row preserves the mirror's balance timestamp.</p>
       <p class="note">Live HTTP checks pass: three accounts or a two-account subset, paired with two private Mongo snapshots. Repeat setup reuses both snapshots; visitor isolation and SQLite/Neo4j replicas are verified. Select HashgraphOASIS in the CQL tab. Reads overlap up to three per native query while preserving timestamps; no freshness, shared-snapshot or consensus-proof promise. Browser verification remains open. No SDK payment or Hedera transaction is submitted.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">dotnet run &#96;
@@ -411,7 +649,7 @@ footer{border-top:1px solid var(--line);padding:24px;text-align:center;font-size
 
       <h3>Public TON headers · no wallet needed</h3>
       <p>Use HolonManager and LINQ to query three configured Mainnet headers, then select two by root hash. Logical times and large counters retain their exact values.</p>
-      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. Browser verification remains open; no wallet, funding or chain transaction is needed.</p>
+      <p class="note">Live HTTP checks pass: query three headers or a two-header subset, then pair them with your two private Mongo snapshots. Repeat setup reuses both copies; visitor privacy and matching SQLite/Neo4j replicas are verified. Select TONOASIS in the CQL tab. This is an explicit bounded header catalogue, not arbitrary chain search. Queries use a 30-second server budget. Gateway observations do not independently verify consensus. The public browser presets passed. The original owner's private paired browser presets remain open. No wallet, funding or chain transaction is needed.</p>
       <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap"># Follow the setup guide once to create your reusable catalogue and build.
 
 dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
@@ -477,15 +715,12 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>Polygon launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Polygon -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5098/" target="_blank" rel="noopener noreferrer">OPEN POLYGON + MONGO QUERY ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>Arbitrum launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Arbitrum -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5099/" target="_blank" rel="noopener noreferrer">OPEN ARBITRUM + MONGO QUERY ↗</a></p>
       </details>
-      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
     <div class="card" id="cql-threefold-public-catalogue">
@@ -720,7 +955,7 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
     <div class="card" id="cql-eosio-catalogue">
       <h2>EOSIO / Vaulta native accounts + MongoDB</h2>
       <p>Query three public native accounts, then filter to two. Select <strong>EOSIOOASIS</strong> in the CQL tab and choose a public preset or its Mongo paired preset. Account creation times, RAM quotas and per-response head markers are exposed without a wallet or funded account.</p>
-      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. Browser interaction verification remains open.</p>
+      <p class="note" id="cql-eosio-acceptance">Hosted HTTP checks pass: native three/two records, Mongo pairing five/four, repeat setup with no new copies, visitor privacy and two matching replicas each in SQLite and Neo4j. No account, wallet, funding or source transaction is needed. The public browser presets passed. The original owner's private paired browser presets remain open.</p>
       <p class="note">Each account read reports its own head; these records do not establish a common finalized snapshot. Private Mongo demo copies retain source identity, name and description, not the full native payload. This is a native EOSIO/Vaulta profile, separate from Telos EVM and signed EOSIO storage.</p>
       <details style="margin-top:20px">
         <summary>Run the commented C# demo locally</summary>
@@ -795,11 +1030,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
 
       <p>Run one CQL ID filter over native Firestore documents and MongoDB copies. Full selection returns five physical copies: Google three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses GoogleCloudOASIS against the retained Firestore emulator. Hosted Google Cloud, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Google + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below with the retained runtime, checkpoint and seed configured. Preserve previous test reports before rerunning.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirestoreCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5100/" target="_blank" rel="noopener noreferrer">OPEN GOOGLE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each copy; reads do not claim a distributed snapshot.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. The owned Mongo fixture is removed and services stop; the original Firestore checkpoint remains reusable.</p>
@@ -810,31 +1040,22 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p class="note">These use retained local nodes and original contract records. Cosmos blockchain is distinct from Azure Cosmos DB. Hosted networks, mainnet, finality guarantees, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>Cosmos blockchain launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCosmosCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5101/" target="_blank" rel="noopener noreferrer">OPEN COSMOS BLOCKCHAIN + MONGO ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>Polkadot launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPolkadotCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5102/" target="_blank" rel="noopener noreferrer">OPEN POLKADOT + MONGO ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>NEAR launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicNearCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5103/" target="_blank" rel="noopener noreferrer">OPEN NEAR + MONGO ↗</a></p>
       </details>
-      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained runtime, ledger, contract, identity and source manifest configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Queries submit no chain transactions and do not claim a distributed snapshot. Finish with the local stop button and wait for the runner to exit: owned Mongo fixtures are removed, nodes stop, and reusable chain data remains.</p>
     </div>
     <div class="card" id="cql-s3-catalogue">
       <h2>12 · S3-compatible local storage + MongoDB</h2>
       <p>Query three encrypted objects through AWSS3OASIS and two MongoDB copies with one CQL ID filter. Full selection returns five physical copies; the subset returns four, preserving both provider labels.</p>
       <p class="note">This uses the owned local MinIO compatible service, not hosted AWS. Native reads, retained-data restart and Mongo federation are verified. General metadata/text queries, distributed snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the reusable S3-compatible demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the pinned cached image and retained store/key, verifies native reads and restart, then opens the paired demo. It makes no billable AWS requests.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicS3CqlNative.ps1 -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5107/" target="_blank" rel="noopener noreferrer">OPEN S3-COMPATIBLE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. The exact owned Mongo fixture is removed and services stop; the reusable S3 source objects, store and protected key remain.</p>
@@ -843,11 +1064,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>13 · TRON local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted TRON holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each source provider shown.</p>
       <p class="note">This uses the retained local TRE chain, not TRON mainnet. Native restart, read-only source preservation and Mongo federation are verified. General metadata/text queries, shared snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the reusable TRON demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained chain, original protected source and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicTronCqlDeclared.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5108/" target="_blank" rel="noopener noreferrer">OPEN TRON + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the TRON source, protected key and ledger remain.</p>
@@ -856,11 +1072,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>14 · TON TVM local emulation + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted TON holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses native TON contract bytecode in local TVM emulation, not the public TON network. No real tokens are spent. General metadata/text queries, consensus/finality and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained TON TVM demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained native source, protected key, pinned SDK and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicTonCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5109/" target="_blank" rel="noopener noreferrer">OPEN TON TVM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the retained TVM source, protected key and receipts remain.</p>
@@ -869,11 +1080,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>15 · Azure Blob emulator + MongoDB</h2>
       <p>Run one CQL ID filter over three Azure Blob holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the free local Azurite emulator through the Azure SDK. Hosted Azure is pending. Blob records use canonical JSON; this demo does not claim application-level encryption, metadata/text queries or a shared snapshot. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Azure Blob demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained Blob source, pinned Azurite runtime and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicAzureBlobCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5106/" target="_blank" rel="noopener noreferrer">OPEN AZURE BLOB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original Blob source remains.</p>
@@ -883,11 +1089,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p>In the <a href="#panel-cql">hosted CQL playground</a>, sign in and select <strong>LocalFileOASIS</strong>. The public presets return all three teaching records or a two-record subset.</p>
       <p>For a paired example, choose the MongoDB preset ending in <strong>mongo-public-records</strong> or <strong>mongo-public-subset</strong>, then select <strong>Prepare my Mongo records</strong> and <strong>Run query</strong>. The full query returns five rows and the subset returns four. Each row shows its provider.</p>
       <p class="note">The hosted source reads a fixed set of public JSON records from the server's filesystem. The MongoDB copies belong to the signed-in visitor.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained local-file demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original source files and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicLocalFileCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5110/" target="_blank" rel="noopener noreferrer">OPEN LOCAL FILES + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original source files remain unchanged.</p>
@@ -896,13 +1097,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>17 · Aptos local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three retained Aptos records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the official Aptos SDK and an existing local Move contract, not a public network. Chain records use plaintext canonical JSON. Metadata/text queries, a shared snapshot and full provider parity remain separate work. Queries submit no transactions; the current SDK configuration still requires the retained account credential. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Aptos demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the first command in one terminal and leave it open. In another terminal, run the second command. Both reuse the original node, source records and account.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Start-CosmicAptosCqlNode.ps1
-
-pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5111/" target="_blank" rel="noopener noreferrer">OPEN APTOS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the demo runner to exit. Then press Ctrl-C in the node terminal. The exact owned Mongo fixture is removed; the original Aptos ledger, account and records remain.</p>
@@ -911,11 +1105,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>18 · Sui local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted Sui records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the official Mysten SDK bridge and a dedicated retained local Sui contract. It does not use mainnet. The demo encryption key is a public test fixture, not a production secret. General metadata/text queries, shared snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Sui demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It resumes the original local node and reuses the admitted source, pinned SDK and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSuiCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5112/" target="_blank" rel="noopener noreferrer">OPEN SUI + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time. Queries submit no chain transactions.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops its services; the original Sui ledger, storage objects and signed source evidence remain.</p>
@@ -924,11 +1113,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>19 · Redis + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted Redis records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the retained local Redis service through RedisOASIS. It queries selected native keys without scanning the keyspace. Metadata/text queries, shared snapshots, cluster behavior and full provider parity remain separate work. Redis-compatible providers require their own verification. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Redis demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original Redis database, protected local identity and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicRedisCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5113/" target="_blank" rel="noopener noreferrer">OPEN REDIS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original Redis records and shared volume remain.</p>
@@ -937,11 +1121,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>20 · PostgreSQL content queries + MongoDB</h2>
       <p>Run the same CQL predicate on both native databases. Try exact name, description Contains, string metadata equality and an AND / OR expression. Expected physical rows are <strong>2, 4, 4 and 2</strong>, with each provider shown.</p>
       <p class="note">PostgreSQL applies parameterized SQL predicates before paging. The retained source uses plaintext canonical JSON. This is a local teaching demo with a server-owned record catalogue; hosted PostgreSQL authorization, arbitrary-source queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained PostgreSQL content demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original PostgreSQL content schema and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPostgreSqlCqlNative.ps1 -Content -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5114/" target="_blank" rel="noopener noreferrer">OPEN POSTGRESQL + MONGO CONTENT QUERIES ↗</a></p>
       <p>Choose <strong>Exact name</strong>, <strong>Description Contains</strong>, <strong>Metadata equality</strong> and <strong>AND / OR</strong>. The page also includes the full and subset ID examples. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; both original PostgreSQL schemas and their records remain.</p>
@@ -950,11 +1129,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>21 · SQL Server content queries + MongoDB</h2>
       <p>Run one CQL predicate on both native databases. Try exact name, description Contains, string metadata equality and AND / OR. Expected physical rows are <strong>2, 4, 4 and 2</strong>, with each provider shown.</p>
       <p class="note">This uses the retained Windows LocalDB instance, not Azure SQL. SQL Server applies parameterized predicates before paging and preserves exact string distinctions, including trailing spaces. Records use plaintext canonical JSON. Hosted authorization, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained SQL Server content demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original LocalDB instance, attached databases and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSqlServerCqlNative.ps1 -Content -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5115/" target="_blank" rel="noopener noreferrer">OPEN SQL SERVER + MONGO CONTENT QUERIES ↗</a></p>
       <p>Choose <strong>Exact name</strong>, <strong>Description Contains</strong>, <strong>Metadata equality</strong> and <strong>AND / OR</strong>. The page also includes full and subset ID examples. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original SQL Server databases, records and source evidence remain.</p>
@@ -968,7 +1142,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained local DuckDB demo</summary>
         <p>From your OASIS repository, run the command below. It reopens the original database file and reuses the cached native driver and Mongo runtime. Your hosted sign-in is never forwarded.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDuckDbCqlNative.ps1 -Federated -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5116/" target="_blank" rel="noopener noreferrer">OPEN DUCKDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
@@ -978,11 +1151,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>23 · Temporary hosted Upstash + MongoDB</h2>
       <p>Run one CQL ID filter over three hosted Upstash records and two local MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note"><strong>The retained free scratch admission expires 31 October 2026 at 21:15 UTC.</strong> The runner refuses expired admission; permanent free hosting remains pending. This is a real hosted REST query with plaintext canonical JSON, not an emulator. General metadata/text queries, atomic multi-command writes, shared snapshots and full parity remain separate work. Your sandbox sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Upstash demo before expiry</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the protected existing hosted identity, original records and Mongo runtime. Do not paste credentials into the browser or replace the expired source.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicUpstashCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5117/" target="_blank" rel="noopener noreferrer">OPEN UPSTASH + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops local services; the original hosted source remains subject to its expiry.</p>
@@ -991,11 +1159,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>24 · Litestream on Linux + MongoDB</h2>
       <p>Run one CQL ID filter over three retained SQLite records through LitestreamOASIS and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the retained Linux source and verified replica/restore lineage. The CQL adapter reads SQLite; the separate Litestream sidecar is not simulated by the query. Windows replication remains unverified after its recorded directory-sync failure. Records use plaintext canonical JSON; remote/PITR/crash recovery, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Linux Litestream demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the existing Ubuntu setup, native source, retained replica/restore receipt and Linux Mongo store without replaying the probe.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicLitestreamLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5118/" target="_blank" rel="noopener noreferrer">OPEN LINUX LITESTREAM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes the exact owned Mongo fixture, then stops its daemon; the original source, replica, restored file and receipts remain.</p>
@@ -1004,11 +1167,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>25 · Volatile Memcached + MongoDB</h2>
       <p>Run one CQL ID filter over three live cache records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. A separate deleted cache record stays excluded.</p>
       <p class="note">Memcached is volatile: each explicitly started demo warms a new empty owned process using the retained canonical test identities. Shutdown intentionally discards that generation. This does not demonstrate persistence or restart recovery. Records use plaintext JSON; shared-index atomicity, conditional writes, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start one owned Memcached demo generation</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the existing Ubuntu runtime and Linux Mongo store. Unresolved earlier generations stop admission rather than being replayed.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMemcachedLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5119/" target="_blank" rel="noopener noreferrer">OPEN MEMCACHED + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup and generation retirement. It removes the exact owned Mongo fixture and stops both daemons; canonical identities and retirement evidence remain.</p>
@@ -1017,11 +1175,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>26 · Valkey + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Valkey records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently identified Valkey 9.0.4 server and its original persistent source. Redis protocol compatibility is not used as proof of Valkey readiness. General metadata/text queries, cluster replication/failover, shared snapshots and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Valkey demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies a clean server restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicValKeyLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5120/" target="_blank" rel="noopener noreferrer">OPEN VALKEY + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original Valkey data, keys and receipts remain.</p>
@@ -1030,11 +1183,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>27 · KeyDB + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted KeyDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently verified KeyDB 6.3.4 runtime and its original persistent source. Executable identity and native process checks distinguish it from compatible products. General metadata/text queries, active replication, cluster failover, shared snapshots and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained KeyDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies a clean server restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicKeyDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5121/" target="_blank" rel="noopener noreferrer">OPEN KEYDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original KeyDB data, keys and receipts remain.</p>
@@ -1043,11 +1191,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>28 · Dragonfly + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Dragonfly records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently verified Dragonfly 2.0.2 runtime and its original native snapshot. A clean restart reloads the retained encrypted records. This does not certify recovery of uncheckpointed writes, per-save crash durability, cluster replication, general metadata/text queries or full parity. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Dragonfly demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies the native checkpoint and a clean restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDragonflyLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5122/" target="_blank" rel="noopener noreferrer">OPEN DRAGONFLY + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original Dragonfly data, keys and snapshot receipts remain.</p>
@@ -1056,11 +1199,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>29 · Garnet + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Garnet records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses Microsoft Garnet 2.2.5 and its explicitly admitted second synthetic dataset. The first dataset's failed checkpoint evidence is preserved separately; this is not a recovery of that lost source. Completed checkpoint reload is verified, while uncheckpointed crash recovery, general metadata/text queries, cluster operation and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Garnet demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the admitted dataset, protected keys and native checkpoint, verifies a restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicGarnetLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5123/" target="_blank" rel="noopener noreferrer">OPEN GARNET + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops both daemons after the acknowledged Garnet checkpoint; retained data, keys and failure evidence remain.</p>
@@ -1069,11 +1207,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>30 · PocketBase + MongoDB</h2>
       <p>Run one CQL ID filter over three retained PocketBase records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the real PocketBase 0.40.6 REST service on Linux and its retained local database. Native filtered queries and restart are verified. Records use canonical plaintext JSON; hosted service access, general name/metadata queries, graph/history/conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained PocketBase demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original database and protected local credentials, verifies a service restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPocketBaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5124/" target="_blank" rel="noopener noreferrer">OPEN POCKETBASE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops both services; the original PocketBase database, credentials and receipts remain.</p>
@@ -1082,11 +1215,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>31 · Supabase REST + MongoDB</h2>
       <p>Run one CQL ID filter over three retained Supabase-provider records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the Supabase provider against a real local PostgREST 16.5 service and PostgreSQL database with JWT checks. It does not certify hosted Supabase, its API-key gateway, Auth, storage or realtime. Canonical JSON is plaintext; general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Supabase REST demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original database and protected local credentials, verifies PostgreSQL and REST restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSupabaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5125/" target="_blank" rel="noopener noreferrer">OPEN SUPABASE REST + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops REST, Mongo and PostgreSQL; the original Supabase-provider database, credentials and receipts remain.</p>
@@ -1098,7 +1226,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Firebase RTDB demo</summary>
         <p>From C:/Source/OASIS2 on the recovery laptop, run the command below. It restores this laptop's retained recovery checkpoint and starts the Windows Mongo-paired demo. The missing original laptop export remains a separate historical cohort.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirebaseCqlNative.ps1 -RecoveryLaptop -Federated -Serve</pre>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/647b53daf/Docs/Devs/FIREBASE_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Recovery setup and scope ↗</a></p>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5126/" target="_blank" rel="noopener noreferrer">OPEN FIREBASE RTDB + MONGO QUERY ↗</a></p>
@@ -1109,11 +1236,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>33 · CouchDB + MongoDB</h2>
       <p>Run one CQL ID selection over three retained CouchDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real authenticated CouchDB service and its original records and revisions. Selection uses bounded native document reads and rejects unresolved revision conflicts. Canonical JSON is plaintext; general metadata/text queries, conditional writes, graph/history and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained CouchDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original native source and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCouchDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5127/" target="_blank" rel="noopener noreferrer">OPEN COUCHDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks CouchDB's original data and revisions, then stops both services. Original source, credentials and receipts remain.</p>
@@ -1122,11 +1244,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>34 · Couchbase + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Couchbase records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real local Couchbase Community 8.0.2 service and parameterized native SQL++ reads. Original JSON and exact unsigned version tokens are checked through restart and federation. Canonical JSON is plaintext; hosted Capella, mobile sync, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Couchbase demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original cluster, bucket, records and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCouchbaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5128/" target="_blank" rel="noopener noreferrer">OPEN COUCHBASE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Couchbase JSON and version tokens, then stops both services. Original data, credentials and receipts remain.</p>
@@ -1135,11 +1252,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>35 · ClickHouse + MongoDB</h2>
       <p>Run one CQL ID selection over three retained ClickHouse records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real local ClickHouse 26.8.36.3 service over authenticated HTTPS with its original private CA. Parameterized native FINAL queries resolve stored versions before returning rows. Canonical JSON is plaintext; concurrent-write version ties, conditional writes, history, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained ClickHouse demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original server, rows and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicClickHouseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5129/" target="_blank" rel="noopener noreferrer">OPEN CLICKHOUSE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original ClickHouse JSON and versions, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1148,11 +1260,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>36 · InfluxDB 2.x Flux + MongoDB</h2>
       <p>Run one CQL ID selection over three logical InfluxDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. “Future Espresso” demonstrates a retained future-dated latest point.</p>
       <p class="note">This uses real InfluxDB OSS 2.7.12 over authenticated HTTPS with its original private CA and six retained points. Flux selects latest heads and rejects ambiguous ties; the separate tied-head control is outside the normal presets. Canonical JSON is plaintext; InfluxDB 3, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained InfluxDB Flux demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original organization, infinite-retention bucket, points and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicInfluxDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5130/" target="_blank" rel="noopener noreferrer">OPEN INFLUXDB FLUX + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original points, then stops both services using InfluxDB's graceful signal. Original data, certificates, credentials and receipts remain.</p>
@@ -1161,11 +1268,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>37 · Qdrant + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Qdrant points and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses real standalone Qdrant 1.16.3 over authenticated HTTPS with its original private CA. The query retrieves admitted IDs and payloads without returning vectors. Original payloads, placeholder zero vectors and collection configuration are checked through restart and federation. Semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Qdrant demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original native peer, points and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicQdrantLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5131/" target="_blank" rel="noopener noreferrer">OPEN QDRANT + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Qdrant points and vectors, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1174,11 +1276,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>38 · Weaviate + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Weaviate objects and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses real Weaviate 1.39.8 and its configured C# gRPC client over authenticated TLS. GraphQL is disabled in this demo service. Original object JSON, timestamps and schema are checked through restart and federation. Vectorization is disabled; semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Weaviate demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original node, objects, private CA and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicWeaviateLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5132/" target="_blank" rel="noopener noreferrer">OPEN WEAVIATE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Weaviate objects, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1187,11 +1284,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>39 · Chroma + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Chroma documents and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, preserving provider labels.</p>
       <p class="note">This uses the real, retained Chroma 1.5.9 local service and its native multi-ID query. Original collection identities, schema and documents are checked through restart and federation. This fixture is loopback-only and uses plaintext without authentication. Semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Chroma demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original collections and documents, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicChromaLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5133/" target="_blank" rel="noopener noreferrer">OPEN CHROMA + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Chroma documents, then stops both services. Original data, schema and receipts remain.</p>
@@ -1203,7 +1295,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run the command below. It reuses the retained native records and admitted Mongo environment. Use the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMeilisearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5135/" target="_blank" rel="noopener noreferrer">OPEN LOCAL MEILISEARCH + MONGO QUERY ↗</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/MEILISEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
@@ -1217,7 +1308,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the retained Solr records and admitted Mongo environment. See the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSolrMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5136/" target="_blank" rel="noopener noreferrer">OPEN LOCAL SOLR + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/SOLR_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1231,7 +1321,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the original ArcadeDB records and admitted Mongo environment. See the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicArcadeDBMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5137/" target="_blank" rel="noopener noreferrer">OPEN LOCAL ARCADEDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/ARCADEDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1245,7 +1334,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the four original canonical Holons and admitted Mongo environment. See the guide for prerequisites and disk capacity notes; missing or changed sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicOpenSearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5138/" target="_blank" rel="noopener noreferrer">OPEN LOCAL OPENSEARCH + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/OPENSEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1259,7 +1347,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained QuestDB symbol demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained symbol source and admitted Mongo environment. Missing or changed source identity, configuration or runtime stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicQuestDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5134/" target="_blank" rel="noopener noreferrer">OPEN LOCAL QUESTDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/QUESTDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.QuestDBOASIS.IntegrationTests/QuestDbBrowserNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1273,7 +1360,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Elasticsearch demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed source identity, configuration or runtime stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicElasticsearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5139/" target="_blank" rel="noopener noreferrer">OPEN LOCAL ELASTICSEARCH + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e3b9b973422e26ebf806d592ed5295d9af54763/Docs/Devs/ELASTICSEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e3b9b973422e26ebf806d592ed5295d9af54763/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.ElasticsearchOASIS.IntegrationTests/ElasticsearchMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1287,7 +1373,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained SurrealDB Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained authenticated source and admitted Mongo environment. Missing runtime, reader or unfinished source admission stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSurrealDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5140/" target="_blank" rel="noopener noreferrer">OPEN LOCAL SURREALDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Docs/Devs/SURREALDB_CQL_WINDOWS_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.SurrealDBOASIS.IntegrationTests/SurrealDbWindowsMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1303,7 +1388,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained PouchDB Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed runtime, source, revisions or unfinished fixture admission stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPouchDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5141/" target="_blank" rel="noopener noreferrer">OPEN LOCAL POUCHDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Docs/Devs/POUCHDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.PouchDBOASIS.IntegrationTests/PouchDbMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1317,7 +1401,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained MinIO Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed runtime, source, credentials, object hashes or ETags stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMinioMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5142/" target="_blank" rel="noopener noreferrer">OPEN LOCAL MINIO + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2d55029988e65c61ab7f318c1a36aaabfb6025b4/Docs/Devs/MINIO_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2d55029988e65c61ab7f318c1a36aaabfb6025b4/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.MinIOOASIS.IntegrationTests/MinioMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1525,7 +1608,7 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
     <div class="card" id="cql-dapr-catalogue">
       <h2>77 &middot; Dapr stored records + MongoDB</h2>
-      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. Browser interaction verification remains open.</p>
+      <p class="note">Live HTTP verification passed: native queries return three records or a two-record subset, and MongoDB federation returns five or four rows. Repeat preparation reuses both private snapshots. The public browser presets returned three or two rows. The original owner's private paired browser presets still need verification.</p>
       <p>Select <strong>DaprOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
       <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. The provider column distinguishes public Dapr records from your private MongoDB snapshots.</p>
       <p>Query the sandbox's enrolled Dapr state records. The verified flow preserves source values and checks snapshot privacy and SQLite/Neo4j replicas. Broader ORM operations remain on the roadmap.</p>
@@ -1563,6 +1646,46 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively. The provider column distinguishes public configuration from your private snapshots.</p>
       <p>Inspect each network name, network ID and the Polygon block reported for that observation. Public rows can advance to newer blocks; your prepared snapshots retain their first observation. Personal verification and pass issuance remain separate features.</p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/843620f4978e1a8854db7b1809bb06508def43e3/Docs/WIP/COSMIC%20ORM/CIVIC_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/88c378c1e08ee270365b760c9d3abc29b629a0f4/Providers/Network/NextGenSoftware.OASIS.API.Providers.CivicOASIS/CivicNetworkQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-maplibre-catalogue">
+      <h2>82 &middot; MapLibre public styles + MongoDB</h2>
+      <p class="note">Explore three complete public map style documents or a two-style subset. Paired queries combine those records with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>MapLibreOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each style name, source count, layer count and complete compact style JSON. The original response hash and byte count describe the fetched document; the compact JSON has its own hash. Your snapshots retain their first observation. Map rendering and tile downloads are separate features.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/39fc64ba7/Docs/WIP/COSMIC%20ORM/MAPLIBRE_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/23532a6fc9146d5535152c182e61ec21d8889d6e/Providers/Maps/NextGenSoftware.OASIS.API.Providers.MapLibreOASIS/MapLibreStyleQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-the-sandbox-catalogue">
+      <h2>83 &middot; The Sandbox token contracts + MongoDB</h2>
+      <p class="note">Explore public LAND, SAND and ASSET contract metadata on Polygon, or a two-contract subset. Paired queries combine these observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>TheSandboxOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries return five and four rows respectively.</p>
+      <p>Inspect each contract address, native token name and symbol, reported Polygon block and observed contract-code hash. Your snapshots retain their first observation as public blocks advance. LAND holdings, transfers and game assets have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e263340738adc83bb882f64dab7dcc5132318654/Docs/WIP/COSMIC%20ORM/THE_SANDBOX_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e6263111241a01a5fd2d1649ec0ea2d3afeaf41a/Providers/Maps/NextGenSoftware.OASIS.API.Providers.TheSandboxOASIS/SandboxContractQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-polygon-id-catalogue">
+      <h2>84 &middot; Polygon ID public schemas + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three complete published credential schemas or a two-schema subset. Paired queries combine these documents with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>PolygonIDOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each schema key, full JSON document, pinned source revision and original content hash. Schema references are preserved in the document. Credential issuance and proof verification have separate interfaces.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/POLYGON_ID_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/35808de0d67544c6cd8a0006c2678a20bd24961b/Providers/Identity/NextGenSoftware.OASIS.API.Providers.PolygonIDOASIS/PolygonIdSchemaQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-seeds-catalogue">
+      <h2>85 &middot; SEEDS public settings + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore the current high, medium and low unity thresholds on Telos, or a two-setting subset. Paired queries combine those observations with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>SEEDSOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect each setting, description and exact integer value. These are current table observations; the reported chain header does not pin the table data to that block. Your snapshots retain their first observation as public settings change.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/SEEDS_PUBLIC_SOURCE_STATUS.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/61481c28bc0d54c8662b3d2d975dd78dbb63381b/Providers/Other/NextGenSoftware.OASIS.API.Providers.SEEDSOASIS/SeedsSettingsQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
+    </div>
+    <div class="card" id="cql-openvino-catalogue">
+      <h2>86 &middot; OpenVINO model metadata + MongoDB</h2>
+      <p class="note">Live rollout pending. Explore three versions of one owned teaching model or a two-version subset. Paired queries combine their native metadata with your private MongoDB snapshots.</p>
+      <p>When server discovery marks it available, select <strong>IntelOpenVINOOASIS</strong> in the <a href="#panel-cql">hosted CQL playground</a> and run a public preset.</p>
+      <p>Choose a paired preset, select <strong>Prepare my Mongo records</strong>, then select <strong>Run query</strong>. Full and subset queries are expected to return five and four rows respectively.</p>
+      <p>Inspect the requested model version, complete advertised version list and native input/output tensor details. The same tiny add-one model is served at all three versions. CQL reads metadata; running inference and using trained models are separate operations.</p>
+      <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/afc28859741df37772fb1a83083f76479eb9e91f/Docs/WIP/COSMIC%20ORM/OPENVINO_CQL_MVP.md" target="_blank" rel="noopener noreferrer">Query scope and setup</a> &middot; <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/9c20d06ad6326d31e564c3c150b72a68e25da070/Providers/Other/NextGenSoftware.OASIS.API.Providers.IntelOpenVINOOASIS/OpenVinoVersionQuerySource.cs" target="_blank" rel="noopener noreferrer">C# query source</a></p>
     </div>
   </section>
   <section class="panel" id="panel-failover">
@@ -1648,10 +1771,20 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <div id="im-previews"></div>
     </div>
     <div class="card">
-      <h2>3 · Import it, then import it again</h2>
-      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Imported holons are ordinary OASIS data: they replicate to every provider.</p>
-      <div class="row"><button id="im-import" disabled>IMPORT SOURCE</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
-      <p class="note" id="im-import-note"></p>
+      <h2>3 · Full import or virtual mapping</h2>
+      <p class="note" style="margin:0 0 12px">Each holon's id comes from where the record lives, so a second import updates the same holons instead of creating duplicates. Full import saves the selected rows as Holons. HyperDrive can replicate them to eligible providers.</p>
+      <div class="row"><button id="im-import" disabled>FULL IMPORT</button><button id="im-verify" class="ghost" disabled>CHECK FIRST HOLON ON EVERY PROVIDER</button></div>
+        <details id="im-virtual-panel" hidden>
+          <summary>Virtual mapping</summary>
+          <p class="note">Use a sandbox MongoDB, SQLite, or Neo4j fixture, or a saved MongoDB, Neo4j or Azure Cosmos DB connection. Cosmos DB containers must use /id as their only partition key for virtual mapping. For customers or loyalty members enter name=name, tier=tier. For suppliers enter name=name, country=country.</p>
+          <div class="row">
+            <input id="im-virtual-fields" placeholder="CQL field=source field, for example Name=label"
+              aria-label="Virtual metadata field bindings" style="flex:1 1 320px">
+            <button id="im-save-virtual" disabled>CREATE VIRTUAL MAPPING</button>
+          </div>
+          <p class="note" id="im-virtual-note" role="status"></p>
+        </details>
+        <p class="note" id="im-import-note"></p>
       <div class="table-wrap" id="im-report"></div>
       <div class="table-wrap" id="im-copies"></div>
     </div>
@@ -1664,7 +1797,22 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
     </div>
   </section>
   <section class="panel" id="panel-ask">
-    <div class="soon-box"><b>FLAGSHIP · COMING LATER</b><p>Ask a question in plain English across your Web2, Web3 and app data. AI writes a read-only, permission-checked CQL plan, WEB4 runs it across providers, and an Explain panel shows exactly where every answer came from.</p></div>
+    <div class="card">
+      <h2>Ask Your Data</h2>
+      <p>WEB6 drafts a read-only query from your question. Review it before running it on WEB4 Development.</p>
+      <p>To include a saved virtual mapping, select it in the CQL Playground first. Public examples clear that selection.</p>
+    <label for="ask-question">Question</label>
+      <textarea id="ask-question" rows="4" maxlength="1000" placeholder="Show five active Neo4j records with a descendant named Coffee or Tea"></textarea>
+      <div class="ask-controls">
+      <label for="ask-example-provider">Public example provider</label>
+      <select id="ask-example-provider"><option value="">Any ready provider</option></select>
+      <button type="button" id="ask-use-example">Use a public example</button>
+      <button type="button" id="ask-generate">Draft query</button>
+      </div>
+      <p id="ask-status" role="status" aria-live="polite"></p>
+      <pre id="ask-draft"></pre>
+      <button type="button" id="ask-preview" disabled>Open in CQL Playground</button>
+    </div>
   </section>
 </main>
 
@@ -1672,16 +1820,21 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
   OASIS WEB4 Sandbox · <a href="index.html">WEB4 home</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/master/Docs/WEB4_One_World_Of_Data.md" target="_blank" rel="noopener">WEB4: One World of Data</a>
 </footer>
 
-<script src="web4-session.js?v=session-renewal-lifetime-v2"></script>
+<script src="web4-session.js?v=session-renewal-status-v3-virtual-mapping-v1"></script>
 <script src="web4-tabs.js?v=provider-card-links-v1"></script>
 <script>
 const $ = id => document.getElementById(id);
 let jwt = null;
+let demoSessionIdentity = null;
 let timer = null;
 
 function esc(s){return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function base(){return $('env').value}
-const session = Web4Session.create({ getBase: base, onToken: token => { jwt = token; } });
+const session = Web4Session.create({
+  getBase: base,
+  onToken: token => { jwt = token; },
+  onRenewalFailure: error => setNote($('auth-note'), error.message, 'err')
+});
 function setNote(el, msg, kind){el.textContent = msg; el.className = 'note' + (kind ? ' ' + kind : '')}
 
 // Tabs
@@ -1706,6 +1859,7 @@ async function signOut(){
   try { await session.signOut(); }
   catch { confirmed = false; }
   stopAuto(); $('auto').checked = false;
+  window.cqlAsk?.resetSession();
   window.cqlPlayground?.syncAuth();
   $('signout-btn').hidden = true; $('refresh-btn').disabled = true;
   setNote($('auth-note'), confirmed ? 'Signed out.' : 'Signed out here. The server could not confirm sign-out.', confirmed ? undefined : 'err');
@@ -1718,6 +1872,7 @@ const SANDBOX = 'https://dev.api.web4.oasisomniverse.one';
 const PROVIDERS = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
 function isSandbox(){ return base() === SANDBOX; }
 function onSignedIn(name){
+  window.cqlAsk?.resetSession();
   window.cqlPlayground?.syncAuth();
   setNote($('auth-note'), `Signed in as ${name}.`, 'ok');
   $('signout-btn').hidden = false; $('refresh-btn').disabled = false;
@@ -1735,6 +1890,7 @@ async function startDemo(){
   setNote($('auth-note'), 'Creating your demo avatar…');
   try {
     const avatar = await session.startDemo();
+    demoSessionIdentity = session.identity();
     onSignedIn(`${avatar.username} (demo avatar)`);
   } catch (e) {
     setNote($('auth-note'), 'Could not start a demo session: ' + e.message, 'err');
@@ -1742,7 +1898,7 @@ async function startDemo(){
 }
 $('demo-btn').addEventListener('click', startDemo);
 
-async function call(method, path, body){
+async function call(method, path, body, options = {}){
   const context = await session.accessContext();
   const { base: origin, token } = context;
   // One click is one logical request. Retain its identity on an uncertain outcome;
@@ -1758,7 +1914,9 @@ async function call(method, path, body){
     throw new Error(`${error.message}. Request key: ${key}. Outcome unknown; do not repeat a write.`);
   }
   const operation = response.headers.get('X-OASIS-Operation-Id');
-  const data = await response.json().catch(() => null);
+  const data = options.preserveMetadata
+    ? CqlLosslessMetadata.parse(await response.text())
+    : await response.json().catch(() => null);
   session.assertContext(context, key, operation || data?.operationId);
   // Data endpoints wrap OASISResult; sandbox endpoints return it directly.
   const r = data && data.result && typeof data.result === 'object' && 'isError' in data.result ? data.result : data;
@@ -1857,6 +2015,7 @@ $('fo-load').addEventListener('click', async () => {
 // Import Your Data · native records → holons (MongoDB reader, shared OASIS mapping)
 const native = () => $('im-provider').value;
 let firstImportedId = null;
+let virtualListedContext = null;
 let sqliteUpload = null; // {fileName, fileBase64} once a SQLite file is chosen
 
 const importMode = () => document.querySelector('input[name="im-mode"]:checked').value;
@@ -1930,6 +2089,22 @@ $('im-delete-conn').addEventListener('click', () => busy($('im-delete-conn'), $(
   await refreshSaved(); setNote($('im-saved-note'), `Deleted '${name}'.`, 'ok');
 }));
 // Shows only the fields the chosen database type needs, and enables the controls that can work right now.
+function virtualConnectionName(){
+  const provider = native();
+  if (importMode() === 'demo')
+    return isSandbox() && ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'].includes(provider) ? 'oasis-sandbox-native-fixture' : null;
+  return ['MongoDBOASIS', 'Neo4jOASIS', 'AzureCosmosDBOASIS'].includes(provider) ? savedName() : null;
+}
+function virtualSourceContext(){
+  const connectionName = virtualConnectionName();
+  return jwt && connectionName
+    ? JSON.stringify([session.identity(), importMode(), native(), connectionName]) : null;
+}
+function syncVirtualControls(){
+  const context = virtualSourceContext();
+  $('im-virtual-panel').hidden = !context;
+  $('im-save-virtual').disabled = !context || context !== virtualListedContext;
+}
 function syncImportControls(){
   const own = importMode() === 'own', select = $('im-provider');
   [...select.options].forEach(o => { o.hidden = o.disabled = !own && !DEMO_TYPES.includes(o.value); });
@@ -1948,6 +2123,7 @@ function syncImportControls(){
   $('im-saved-row').hidden = !own;
   $('im-save-conn').disabled = !(jwt && own) || saved;
   $('im-delete-conn').disabled = !saved;
+  syncVirtualControls();
   $('im-seed').disabled = !(jwt && isSandbox());
   $('im-sources').disabled = !(jwt && (own || isSandbox()));
 }
@@ -1987,11 +2163,16 @@ $('im-seed').addEventListener('click', () => busy($('im-seed'), $('im-seed-note'
   await loadSources();
 }));
 async function loadSources(){
+  const virtualContext = virtualSourceContext();
+  virtualListedContext = null;
+  syncVirtualControls();
   const conn = importMode() === 'own';
   const r = conn ? await call('POST', `native-data/${native()}/sources`, connRef()) : await call('GET', `native-data/${native()}/sources`);
   const sources = r.result || [];
   $('im-source').innerHTML = sources.length ? sources.map(s => `<option value="${esc(s.name)}">${esc(s.name)} (${esc(s.estimatedRecordCount ?? '?')} records)</option>`).join('') : '<option>No sources yet</option>';
   const ok = sources.length > 0;
+  virtualListedContext = ok ? virtualContext : null;
+  syncVirtualControls();
   ['im-source','im-preview','im-import','im-save-mapping'].forEach(id => $(id).disabled = !ok);
   setNote($('im-preview-note'), ok ? `${sources.length} sources found${conn ? ' in your database' : ' in the shop database'}.` : (conn ? 'Connected, but no sources were found.' : 'Create the demo shop data first.'), ok ? 'ok' : '');
 }
@@ -2009,6 +2190,46 @@ $('im-preview').addEventListener('click', () => busy($('im-preview'), $('im-prev
       <div><div class="list-title">OASIS HOLON · ${esc(p.holonType)}</div>${p.error ? `<p class="note err">${esc(p.error)}</p>` :
         `<pre>${esc(JSON.stringify({id: p.holonId, name: p.holonName, description: p.holonDescription, metaData: p.holonMetaData}, null, 2))}</pre>`}</div></div>`).join('');
 }));
+$('im-save-virtual').addEventListener('click', async () => {
+  const context = virtualSourceContext();
+  if (!context || context !== virtualListedContext) return;
+  await busy($('im-save-virtual'), $('im-virtual-note'), 'Creating mapping…', async () => {
+    const sourceName = $('im-source').value;
+    const fields = Object.create(null);
+    const nativeFields = new Set();
+    for (const pair of $('im-virtual-fields').value.split(',')) {
+      const [alias, field, unexpected] = pair.split('=').map(value => value.trim());
+      if (!alias || alias.length > 64 || /[\u0000-\u001f\u007f-\u009f]/.test(alias) || /^oasis\.(native|virtual)\./i.test(alias) ||
+          !field || !/^[A-Za-z_][A-Za-z0-9_]{0,127}$/.test(field) || field === '_id' ||
+          unexpected !== undefined || Object.hasOwn(fields, alias) || nativeFields.has(field))
+        throw new Error('Enter unique bindings in the form CQL field=source field.');
+      fields[alias] = field;
+      nativeFields.add(field);
+    }
+    if (nativeFields.size > 32) throw new Error('Use at most 32 field bindings.');
+    const id = crypto.randomUUID(), operationId = crypto.randomUUID();
+    const prepared = await call('POST', 'native-data/' + native() + '/virtual-mappings/prepare',
+      {id, sourceName, connectionName: virtualConnectionName(), fields});
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('The active source changed. List sources again. No save was sent.');
+    const ownerId = prepared.result?.createdByAvatarId;
+    if (prepared.result?.id?.toLowerCase() !== id || prepared.result.isPublic !== false ||
+        typeof ownerId !== 'string' || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(ownerId) ||
+        /^0{8}(?:-0{4}){3}-0{12}$/.test(ownerId))
+      throw new Error('WEB4 did not prepare the expected private mapping.');
+    const saved = await call('POST', 'data/save-holon', {holon: prepared.result, operationId,
+      expectedRevisions: {[id]: null}, saveChildren: false, recursive: false});
+    if (saved?.isSaved !== true || saved.result?.id?.toLowerCase() !== id ||
+        saved.result?.isPublic !== false || saved.result?.createdByAvatarId?.toLowerCase() !== ownerId.toLowerCase())
+      throw new Error('Mapping save acknowledgement is incomplete. Retain request key ' +
+        operationId + ' for reconciliation; do not repeat the save.');
+    if (virtualSourceContext() !== context || $('im-source').value !== sourceName)
+      throw new Error('Mapping ' + id + ' was saved for the original source. The selection changed, so it was not selected for CQL.');
+    $('cql-virtual-mapping').value = id;
+    setNote($('im-virtual-note'), `Mapping ${id} saved. The source records stay in their database.`, 'ok');
+  });
+  syncVirtualControls();
+});
 $('im-import').addEventListener('click', () => busy($('im-import'), $('im-import-note'), 'Importing and replicating…', async () => {
   const source = $('im-source').value;
   const t0 = performance.now();
@@ -2088,7 +2309,10 @@ renderOrm();
 
 $('signout-btn').addEventListener('click', signOut);
 $('auth-pass').addEventListener('keydown', e => { if (e.key === 'Enter') signIn(); });
-$('env').addEventListener('change', () => { if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); } });
+$('env').addEventListener('change', () => {
+  window.cqlAsk?.resetSession();
+  if (jwt) { signOut(); setNote($('auth-note'), 'Environment changed: sign in again.'); }
+});
 
 async function api(path){
   const context = await session.accessContext();
@@ -2156,10 +2380,54 @@ function renderMetrics(metrics, connections, best){
     '</tbody></table>';
 }
 </script>
-<script src="cql-demo-preparation.js?v=cql-azure-blob-v1"></script>
-<script src="cql-playground.js?v=cql-preset-labels-v1"></script>
+<script src="cql-demo-preparation.js?v=20261125-sample-records-v1"></script>
+<script src="cql-text.js?v=20261123-set-columnar-render-v1"></script>
+<script src="lossless-metadata.js?v=exact-numeric-snapshot-v1"></script>
+<script src="cql-playground.js?v=20261125-sample-records-v1"></script>
+<script src="local-demo-links.js?v=20261125-public-hide-v1"></script>
+<script src="cql-ask.js?v=20261123-set-columnar-render-v1"></script>
 <script>
-window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox });
+window.cqlPlayground = CqlPlayground.init({ getToken: () => jwt, getBase: () => base(), getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken, request: call, canPrepare: isSandbox,
+  onCatalogueChanged: () => window.cqlAsk?.refreshExampleProviders() });
+  $('cql-list-mappings').addEventListener('click', () =>
+    busy($('cql-list-mappings'), $('cql-mapping-note'), 'Loading mappings…', async () => {
+      const actor = session.avatarId();
+      if (!actor) throw new Error('Sign in to list your mappings.');
+      const response = await call('POST', 'data/query-cql/projection', {
+        filters: [{metadataPath:['oasis.virtual.mapping'], scalar:'Boolean', operator:'Equal', value:true},
+          {field:'IsActive', scalar:'Boolean', operator:'Equal', value:true}],
+        orderBy:'Id', take:100,
+        columns:[{field:'Id', alias:'Id'}, {field:'Name', alias:'Source'}, {field:'CreatedByAvatarId', alias:'Owner'}]
+      });
+      const choices = $('cql-saved-mapping');
+      choices.replaceChildren(new Option('Choose a saved mapping', ''));
+      for (const [id, source, owner] of response.result.rows) {
+        if (String(owner).toLowerCase() === actor.toLowerCase())
+          choices.add(new Option(source, id));
+      }
+      choices.hidden = choices.options.length === 1;
+      setNote($('cql-mapping-note'), choices.hidden ? 'No mappings found for this avatar.' :
+        (response.result.rows.length === 100 ? 'Showing mappings from the first 100 matching results.' : 'Choose a mapping.'), 'ok');
+    }));
+  $('cql-saved-mapping').addEventListener('change', () => {
+    $('cql-virtual-mapping').value = $('cql-saved-mapping').value;
+  });
+  function loadVirtualExample(sql) {
+    try {
+      window.cqlPlayground.loadText(sql);
+      $('cql-text').value = sql;
+    } catch (error) {
+      setNote($('cql-note'), error.message, 'err');
+    }
+  }
+  $('cql-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Label FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
+  $('cql-sqlite-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Supplier FROM MongoDBOASIS WHERE metadata.country = 'United Kingdom' ORDER BY Id LIMIT 10"));
+  $('cql-neo-virtual-example').addEventListener('click', () => loadVirtualExample(
+    "SELECT Id, CAST(metadata.name AS STRING) AS Member FROM MongoDBOASIS WHERE metadata.tier = 'gold' ORDER BY Id LIMIT 10"));
+window.cqlAsk = CqlAsk.init({ playground: window.cqlPlayground, isSandbox, getIdentity: session.identity, ensureAccessToken: session.ensureAccessToken,
+  isDemoSession: () => demoSessionIdentity !== null && demoSessionIdentity === session.identity() });
 </script>
 </body>
 </html>

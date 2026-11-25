@@ -15,12 +15,13 @@ function response(avatar, direct = false, status = 200) {
 }
 function fixture() {
   let time = Date.parse('2026-11-01T12:00:00Z'), base = origin;
-  const calls = [], published = [];
+  const calls = [], published = [], renewalFailures = [];
   let handle = async url => response(avatar(owner, time), url.endsWith('/sandbox/session'));
   const session = create({ getBase: () => base, now: () => time,
     fetch: async (url, options) => { calls.push({ url, options }); return handle(url, options); },
-    onToken: value => published.push(value) });
-  return { session, calls, published, advance: ms => { time += ms; }, setBase: value => { base = value; },
+    onToken: value => published.push(value),
+    onRenewalFailure: error => renewalFailures.push(error) });
+  return { session, calls, published, renewalFailures, advance: ms => { time += ms; }, setBase: value => { base = value; },
     handle: value => { handle = value; }, fresh: id => avatar(id ?? owner, time) };
 }
 async function tick() { await new Promise(resolve => setImmediate(resolve)); }
@@ -103,6 +104,8 @@ test('unknown refresh outcome is not retried and never creates another avatar', 
   await assert.rejects(f.session.ensureAccessToken(), /could not be verified/);
   await assert.rejects(f.session.ensureAccessToken(), /could not be verified/);
   assert.equal(f.calls.length, 2); assert.equal(f.calls.filter(call => call.url.endsWith('/sandbox/session')).length, 1);
+  assert.equal(f.renewalFailures.length, 1);
+  assert.match(f.renewalFailures[0].message, /Sign in again/);
 });
 test('renewal cannot switch the authenticated avatar', async () => {
   const f = fixture(); await f.session.startDemo(); const identity = f.session.identity(); f.advance(840000);
@@ -117,6 +120,7 @@ test('late rotation cannot revive a cleared session', async () => {
   const pending = f.session.ensureAccessToken(); await tick(); f.session.clear(); release();
   await assert.rejects(pending); assert.equal(f.session.token(), null); assert.equal(f.session.identity(), null);
   assert.equal(f.published.at(-1), null);
+  assert.deepEqual(f.renewalFailures, []);
 });
 test('environment changes cannot receive the former environment bearer', async () => {
   const f = fixture(); await f.session.startDemo(); f.setBase('https://another.example');

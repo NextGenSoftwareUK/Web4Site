@@ -16,7 +16,7 @@
   }
 
   function create({ getBase, fetch: send = root.fetch.bind(root), now = () => Date.now(), onToken = () => {},
-    renewalWindowMs = 60000, timeoutMs = 15000 }) {
+    renewalWindowMs = 60000, timeoutMs = 15000, onRenewalFailure = () => {} }) {
     let current = null, generation = 0, pending = null, renewalFailure = null;
     const same = snapshot => current && snapshot.generation === current.generation &&
       snapshot.base === getBase() && snapshot.avatarId === current.avatarId;
@@ -65,7 +65,10 @@
         return current.token;
       } catch (error) {
         const failure = Error('Session renewal could not be verified. Sign in again; the original request was not sent.', { cause: error });
-        if (same(snapshot)) renewalFailure = failure;
+        if (same(snapshot)) {
+          renewalFailure = failure;
+          onRenewalFailure(failure);
+        }
         throw failure;
       }
     }
@@ -120,6 +123,7 @@
     return {
       token: () => current?.token ?? null,
       identity: () => current ? `${current.base}:${current.avatarId}:${current.generation}` : null,
+      avatarId: () => current?.avatarId ?? null,
       signIn: credentials => authenticate('avatar/authenticate', credentials),
       startDemo: () => authenticate('sandbox/session', {}),
       ensureAccessToken, accessContext, assertContext, signOut, clear
