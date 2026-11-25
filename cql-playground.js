@@ -181,7 +181,11 @@
 
   function profilePreset(source, id) {
     if (!source?.available) throw new Error('The hosted source is unavailable.');
-    if (!id.startsWith('host:')) return preset(id, source.provider);
+    if (!id.startsWith('host:')) {
+      const builtIn = preset(id, source.provider);
+      if (root.CqlDemoPreparation?.sampleRecipe) builtIn.preparation = root.CqlDemoPreparation.sampleRecipe(id, source.provider);
+      return builtIn;
+    }
     const example = source.examples.find(row => 'host:' + row.id === id);
     if (!example) throw new Error('Choose a configured hosted example.');
     if (example.available === false || example.operation === 'Federation' && !source.federationAvailable)
@@ -223,6 +227,7 @@
       $('cql-reset').disabled = busy || !ready || discovery !== null;
       $('cql-refresh').disabled = busy || discovery !== null || !getToken();
       $('cql-prepare').hidden = !preparation;
+      $('cql-prepare').textContent = preparation?.kind === 'samples' ? 'PREPARE MY SAMPLE RECORDS' : 'PREPARE MY MONGO RECORDS';
       $('cql-prepare-panel').hidden = !preparation;
       $('cql-prepare').disabled = busy || discovery !== null || !getToken() || !preparation || !canPrepare() || !request;
       $('cql-request').readOnly = busy || !ready;
@@ -485,18 +490,19 @@
       const isCurrent = () => current === generation && identity === getIdentity() && base === getBase();
       preparing = true; controls();
       $('cql-operation').textContent = '';
-      note('Preparing private Mongo snapshots from the configured example…');
+      const samples = preparation.kind === 'samples';
+      note(samples ? 'Saving your private sample records (Espresso and Green Tea)…' : 'Preparing private Mongo snapshots from the configured example…');
       try {
         await ensureAccessToken();
         if (!isCurrent()) return;
-        const result = await root.CqlDemoPreparation.prepare({ recipe: preparation,
+        const result = await root.CqlDemoPreparation[samples ? 'prepareSamples' : 'prepare']({ recipe: preparation,
           request: (path, body) => request('POST', path, body), storage: root.localStorage, base,
           isCurrent, randomUUID: () => crypto.randomUUID() });
         if (isCurrent()) {
           if (result.pairedRequest) $('cql-request').value = JSON.stringify(result.pairedRequest, null, 2);
           note(`${result.saved} saved · ${result.existing} already prepared. ` +
             (result.pairedRequest ? 'The query now includes your private snapshot IDs. ' : '') +
-            'Run the federation query to inspect both providers.');
+            (samples ? 'Run the query to see your sample records.' : 'Run the federation query to inspect both providers.'));
           $('cql-operation').textContent = result.keys.length ? 'Acknowledged save request keys: ' + result.keys.join(', ') : 'Existing records were left unchanged.';
         }
       } catch (error) { if (isCurrent()) note(error.message, true); }

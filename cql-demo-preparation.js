@@ -142,7 +142,83 @@
     return result;
   }
 
-  const api = { recipe, prepare, composeIdPair };
+  // Built-in store presets query the visitor's own holons. A new demo avatar owns
+  // none, so these samples give every built-in preset real rows: Espresso matches
+  // name, description and the coffee category; Green Tea makes AND/OR return two.
+  const samplePresets = ['browse', 'name', 'description', 'metadata', 'either', 'count', 'federation'];
+  const sampleStores = ['MongoDBOASIS', 'SQLLiteDBOASIS', 'Neo4jOASIS'];
+  const samples = [
+    { key: 'espresso', name: 'Espresso', description: 'A short, strong coffee.', category: 'coffee' },
+    { key: 'green-tea', name: 'Green Tea', description: 'A light loose-leaf tea.', category: 'tea' }
+  ];
+
+  function sampleRecipe(presetName, provider) {
+    if (!samplePresets.includes(presetName)) return null;
+    if (presetName === 'federation') return { kind: 'samples', providers: [...sampleStores] };
+    return sampleStores.includes(provider) ? { kind: 'samples', providers: [provider] } : null;
+  }
+
+  async function prepareSamples({ recipe: supplied, request, storage, base, isCurrent, randomUUID }) {
+    const plan = clone(supplied);
+    if (plan?.kind !== 'samples' || !Array.isArray(plan.providers) || !plan.providers.length ||
+        plan.providers.some(provider => !sampleStores.includes(provider)) ||
+        !storage || typeof storage.key !== 'function' || typeof storage.getItem !== 'function' ||
+        typeof storage.setItem !== 'function' || typeof storage.removeItem !== 'function')
+      throw new Error('Safe preparation storage is unavailable. No save was sent.');
+    const current = () => { if (!isCurrent()) throw new Error('Session changed. No further preparation requests were sent.'); };
+    const call = async (path, body) => { current(); const result = await request(path, body); current(); return result; };
+    const result = { saved: 0, existing: 0, keys: [] };
+    for (const provider of plan.providers) {
+      const mapped = await call('data/query-cql/demo-identities', { provider, keys: samples.map(sample => sample.key) });
+      const identity = mapped?.result;
+      if (!nonemptyGuid(identity?.ownerId) || identity.provider !== provider || identity.records?.length !== samples.length ||
+          new Set(identity.records.map(record => record.id)).size !== samples.length)
+        throw new Error('WEB4 did not acknowledge the sample identities. No save was sent.');
+      for (const record of identity.records) {
+        current();
+        const sample = samples.find(row => row.key === record.nativeKey);
+        if (!sample || !nonemptyGuid(record.id) || record.metadata?.['oasis.native.provider'] !== provider ||
+            record.metadata?.['oasis.native.source'] !== 'cosmic-cql-demo' || record.metadata?.['oasis.native.key'] !== sample.key)
+          throw new Error('WEB4 returned an invalid sample identity. No further saves were sent.');
+        const metadata = { ...record.metadata, category: sample.category, 'COSMIC.Demo.Dataset': dataset };
+        const loaded = await call('data/query-cql', { provider, orderBy: 'Id', take: 1, includeMetadata: true,
+          filters: [{ field: 'Id', scalar: 'Guid', operator: 'Equal', value: record.id }] });
+        const existing = loaded?.result?.rows;
+        if (!Array.isArray(existing) || existing.length > 1) throw new Error(`Invalid ${provider} lookup. No further saves were sent.`);
+        if (existing.length) {
+          const row = existing[0];
+          if (row.id !== record.id || row.createdByAvatarId !== identity.ownerId || row.name !== sample.name)
+            throw new Error(`An existing ${provider} record differs from the sample. It has been left untouched.`);
+          result.existing++;
+          continue;
+        }
+        const prefix = `oasis.cql.samples.v1:${base}:${identity.ownerId}:${provider}:${record.id}:`;
+        for (let index = 0; index < storage.length; index++)
+          if (storage.key(index)?.startsWith(prefix))
+            throw new Error('An earlier save requires reconciliation. Do not repeat it. ' + storage.key(index).slice(prefix.length));
+        const operation = randomUUID();
+        if (!nonemptyGuid(operation)) throw new Error('A valid save operation key is required.');
+        const journal = prefix + operation;
+        storage.setItem(journal, JSON.stringify({ ownerId: identity.ownerId, id: record.id, provider,
+          operationId: operation, createdUtc: new Date().toISOString() })); // No token or private payload.
+        // Replication stays off so each store holds exactly its own two samples.
+        const saved = await call('data/save-holon', { operationId: operation, providerType: provider,
+          expectedRevisions: { [record.id]: null }, saveChildren: false, autoFailOverMode: 'OFF', autoReplicationMode: 'OFF',
+          waitForAutoReplicationResult: false,
+          holon: { id: record.id, name: sample.name, description: sample.description,
+            isNewHolon: true, isPublic: false, isActive: true, metaData: metadata } });
+        if (saved?.isSaved !== true || saved.result?.id !== record.id || saved.result.createdByAvatarId !== identity.ownerId ||
+            saved.result.version !== 1)
+          throw new Error('Save acknowledgement is incomplete. Retain and reconcile request key ' + operation + '.');
+        storage.removeItem(journal);
+        result.saved++;
+        result.keys.push(operation);
+      }
+    }
+    return result;
+  }
+
+  const api = { recipe, prepare, composeIdPair, sampleRecipe, prepareSamples };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.CqlDemoPreparation = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
