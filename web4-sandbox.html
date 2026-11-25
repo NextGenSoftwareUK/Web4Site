@@ -462,11 +462,6 @@ ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
         <a id="cql-oracle-open" href="http://127.0.0.1:5090/?preset=name" target="_blank" rel="noopener noreferrer">OPEN LOCAL QUERY ↗</a>
       </div>
       <p id="cql-oracle-note" class="note" role="status" aria-live="polite"></p>
-      <details style="margin-top:16px">
-        <summary>Start the reusable local demo</summary>
-        <p class="note">From C:/Source/OASIS-cosmic, run this command first, then open a local example above. Stop the local demo with its stop button when finished.</p>
-        <pre style="margin-top:12px;line-height:1.8">pwsh -File Scripts/TestHosts/Run-ReusableOracleMongoTests.ps1 -Content -Serve -ArchiveCompletedDemo</pre>
-      </details>
     </div>
     <div class="card" id="cql-protocol-catalogue">
       <h2>5 · IPFS, SOLID and ActivityPub + MongoDB</h2>
@@ -475,18 +470,15 @@ ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
       <p class="note">These local demos support bounded native-key queries. General content searches and full query parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>IPFS + MongoDB · encrypted records selected by CID</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider IPFS -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected IPFS records plus two MongoDB records: five physical copies.</p>
       </details>
       <details style="margin-top:20px">
         <summary id="cql-solid-catalogue">SOLID + MongoDB · encrypted Pod records selected by resource key</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider SOLID -Serve -ArchiveCompletedDemo</pre>
         <p>Three selected Pod records plus two MongoDB records: five physical copies.</p>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Examples/CosmicCqlDemo/SolidPointWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# resource-selection example ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/Devs/SOLID_CQL_HOST_CONFIGURATION.md" target="_blank" rel="noopener noreferrer">HTTP example and host guide ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>ActivityPub + MongoDB · existing public Mastodon statuses</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-ReusableProtocolMongoTests.ps1 -Provider ActivityPub -Serve -ArchiveCompletedDemo</pre>
         <p>Three public statuses selected by status ID plus two MongoDB records: five physical copies. No posts or accounts are created.</p>
       </details>
       <p style="margin-top:24px">These local launcher commands use the <a href="https://github.com/NextGenSoftwareUK/OASIS/tree/237403a75b6983e013141cf7ba44bf66858abafd/Examples/CosmicCqlDemo" target="_blank" rel="noopener noreferrer">preserved local-demo source revision ↗</a> and require its configured native services. Run from the matching checkout. They share port5088, so start only one at a time. The hosted playground needs no local services.</p>
@@ -509,11 +501,6 @@ ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
       <h2>7 · AWS DynamoDB Local + MongoDB</h2>
       <p>Select records by ID through one CQL query and inspect copies from both providers. All returns five physical copies: three AWS records and two MongoDB records. The subset returns four: two from each provider.</p>
       <p class="note">This uses the AWSOASIS adapter against DynamoDB Local. Hosted AWS, general metadata/text filters and full query parity remain separate work. Reads do not claim a distributed snapshot. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained AWS + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run this command with the retained DynamoDB environment and seed configured. Preserve previous test reports before rerunning.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicAwsCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5096/" target="_blank" rel="noopener noreferrer">OPEN AWS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each returned copy.</p>
       <p class="note">Finish with the local page's stop button and wait for the runner to exit. The owned Mongo fixture is cleaned up; the reusable AWS seed and data remain.</p>
@@ -528,11 +515,6 @@ ORDER BY Units DESC, Original ASC LIMIT 10</code></pre>
       <h3>Owned-record demo · local chain + MongoDB</h3>
       <p>Query encrypted Ethereum records and MongoDB copies with one CQL ID filter. All returns five physical copies: Ethereum three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses the retained local EVM chain31338 and original storage contract. Hosted Ethereum, mainnet, finality guarantees and general metadata/text queries remain separate work. Reads preserve provider copies without claiming a distributed snapshot.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Ethereum + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below with the retained chain, seed and key configured. Preserve previous test reports before rerunning. No query transaction is submitted.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5097/" target="_blank" rel="noopener noreferrer">OPEN ETHEREUM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Your hosted sign-in is never forwarded.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It cleans the owned Mongo fixture and stops both services, preserving the reusable chain records.</p>
@@ -733,15 +715,12 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p class="note">These use retained contracts on local EVM chain31338. They demonstrate provider adapters, not hosted Polygon/Arbitrum networks, finality guarantees or general metadata/text querying. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>Polygon launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Polygon -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5098/" target="_blank" rel="noopener noreferrer">OPEN POLYGON + MONGO QUERY ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>Arbitrum launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicEthereumCqlNative.ps1 -Provider Arbitrum -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5099/" target="_blank" rel="noopener noreferrer">OPEN ARBITRUM + MONGO QUERY ↗</a></p>
       </details>
-      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained chain, seed and key configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. Only the owned Mongo fixture is removed; reusable chain records remain. Queries submit no transactions.</p>
     </div>
     <div class="card" id="cql-threefold-public-catalogue">
@@ -1051,11 +1030,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
 
       <p>Run one CQL ID filter over native Firestore documents and MongoDB copies. Full selection returns five physical copies: Google three and MongoDB two. The subset returns four: two from each provider.</p>
       <p class="note">This uses GoogleCloudOASIS against the retained Firestore emulator. Hosted Google Cloud, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Google + MongoDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below with the retained runtime, checkpoint and seed configured. Preserve previous test reports before rerunning.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirestoreCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5100/" target="_blank" rel="noopener noreferrer">OPEN GOOGLE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Inspect the provider beside each copy; reads do not claim a distributed snapshot.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. The owned Mongo fixture is removed and services stop; the original Firestore checkpoint remains reusable.</p>
@@ -1066,31 +1040,22 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p class="note">These use retained local nodes and original contract records. Cosmos blockchain is distinct from Azure Cosmos DB. Hosted networks, mainnet, finality guarantees, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
       <details style="margin-top:20px">
         <summary>Cosmos blockchain launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCosmosCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5101/" target="_blank" rel="noopener noreferrer">OPEN COSMOS BLOCKCHAIN + MONGO ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>Polkadot launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPolkadotCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5102/" target="_blank" rel="noopener noreferrer">OPEN POLKADOT + MONGO ↗</a></p>
       </details>
       <details style="margin-top:20px">
         <summary>NEAR launch command</summary>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicNearCqlNative.ps1 -Federated -Serve</pre>
         <p><a href="http://127.0.0.1:5103/" target="_blank" rel="noopener noreferrer">OPEN NEAR + MONGO ↗</a></p>
       </details>
-      <p style="margin-top:24px">From C:/Source/OASIS-cosmic, start one demo at a time with its retained runtime, ledger, contract, identity and source manifest configured. Preserve previous reports before rerunning. Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>.</p>
       <p class="note">Queries submit no chain transactions and do not claim a distributed snapshot. Finish with the local stop button and wait for the runner to exit: owned Mongo fixtures are removed, nodes stop, and reusable chain data remains.</p>
     </div>
     <div class="card" id="cql-s3-catalogue">
       <h2>12 · S3-compatible local storage + MongoDB</h2>
       <p>Query three encrypted objects through AWSS3OASIS and two MongoDB copies with one CQL ID filter. Full selection returns five physical copies; the subset returns four, preserving both provider labels.</p>
       <p class="note">This uses the owned local MinIO compatible service, not hosted AWS. Native reads, retained-data restart and Mongo federation are verified. General metadata/text queries, distributed snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the reusable S3-compatible demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the pinned cached image and retained store/key, verifies native reads and restart, then opens the paired demo. It makes no billable AWS requests.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicS3CqlNative.ps1 -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5107/" target="_blank" rel="noopener noreferrer">OPEN S3-COMPATIBLE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. The exact owned Mongo fixture is removed and services stop; the reusable S3 source objects, store and protected key remain.</p>
@@ -1099,11 +1064,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>13 · TRON local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted TRON holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each source provider shown.</p>
       <p class="note">This uses the retained local TRE chain, not TRON mainnet. Native restart, read-only source preservation and Mongo federation are verified. General metadata/text queries, shared snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the reusable TRON demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained chain, original protected source and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicTronCqlDeclared.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5108/" target="_blank" rel="noopener noreferrer">OPEN TRON + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the TRON source, protected key and ledger remain.</p>
@@ -1112,11 +1072,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>14 · TON TVM local emulation + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted TON holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses native TON contract bytecode in local TVM emulation, not the public TON network. No real tokens are spent. General metadata/text queries, consensus/finality and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained TON TVM demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained native source, protected key, pinned SDK and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicTonCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5109/" target="_blank" rel="noopener noreferrer">OPEN TON TVM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the retained TVM source, protected key and receipts remain.</p>
@@ -1125,11 +1080,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>15 · Azure Blob emulator + MongoDB</h2>
       <p>Run one CQL ID filter over three Azure Blob holons and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the free local Azurite emulator through the Azure SDK. Hosted Azure is pending. Blob records use canonical JSON; this demo does not claim application-level encryption, metadata/text queries or a shared snapshot. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Azure Blob demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the retained Blob source, pinned Azurite runtime and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicAzureBlobCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5106/" target="_blank" rel="noopener noreferrer">OPEN AZURE BLOB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original Blob source remains.</p>
@@ -1139,11 +1089,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <p>In the <a href="#panel-cql">hosted CQL playground</a>, sign in and select <strong>LocalFileOASIS</strong>. The public presets return all three teaching records or a two-record subset.</p>
       <p>For a paired example, choose the MongoDB preset ending in <strong>mongo-public-records</strong> or <strong>mongo-public-subset</strong>, then select <strong>Prepare my Mongo records</strong> and <strong>Run query</strong>. The full query returns five rows and the subset returns four. Each row shows its provider.</p>
       <p class="note">The hosted source reads a fixed set of public JSON records from the server's filesystem. The MongoDB copies belong to the signed-in visitor.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained local-file demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original source files and Mongo runtime, then starts the paired browser demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicLocalFileCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5110/" target="_blank" rel="noopener noreferrer">OPEN LOCAL FILES + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original source files remain unchanged.</p>
@@ -1152,13 +1097,6 @@ dotnet ./Examples/CosmicCqlDemo/bin/Debug/net10.0/CosmicCqlDemo.dll &#96;
       <h2>17 · Aptos local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three retained Aptos records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the official Aptos SDK and an existing local Move contract, not a public network. Chain records use plaintext canonical JSON. Metadata/text queries, a shared snapshot and full provider parity remain separate work. Queries submit no transactions; the current SDK configuration still requires the retained account credential. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Aptos demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the first command in one terminal and leave it open. In another terminal, run the second command. Both reuse the original node, source records and account.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Start-CosmicAptosCqlNode.ps1
-
-pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5111/" target="_blank" rel="noopener noreferrer">OPEN APTOS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the demo runner to exit. Then press Ctrl-C in the node terminal. The exact owned Mongo fixture is removed; the original Aptos ledger, account and records remain.</p>
@@ -1167,11 +1105,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>18 · Sui local chain + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted Sui records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the official Mysten SDK bridge and a dedicated retained local Sui contract. It does not use mainnet. The demo encryption key is a public test fixture, not a production secret. General metadata/text queries, shared snapshots and full provider parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Sui demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It resumes the original local node and reuses the admitted source, pinned SDK and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSuiCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5112/" target="_blank" rel="noopener noreferrer">OPEN SUI + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time. Queries submit no chain transactions.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops its services; the original Sui ledger, storage objects and signed source evidence remain.</p>
@@ -1180,11 +1113,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>19 · Redis + MongoDB</h2>
       <p>Run one CQL ID filter over three encrypted Redis records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the retained local Redis service through RedisOASIS. It queries selected native keys without scanning the keyspace. Metadata/text queries, shared snapshots, cluster behavior and full provider parity remain separate work. Redis-compatible providers require their own verification. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Redis demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original Redis database, protected local identity and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicRedisCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5113/" target="_blank" rel="noopener noreferrer">OPEN REDIS + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original Redis records and shared volume remain.</p>
@@ -1193,11 +1121,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>20 · PostgreSQL content queries + MongoDB</h2>
       <p>Run the same CQL predicate on both native databases. Try exact name, description Contains, string metadata equality and an AND / OR expression. Expected physical rows are <strong>2, 4, 4 and 2</strong>, with each provider shown.</p>
       <p class="note">PostgreSQL applies parameterized SQL predicates before paging. The retained source uses plaintext canonical JSON. This is a local teaching demo with a server-owned record catalogue; hosted PostgreSQL authorization, arbitrary-source queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained PostgreSQL content demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original PostgreSQL content schema and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPostgreSqlCqlNative.ps1 -Content -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5114/" target="_blank" rel="noopener noreferrer">OPEN POSTGRESQL + MONGO CONTENT QUERIES ↗</a></p>
       <p>Choose <strong>Exact name</strong>, <strong>Description Contains</strong>, <strong>Metadata equality</strong> and <strong>AND / OR</strong>. The page also includes the full and subset ID examples. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; both original PostgreSQL schemas and their records remain.</p>
@@ -1206,11 +1129,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>21 · SQL Server content queries + MongoDB</h2>
       <p>Run one CQL predicate on both native databases. Try exact name, description Contains, string metadata equality and AND / OR. Expected physical rows are <strong>2, 4, 4 and 2</strong>, with each provider shown.</p>
       <p class="note">This uses the retained Windows LocalDB instance, not Azure SQL. SQL Server applies parameterized predicates before paging and preserves exact string distinctions, including trailing spaces. Records use plaintext canonical JSON. Hosted authorization, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained SQL Server content demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original LocalDB instance, attached databases and Mongo runtime.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSqlServerCqlNative.ps1 -Content -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5115/" target="_blank" rel="noopener noreferrer">OPEN SQL SERVER + MONGO CONTENT QUERIES ↗</a></p>
       <p>Choose <strong>Exact name</strong>, <strong>Description Contains</strong>, <strong>Metadata equality</strong> and <strong>AND / OR</strong>. The page also includes full and subset ID examples. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops services; the original SQL Server databases, records and source evidence remain.</p>
@@ -1224,7 +1142,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained local DuckDB demo</summary>
         <p>From your OASIS repository, run the command below. It reopens the original database file and reuses the cached native driver and Mongo runtime. Your hosted sign-in is never forwarded.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDuckDbCqlNative.ps1 -Federated -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5116/" target="_blank" rel="noopener noreferrer">OPEN DUCKDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
@@ -1234,11 +1151,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>23 · Temporary hosted Upstash + MongoDB</h2>
       <p>Run one CQL ID filter over three hosted Upstash records and two local MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note"><strong>The retained free scratch admission expires 31 October 2026 at 21:15 UTC.</strong> The runner refuses expired admission; permanent free hosting remains pending. This is a real hosted REST query with plaintext canonical JSON, not an emulator. General metadata/text queries, atomic multi-command writes, shared snapshots and full parity remain separate work. Your sandbox sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Upstash demo before expiry</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the protected existing hosted identity, original records and Mongo runtime. Do not paste credentials into the browser or replace the expired source.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicUpstashCqlNative.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5117/" target="_blank" rel="noopener noreferrer">OPEN UPSTASH + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and stops local services; the original hosted source remains subject to its expiry.</p>
@@ -1247,11 +1159,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>24 · Litestream on Linux + MongoDB</h2>
       <p>Run one CQL ID filter over three retained SQLite records through LitestreamOASIS and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the retained Linux source and verified replica/restore lineage. The CQL adapter reads SQLite; the separate Litestream sidecar is not simulated by the query. Windows replication remains unverified after its recorded directory-sync failure. Records use plaintext canonical JSON; remote/PITR/crash recovery, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Linux Litestream demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the existing Ubuntu setup, native source, retained replica/restore receipt and Linux Mongo store without replaying the probe.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicLitestreamLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5118/" target="_blank" rel="noopener noreferrer">OPEN LINUX LITESTREAM + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It verifies and removes the exact owned Mongo fixture, then stops its daemon; the original source, replica, restored file and receipts remain.</p>
@@ -1260,11 +1167,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>25 · Volatile Memcached + MongoDB</h2>
       <p>Run one CQL ID filter over three live cache records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. A separate deleted cache record stays excluded.</p>
       <p class="note">Memcached is volatile: each explicitly started demo warms a new empty owned process using the retained canonical test identities. Shutdown intentionally discards that generation. This does not demonstrate persistence or restart recovery. Records use plaintext JSON; shared-index atomicity, conditional writes, wider queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start one owned Memcached demo generation</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the existing Ubuntu runtime and Linux Mongo store. Unresolved earlier generations stop admission rather than being replayed.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMemcachedLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5119/" target="_blank" rel="noopener noreferrer">OPEN MEMCACHED + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup and generation retirement. It removes the exact owned Mongo fixture and stops both daemons; canonical identities and retirement evidence remain.</p>
@@ -1273,11 +1175,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>26 · Valkey + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Valkey records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently identified Valkey 9.0.4 server and its original persistent source. Redis protocol compatibility is not used as proof of Valkey readiness. General metadata/text queries, cluster replication/failover, shared snapshots and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Valkey demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies a clean server restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicValKeyLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5120/" target="_blank" rel="noopener noreferrer">OPEN VALKEY + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original Valkey data, keys and receipts remain.</p>
@@ -1286,11 +1183,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>27 · KeyDB + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted KeyDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently verified KeyDB 6.3.4 runtime and its original persistent source. Executable identity and native process checks distinguish it from compatible products. General metadata/text queries, active replication, cluster failover, shared snapshots and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained KeyDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies a clean server restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicKeyDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5121/" target="_blank" rel="noopener noreferrer">OPEN KEYDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original KeyDB data, keys and receipts remain.</p>
@@ -1299,11 +1191,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>28 · Dragonfly + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Dragonfly records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the independently verified Dragonfly 2.0.2 runtime and its original native snapshot. A clean restart reloads the retained encrypted records. This does not certify recovery of uncheckpointed writes, per-save crash durability, cluster replication, general metadata/text queries or full parity. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Dragonfly demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original encrypted source and protected keys, verifies the native checkpoint and a clean restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicDragonflyLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5122/" target="_blank" rel="noopener noreferrer">OPEN DRAGONFLY + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for the runner to exit. It removes the exact owned Mongo fixture and cleanly stops both daemons; the original Dragonfly data, keys and snapshot receipts remain.</p>
@@ -1312,11 +1199,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>29 · Garnet + MongoDB</h2>
       <p>Run one CQL ID filter over three retained encrypted Garnet records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses Microsoft Garnet 2.2.5 and its explicitly admitted second synthetic dataset. The first dataset's failed checkpoint evidence is preserved separately; this is not a recovery of that lost source. Completed checkpoint reload is verified, while uncheckpointed crash recovery, general metadata/text queries, cluster operation and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Garnet demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the admitted dataset, protected keys and native checkpoint, verifies a restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicGarnetLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5123/" target="_blank" rel="noopener noreferrer">OPEN GARNET + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops both daemons after the acknowledged Garnet checkpoint; retained data, keys and failure evidence remain.</p>
@@ -1325,11 +1207,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>30 · PocketBase + MongoDB</h2>
       <p>Run one CQL ID filter over three retained PocketBase records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the real PocketBase 0.40.6 REST service on Linux and its retained local database. Native filtered queries and restart are verified. Records use canonical plaintext JSON; hosted service access, general name/metadata queries, graph/history/conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained PocketBase demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original database and protected local credentials, verifies a service restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPocketBaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5124/" target="_blank" rel="noopener noreferrer">OPEN POCKETBASE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops both services; the original PocketBase database, credentials and receipts remain.</p>
@@ -1338,11 +1215,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>31 · Supabase REST + MongoDB</h2>
       <p>Run one CQL ID filter over three retained Supabase-provider records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. Deleted records stay excluded.</p>
       <p class="note">This uses the Supabase provider against a real local PostgREST 16.5 service and PostgreSQL database with JWT checks. It does not certify hosted Supabase, its API-key gateway, Auth, storage or realtime. Canonical JSON is plaintext; general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Supabase REST demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original database and protected local credentials, verifies PostgreSQL and REST restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSupabaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5125/" target="_blank" rel="noopener noreferrer">OPEN SUPABASE REST + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture and stops REST, Mongo and PostgreSQL; the original Supabase-provider database, credentials and receipts remain.</p>
@@ -1354,7 +1226,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Firebase RTDB demo</summary>
         <p>From C:/Source/OASIS2 on the recovery laptop, run the command below. It restores this laptop's retained recovery checkpoint and starts the Windows Mongo-paired demo. The missing original laptop export remains a separate historical cohort.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicFirebaseCqlNative.ps1 -RecoveryLaptop -Federated -Serve</pre>
         <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/647b53daf/Docs/Devs/FIREBASE_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Recovery setup and scope ↗</a></p>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5126/" target="_blank" rel="noopener noreferrer">OPEN FIREBASE RTDB + MONGO QUERY ↗</a></p>
@@ -1365,11 +1236,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>33 · CouchDB + MongoDB</h2>
       <p>Run one CQL ID selection over three retained CouchDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real authenticated CouchDB service and its original records and revisions. Selection uses bounded native document reads and rejects unresolved revision conflicts. Canonical JSON is plaintext; general metadata/text queries, conditional writes, graph/history and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained CouchDB demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original native source and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCouchDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5127/" target="_blank" rel="noopener noreferrer">OPEN COUCHDB + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks CouchDB's original data and revisions, then stops both services. Original source, credentials and receipts remain.</p>
@@ -1378,11 +1244,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>34 · Couchbase + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Couchbase records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real local Couchbase Community 8.0.2 service and parameterized native SQL++ reads. Original JSON and exact unsigned version tokens are checked through restart and federation. Canonical JSON is plaintext; hosted Capella, mobile sync, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Couchbase demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original cluster, bucket, records and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicCouchbaseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5128/" target="_blank" rel="noopener noreferrer">OPEN COUCHBASE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Couchbase JSON and version tokens, then stops both services. Original data, credentials and receipts remain.</p>
@@ -1391,11 +1252,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>35 · ClickHouse + MongoDB</h2>
       <p>Run one CQL ID selection over three retained ClickHouse records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses the real local ClickHouse 26.8.36.3 service over authenticated HTTPS with its original private CA. Parameterized native FINAL queries resolve stored versions before returning rows. Canonical JSON is plaintext; concurrent-write version ties, conditional writes, history, general metadata/text queries and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained ClickHouse demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original server, rows and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicClickHouseLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5129/" target="_blank" rel="noopener noreferrer">OPEN CLICKHOUSE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original ClickHouse JSON and versions, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1404,11 +1260,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>36 · InfluxDB 2.x Flux + MongoDB</h2>
       <p>Run one CQL ID selection over three logical InfluxDB records and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown. “Future Espresso” demonstrates a retained future-dated latest point.</p>
       <p class="note">This uses real InfluxDB OSS 2.7.12 over authenticated HTTPS with its original private CA and six retained points. Flux selects latest heads and rejects ambiguous ties; the separate tied-head control is outside the normal presets. Canonical JSON is plaintext; InfluxDB 3, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained InfluxDB Flux demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original organization, infinite-retention bucket, points and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicInfluxDbLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5130/" target="_blank" rel="noopener noreferrer">OPEN INFLUXDB FLUX + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original points, then stops both services using InfluxDB's graceful signal. Original data, certificates, credentials and receipts remain.</p>
@@ -1417,11 +1268,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>37 · Qdrant + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Qdrant points and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses real standalone Qdrant 1.16.3 over authenticated HTTPS with its original private CA. The query retrieves admitted IDs and payloads without returning vectors. Original payloads, placeholder zero vectors and collection configuration are checked through restart and federation. Semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Qdrant demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original native peer, points and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicQdrantLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5131/" target="_blank" rel="noopener noreferrer">OPEN QDRANT + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Qdrant points and vectors, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1430,11 +1276,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>38 · Weaviate + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Weaviate objects and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, with each provider shown.</p>
       <p class="note">This uses real Weaviate 1.39.8 and its configured C# gRPC client over authenticated TLS. GraphQL is disabled in this demo service. Original object JSON, timestamps and schema are checked through restart and federation. Vectorization is disabled; semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Weaviate demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original node, objects, private CA and protected credentials, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicWeaviateLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5132/" target="_blank" rel="noopener noreferrer">OPEN WEAVIATE + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Weaviate objects, then stops both services. Original data, certificates, credentials and receipts remain.</p>
@@ -1443,11 +1284,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <h2>39 · Chroma + MongoDB</h2>
       <p>Run one CQL ID selection over three retained Chroma documents and two MongoDB copies. Full selection returns five physical rows; the two-record subset returns four, preserving provider labels.</p>
       <p class="note">This uses the real, retained Chroma 1.5.9 local service and its native multi-ID query. Original collection identities, schema and documents are checked through restart and federation. This fixture is loopback-only and uses plaintext without authentication. Semantic search, hosted cloud, general metadata/text queries, conditional writes and full parity remain separate work. Your hosted sign-in is never forwarded.</p>
-      <details style="margin-top:20px">
-        <summary>Start the retained Chroma demo</summary>
-        <p>From C:/Source/OASIS-cosmic, run the command below. It reuses the original collections and documents, verifies restart, then starts the Linux Mongo-paired demo.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicChromaLinuxDemo.ps1 -Federated -Serve</pre>
-      </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5133/" target="_blank" rel="noopener noreferrer">OPEN CHROMA + MONGO QUERY ↗</a></p>
       <p>Choose <strong>Query all records</strong>, then <strong>Query two-record subset</strong>. Start one native demo at a time.</p>
       <p class="note">Finish with the local stop button and wait for verified cleanup. It removes the exact owned Mongo fixture, rechecks original Chroma documents, then stops both services. Original data, schema and receipts remain.</p>
@@ -1459,7 +1295,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run the command below. It reuses the retained native records and admitted Mongo environment. Use the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMeilisearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5135/" target="_blank" rel="noopener noreferrer">OPEN LOCAL MEILISEARCH + MONGO QUERY ↗</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/MEILISEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide ↗</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough ↗</a></p>
@@ -1473,7 +1308,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the retained Solr records and admitted Mongo environment. See the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSolrMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5136/" target="_blank" rel="noopener noreferrer">OPEN LOCAL SOLR + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/SOLR_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1487,7 +1321,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the original ArcadeDB records and admitted Mongo environment. See the guide for prerequisites; missing sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicArcadeDBMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5137/" target="_blank" rel="noopener noreferrer">OPEN LOCAL ARCADEDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/ARCADEDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1501,7 +1334,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Windows demo</summary>
         <p>In the prepared recovery-laptop task checkout, run this command. It reuses the four original canonical Holons and admitted Mongo environment. See the guide for prerequisites and disk capacity notes; missing or changed sources stop the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicOpenSearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5138/" target="_blank" rel="noopener noreferrer">OPEN LOCAL OPENSEARCH + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/OPENSEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Examples/CosmicCqlDemo/IdentityFederationWalkthrough.cs" target="_blank" rel="noopener noreferrer">Commented C# walkthrough</a></p>
@@ -1515,7 +1347,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained QuestDB symbol demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained symbol source and admitted Mongo environment. Missing or changed source identity, configuration or runtime stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicQuestDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5134/" target="_blank" rel="noopener noreferrer">OPEN LOCAL QUESTDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Docs/Devs/QUESTDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/e33199d90f821776cbf514b57a6671911c16e4ab/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.QuestDBOASIS.IntegrationTests/QuestDbBrowserNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1529,7 +1360,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained Elasticsearch demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed source identity, configuration or runtime stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicElasticsearchMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5139/" target="_blank" rel="noopener noreferrer">OPEN LOCAL ELASTICSEARCH + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e3b9b973422e26ebf806d592ed5295d9af54763/Docs/Devs/ELASTICSEARCH_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/7e3b9b973422e26ebf806d592ed5295d9af54763/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.ElasticsearchOASIS.IntegrationTests/ElasticsearchMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1543,7 +1373,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained SurrealDB Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained authenticated source and admitted Mongo environment. Missing runtime, reader or unfinished source admission stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicSurrealDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5140/" target="_blank" rel="noopener noreferrer">OPEN LOCAL SURREALDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Docs/Devs/SURREALDB_CQL_WINDOWS_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/3fb4991d9fc496209a3592882ee1139a33ea46c1/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.SurrealDBOASIS.IntegrationTests/SurrealDbWindowsMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1559,7 +1388,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained PouchDB Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed runtime, source, revisions or unfinished fixture admission stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicPouchDbMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5141/" target="_blank" rel="noopener noreferrer">OPEN LOCAL POUCHDB + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Docs/Devs/POUCHDB_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/1cac150c4fc80bdb4e027bccb83644602d0f4298/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.PouchDBOASIS.IntegrationTests/PouchDbMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
@@ -1573,7 +1401,6 @@ pwsh -File Scripts/TestHosts/Run-CosmicAptosCqlNative.ps1 -Federated -Serve</pre
       <details style="margin-top:20px">
         <summary>Start the retained MinIO Windows demo</summary>
         <p>From C:/Source/OASIS2 on the prepared recovery laptop, run this command. It reuses the retained native source and admitted Mongo environment. Missing or changed runtime, source, credentials, object hashes or ETags stops the run.</p>
-        <pre style="margin-top:16px;line-height:1.8;white-space:pre-wrap">pwsh -File Scripts/TestHosts/Run-CosmicMinioMongoDemo.ps1 -Serve</pre>
       </details>
       <p style="margin-top:24px"><a href="http://127.0.0.1:5142/" target="_blank" rel="noopener noreferrer">OPEN LOCAL MINIO + MONGO QUERY</a></p>
       <p><a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2d55029988e65c61ab7f318c1a36aaabfb6025b4/Docs/Devs/MINIO_CQL_LOCAL_DEMO.md" target="_blank" rel="noopener noreferrer">Setup and presentation guide</a> · <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/2d55029988e65c61ab7f318c1a36aaabfb6025b4/Providers/Storage/TestProjects/NextGenSoftware.OASIS.API.Providers.MinIOOASIS.IntegrationTests/MinioMongoCqlNativeTests.cs" target="_blank" rel="noopener noreferrer">Verified C# demo</a></p>
