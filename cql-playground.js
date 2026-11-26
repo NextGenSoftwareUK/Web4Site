@@ -501,6 +501,7 @@
         if (isCurrent()) {
           if (result.pairedRequest) $('cql-request').value = JSON.stringify(result.pairedRequest, null, 2);
           note(`${result.saved} saved · ${result.existing} already prepared. ` +
+            (result.legacy ? `${result.legacy} earlier copies kept as they were, without native fields. ` : '') +
             (result.pairedRequest ? 'The query now includes your private snapshot IDs. ' : '') +
             (samples ? 'Run the query to see your sample records.' : 'Run the federation query to inspect both providers.'));
           $('cql-operation').textContent = result.keys.length ? 'Acknowledged save request keys: ' + result.keys.join(', ') : 'Existing records were left unchanged.';

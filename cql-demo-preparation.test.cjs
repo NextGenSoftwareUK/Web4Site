@@ -1294,3 +1294,60 @@ test('Blockscout address keys prepare owned private copies and reuse original sn
   assert.equal(f.saves.length, 2);
   assert.ok(f.saves.every(save => save.providerType === 'MongoDBOASIS' && save.holon.isPublic === false));
 });
+
+function withNativeMetadata(f, extra) {
+  const inner = f.options.request;
+  const request = async (path, body) => {
+    const result = await inner(path, body);
+    if (path === 'data/query-cql' && body.provider === f.source.provider)
+      for (const row of result.result.rows) Object.assign(row.metadata, typeof extra === 'function' ? extra(row) : extra);
+    return result;
+  };
+  return { ...f.options, request };
+}
+
+test('new demo copies carry the native domain payload exactly, without reserved keys', async () => {
+  const f = fixture();
+  const options = withNativeMetadata(f, { FilecoinBalanceWei: '12345678901234567890', FilecoinBlockHash: '0xabc',
+    'oasis.native.provider': 'Spoofed', 'COSMIC.Demo.Dataset': 'spoofed', name: 'not copied' });
+  const result = await prep.prepare(options);
+  assert.equal(result.saved, 2);
+  for (const save of f.saves) {
+    const m = save.holon.metaData;
+    assert.equal(m.FilecoinBalanceWei, '12345678901234567890');
+    assert.equal(m.FilecoinBlockHash, '0xabc');
+    assert.equal(m['oasis.native.provider'], f.source.provider);
+    assert.equal(m['COSMIC.Demo.Dataset'], 'COSMIC.CQL.Demo.v1');
+    assert.equal(m['COSMIC.Demo.PayloadSchema'], '2');
+    assert.ok(!Number.isNaN(Date.parse(m['COSMIC.Demo.ObservedUtc'])));
+    assert.equal(m.name, undefined);
+  }
+});
+
+test('a native field the copy cannot carry exactly stops before any save', async () => {
+  for (const bad of [{ Balance: 42 }, { 'bad key': 'x' }, { Long: 'x'.repeat(1025) },
+    Object.fromEntries(Array.from({ length: 33 }, (_, i) => ['Field' + i, 'v']))]) {
+    const f = fixture();
+    await assert.rejects(prep.prepare(withNativeMetadata(f, bad)), /No save was sent/);
+    assert.equal(f.saves.length, 0);
+  }
+});
+
+test('copies made before payload schema 2 are acknowledged as legacy and never rewritten', async () => {
+  const f = fixture();
+  await prep.prepare(f.options);
+  for (const row of f.db.values()) { delete row.metadata['COSMIC.Demo.PayloadSchema']; delete row.metadata['COSMIC.Demo.ObservedUtc']; }
+  const before = structuredClone([...f.db.values()]);
+  const again = await prep.prepare(withNativeMetadata(f, { FilecoinBalanceWei: '1' }));
+  assert.equal(again.saved, 0); assert.equal(again.legacy, 2); assert.equal(again.existing, 0);
+  assert.equal(f.saves.length, 2);
+  assert.deepEqual([...f.db.values()], before);
+});
+
+test('a later observation does not change or re-save a schema 2 copy', async () => {
+  const f = fixture();
+  await prep.prepare(withNativeMetadata(f, { FilecoinBalanceWei: '1' }));
+  const again = await prep.prepare(withNativeMetadata(f, { FilecoinBalanceWei: '2' }));
+  assert.equal(again.saved, 0); assert.equal(again.existing, 2);
+  assert.equal([...f.db.values()][0].metadata.FilecoinBalanceWei, '1');
+});

@@ -5,6 +5,24 @@
   const guid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const nonemptyGuid = value => typeof value === 'string' && guid.test(value) && !/^0{8}-0{4}-0{4}-0{4}-0{12}$/.test(value);
   const clone = value => JSON.parse(JSON.stringify(value));
+  const payloadSchema = '2';
+  const reservedKeys = ['constructor', 'prototype', '__proto__', 'name', 'description'];
+
+  // Domain payload is the source's own observed fields, copied exactly. Owner,
+  // revision, encryption and provider state live in reserved oasis./COSMIC.
+  // keys and Holon fields, never in this projection. Out-of-bounds input stops
+  // before any save rather than being trimmed.
+  function domainPayload(metadata) {
+    const payload = {};
+    for (const [key, value] of Object.entries(metadata ?? {})) {
+      if (/^(oasis|COSMIC)\./i.test(key) || reservedKeys.includes(key)) continue;
+      if (!/^[A-Za-z][A-Za-z0-9_.]{0,63}$/.test(key) || typeof value !== 'string' || value.length > 1024)
+        throw new Error('The source returned a field the demo copy cannot carry exactly. No save was sent.');
+      payload[key] = value;
+    }
+    if (Object.keys(payload).length > 32) throw new Error('The source returned more fields than a demo copy carries. No save was sent.');
+    return payload;
+  }
 
   function recipe(source, example) {
     // Match the source and server identity contract; other profiles keep 128.
@@ -83,7 +101,7 @@
         new Set(identity.records.map(record => record.id)).size !== plan.keys.length ||
         new Set(identity.records.map(record => record.nativeKey)).size !== plan.keys.length)
       throw new Error('WEB4 did not acknowledge the preparation identities. No save was sent.');
-    const result = { saved: 0, existing: 0, keys: [] };
+    const result = { saved: 0, existing: 0, legacy: 0, keys: [] };
     if (plan.selectionKind === 'Id') {
       // A snapshot has a Core-mapped, avatar-scoped ID, not its source ID.
       // Both sets belong in the shared federation predicate. Oracle's separate
@@ -104,8 +122,10 @@
         if (storage.key(index)?.startsWith(prefix))
           throw new Error('An earlier save requires reconciliation. Do not repeat it. ' + storage.key(index).slice(prefix.length));
       const source = sourceRows.get(record.nativeKey);
-      const metadata = { ...record.metadata, ...(plan.selectionKind === 'Id' ? {} : { [plan.metadataKey]: record.nativeKey }),
+      const identityMetadata = { ...record.metadata, ...(plan.selectionKind === 'Id' ? {} : { [plan.metadataKey]: record.nativeKey }),
         'COSMIC.Demo.Dataset': dataset, 'COSMIC.Demo.SourceHolonId': source.id };
+      const metadata = { ...domainPayload(source.metadata), ...identityMetadata,
+        'COSMIC.Demo.PayloadSchema': payloadSchema, 'COSMIC.Demo.ObservedUtc': new Date().toISOString() };
       const loaded = await call('data/query-cql', { provider: 'MongoDBOASIS', orderBy: 'Id', take: 1, includeMetadata: true,
         filters: [{ field: 'Id', scalar: 'Guid', operator: 'Equal', value: record.id }] });
       const existing = loaded?.result?.rows;
@@ -113,12 +133,15 @@
       if (existing.length) {
         // A snapshot preserves its first observation when the live source advances.
         // Version1 and matching ownership/provenance identify an unedited copy.
+        // Copies made before payload schema 2 are acknowledged as they are and
+        // never rewritten here; their domain fields stay only in the native rows.
         const row = existing[0];
         if (row.id !== record.id || row.createdByAvatarId !== identity.ownerId || row.isPublic !== false ||
             row.version !== 1 ||
-            Object.entries(metadata).some(([key, value]) => row.metadata?.[key] !== value))
+            Object.entries(identityMetadata).some(([key, value]) => row.metadata?.[key] !== value))
           throw new Error('An existing record differs from the demo. It has been left untouched.');
-        result.existing++;
+        if (row.metadata?.['COSMIC.Demo.PayloadSchema'] === payloadSchema) result.existing++;
+        else result.legacy++;
         continue;
       }
       const operation = randomUUID();
