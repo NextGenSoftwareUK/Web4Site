@@ -155,7 +155,8 @@
             request.identityMode !== 'PreserveCopies') {
           throw new Error('Hosted federation changed its explicit provider scope.');
         }
-        return { id: row.id, label: row.label, request, operation, available: row.available !== false };
+        const text = typeof row.text === 'string' && row.text.length <= 4096 ? row.text : null;
+        return { id: row.id, label: row.label, request, operation, available: row.available !== false, text };
       });
       return { provider: source.provider, available: source.available, queryOnly: source.queryOnly,
         federationAvailable: source.federationAvailable, textKeyProfile: source.textKeyProfile, examples };
@@ -206,7 +207,6 @@
     let sessionIdentity = null;
     let sessionBase = null;
     let sources = null;
-    let discoveredTextProfiles = {};
     let discovery = null;
     let preparation = null;
     let preparing = false;
@@ -434,7 +434,7 @@
         $('cql-response').textContent = '';
         $('cql-operation').textContent = '';
       }
-      sessionIdentity = identity; sessionBase = base; sources = null; discoveredTextProfiles = {}; endpoint = '';
+      sessionIdentity = identity; sessionBase = base; sources = null; endpoint = '';
       namedScalar = null;
       $('cql-provider').replaceChildren(); $('cql-preset').replaceChildren();
       $('cql-request').value = ''; $('cql-endpoint').textContent = '';
@@ -459,7 +459,6 @@
         if (!response.ok || result?.isError)
           throw new Error(`Provider discovery failed: HTTP ${response.status} · ${result?.errorCode || 'CQL_CATALOGUE_UNAVAILABLE'}`);
         sources = catalogue(result);
-        discoveredTextProfiles = root.CqlText.discoverKeyProfiles(sources);
         for (const source of sources) {
           const playable = profileChoices(source, sources).length > 0;
           const option = new Option(source.provider + (!source.available ? ' · unavailable' : !playable ? ' · examples pending' : ''), source.provider);
@@ -533,8 +532,8 @@
         (selectedPreset === null || 'host:' + row.id === selectedPreset) &&
         ['public-records', 'public-posts', 'public-subset'].includes(row.id) &&
         row.available !== false && row.operation === 'Rows' &&
-        root.CqlText.publicExample(source.provider, row.request, discoveredTextProfiles));
-      return example ? { provider: source.provider, request: example.request } : null;
+        row.text);
+      return example ? { provider: source.provider, request: example.request, text: example.text } : null;
     }
 
     function selectedPublicExample() {
@@ -572,33 +571,31 @@
       try {
         const example = selectedPublicExample();
         if (!example) throw new Error('This provider has no SQL-like public example on this host.');
-        $('cql-text').value = root.CqlText.publicExample(example.provider, example.request, discoveredTextProfiles);
+        $('cql-text').value = example.text;
         note('Review the SQL-like example, then preview its request.');
       } catch (error) { note(error.message, true); }
     });
 
-    function availableTextProviders() {
-      if (discovery || !getToken()) return [];
-      return [...root.CqlText.providers, ...Object.keys(discoveredTextProfiles)].filter(provider =>
-        sources?.some(source => source.provider === provider && source.available));
-    }
-
-    function availableTextProfiles() {
-      return discovery || !getToken() ? {} : discoveredTextProfiles;
-    }
-
-    function compileAvailableText(text, parameters = {}) {
+    // The server owns the SQL-like language: it compiles the text and the page only shows and runs the result.
+    async function compileText(text, parameters = {}) {
       if (controller || preparing || discovery || !getToken()) throw new Error('Wait for provider discovery before loading a query.');
-      const query = root.CqlText.compile(text, discoveredTextProfiles, parameters);
-      const selected = query.body.providers ?? [query.body.provider];
-      if (!selected.every(provider => sources?.some(row => row.provider === provider && row.available &&
-        (selected.length === 1 || row.federationAvailable))))
-        throw new Error('A requested provider is unavailable for this query on the selected WEB4 host.');
-      return query;
+      const identity = getIdentity(); const base = getBase();
+      const access = await ensureAccessToken();
+      const response = await fetch(`${base}/api/data/query-cql/sql`, {
+        method: 'POST', redirect: 'error', signal: AbortSignal.timeout(15000),
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + access, 'Idempotency-Key': crypto.randomUUID() },
+        body: JSON.stringify({ query: text, parameters, execute: false })
+      });
+      const data = await response.json().catch(() => null);
+      const result = data && unwrap(data);
+      if (identity !== getIdentity() || base !== getBase()) throw new Error('The sandbox session changed. Try again.');
+      if (!response.ok || !result?.result?.path || !result.result.body)
+        throw new Error(result?.message || result?.title || `WEB4 could not compile the query (HTTP ${response.status}).`);
+      return result.result;
     }
 
-    function loadText(text, parameters = {}) {
-      const query = compileAvailableText(text, parameters);
+    function showCompiled(query) {
       $('cql-provider').value = query.body.providers?.[0] ?? query.body.provider;
       chooseProvider();
       preparation = null;
@@ -609,7 +606,11 @@
       note('Review the compiled request, then run it on WEB4.');
       controls();
     }
-    return { syncAuth, ready, availableTextProviders, availableTextProfiles, compileAvailableText, loadText, selectedPublicExample, publicQuestionExample,
+
+    async function loadText(text, parameters = {}) {
+      showCompiled(await compileText(text, parameters));
+    }
+    return { syncAuth, ready, loadText, selectedPublicExample, publicQuestionExample,
       clearVirtualMapping: () => clearVirtualMapping($('cql-virtual-mapping'), $('cql-saved-mapping'), $('cql-mapping-note')),
       availableQuestionProviders };
   }
