@@ -92,6 +92,7 @@
 
 <h1>OASIS Provider Registry</h1>
 <p class="subtitle">WEB4 provider registry — project categories, inventory roles and documented capabilities</p>
+<p class="subtitle">Includes legacy project variants. Categories and secondary capabilities are source inventory labels, not backend acceptance. See the <a href="https://github.com/NextGenSoftwareUK/OASIS/blob/Development/Docs/WIP/HyperDrive-Providers/PROVIDER_MATRIX.md">verification matrix</a> for scoped evidence.</p>
 
 <div class="controls">
   <input type="text" id="search" placeholder="Search providers…">
@@ -353,10 +354,15 @@ const providers = [
   ["Storage","WeaviateOASIS","Storage",["Network"]],
   ["Storage","XataOASIS","Storage",["Network"]],
   ["Storage","ZillizOASIS","Storage",["Network"]],
+  ["Network","BiconomyOASIS","Non-storage",[]],
+  ["Network","PimlicoOASIS","Non-storage",[]],
+  ["Network","XMTPOASIS","Non-storage",[]],
+  ["Network","ZeroDevOASIS","Non-storage",[]],
 ];
 
 // Issues to flag
 const issues = {
+  "HoloOASIS.Desktop": "Desktop variant is obsolete for now; use canonical HoloOASIS. Historical proof does not reopen development.",
   "AzureStorageOASIS": "Cloud in caps is redundant (primary is Cloud)",
   "Neo4jOASIS.Aura": "Primary should be Storage, not StorageAndNetwork",
 };
